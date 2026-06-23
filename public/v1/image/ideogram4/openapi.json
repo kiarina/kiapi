@@ -1,0 +1,635 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Ideogram 4 API",
+    "description": "Typography-focused text-to-image generation (Ideogram 4 FP8 via mflux).\n\nOne operation: `/generate` (text-to-image). Ideogram 4 excels at rendering legible\ntext and typography. There is no image-to-image, no training, and no hosted Magic\nPrompt API.\n\n## Upstream docs\n- [mflux — Ideogram 4](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ideogram4/README.md) — the MLX engine kiapi runs\n- [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) — the `fp8` weights (gated)\n\n## Models\n- **fp8** (default) — `ideogram-ai/ideogram-4-fp8`. The only variant; discover it\n  at `GET /v1/image/ideogram4/models`. The Hugging Face repo is **gated**: approve\n  access to `ideogram-ai/ideogram-4-fp8` before the first download. Non-FP8\n  checkpoint layouts are not supported.\n\n## Prompting (JSON caption preferred)\nIdeogram 4 follows a **structured JSON caption** far better than plain text,\nespecially for laying out and spelling words. Plain text is accepted but usually\nweaker. See the official prompt guide for the full caption schema, key-order\nrules, bbox layout, and color-palette conditioning:\n- [Ideogram 4 prompting guide](https://github.com/ideogram-oss/ideogram-4/blob/main/docs/prompting.md)\n\nA caption looks like:\n\n```json\n{\n  \"high_level_description\": \"A clean studio photo of a white notebook with the word MFLUX on the cover.\",\n  \"style_description\": \"Soft daylight, shallow depth of field, product-photography aesthetic.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Warm wooden desk with soft window light.\",\n    \"elements\": [\n      {\n        \"type\": \"text\",\n        \"bbox\": [420, 420, 620, 560],\n        \"text\": \"MFLUX\",\n        \"desc\": \"Crisp black uppercase letters centered on the notebook.\"\n      }\n    ]\n  }\n}\n```\n\n- `bbox` is `[x1, y1, x2, y2]` in normalized **0-1000** layout coordinates.\n- `type` is `text` (needs a `text` field) or `obj`.\n- Set `strict_caption_validation=true` to fail (400) on mflux caption-schema\n  warnings; `warn_on_caption_issues` (default true) just surfaces them.\n\n## Presets\n`preset` bundles steps + guidance + noise schedule. Trade speed for quality:\n`V4_TURBO_12` (fast, 12 steps) → `V4_DEFAULT_20` (balanced) → `V4_QUALITY_48`\n(best, 48 steps).\n\n## TIPS\n- For a quick image, call `sync` without `Accept: application/json` to get the raw\n  bytes straight back (`curl -o out.png`).\n- `width`/`height` must be multiples of 16 and within 256..2048 (default 1024).\n- First use downloads the gated FP8 weights; run `kiapi activate` ahead of time to\n  avoid a cold-start download on the first request.\n\n## Performance\n- **fp8**: roughly 26-28 GiB peak RSS at 1024x1024 / V4_DEFAULT_20.\n- **first request**: may be much slower if gated weights are still being\n  downloaded from Hugging Face.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/image/ideogram4/generate": {
+      "post": {
+        "summary": "Generate",
+        "description": "Generate one image from a text prompt or JSON caption (Ideogram 4, text-to-image).\n\nIdeogram 4 is typography-focused txt2img — there is no image-to-image or\ntraining. Prefer a structured JSON `prompt` (high_level_description,\noptional style_description, compositional_deconstruction with element\n`bbox`/`text`) for crisp lettering; plain text works but is usually weaker.\nThe same endpoint serves both `sync` and `async` via `mode`. Pick the\nspeed/quality tradeoff with `preset` (V4_TURBO_12 → V4_DEFAULT_20 →\nV4_QUALITY_48).\n\nSync content negotiation: a single image is produced, so unless the client\nasks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /\n`X-Kiapi-Job-Id` headers — `curl -o out.png` just works. With\n`Accept: application/json` (or async) the Job JSON is returned, whose\n`result` follows ImageResponse.\n\nA `quantize` differing from the resident model runs a one-off transient\nmodel (slower, not reused). Ideogram 4 may return an 'Image blocked by safety\nfilter' image (including false positives); kiapi stores it as the artifact\nrather than raising an error. Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
+        "operationId": "generate_v1_image_ideogram4_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobImageResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/image/ideogram4/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_image_ideogram4_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Image Ideogram4 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/image/ideogram4/models). Only `fp8` exists; omit to use it. Aliases `ideogram4` / `ideogram-4` are accepted."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the image (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            ],
+            "title": "Prompt",
+            "description": "What to generate. Prefer a structured JSON caption with `high_level_description`, optional `style_description`, and `compositional_deconstruction` (`background` + `elements`, each with `type` text|obj, `bbox` [x1,y1,x2,y2] in 0-1000 layout coords, `text` for text elements, and `desc`). Plain text is accepted but usually weaker for typography. Must not be empty."
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "V4_DEFAULT_20",
+              "V4_QUALITY_48",
+              "V4_TURBO_12"
+            ],
+            "title": "Preset",
+            "description": "Sampler preset bundling steps, guidance schedule, and noise schedule. `V4_TURBO_12` is fastest (12 steps), `V4_DEFAULT_20` is balanced, `V4_QUALITY_48` is highest quality and slowest (48 steps).",
+            "default": "V4_DEFAULT_20"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and within 256..2048."
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and within 256..2048."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits, one of {3, 4, 5, 6, 8}. Omit to use the resident model's quantization. A differing value builds a one-off transient model (slower, not reused)."
+          },
+          "strict_caption_validation": {
+            "type": "boolean",
+            "title": "Strict Caption Validation",
+            "description": "If true, fail the request (400) when mflux reports JSON-caption schema warnings instead of proceeding.",
+            "default": false
+          },
+          "warn_on_caption_issues": {
+            "type": "boolean",
+            "title": "Warn On Caption Issues",
+            "description": "Ask mflux to surface warnings about JSON-caption schema issues.",
+            "default": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "description": "Output image encoding for the produced file.",
+            "default": "png"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quality",
+            "description": "Encoder quality 1..100 (used for jpeg/webp; ignored for png).",
+            "default": 90
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateRequest"
+      },
+      "ImageResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model variant that produced the image."
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            ],
+            "title": "Prompt",
+            "description": "The prompt used for the run (plain text or JSON caption)."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced image. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "image_bytes": {
+            "type": "integer",
+            "title": "Image Bytes",
+            "description": "Size of the produced image in bytes."
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "description": "Width in pixels of the produced image."
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "description": "Height in pixels of the produced image."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (model, prompt, preset, seed, width, height, quantize, format, quality, …), so the result is reproducible."
+          },
+          "safety_filter_note": {
+            "type": "string",
+            "title": "Safety Filter Note",
+            "description": "Reminder that Ideogram 4 may return an 'Image blocked by safety filter' image, which kiapi stores as the artifact rather than raising an error."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "prompt",
+          "file_id",
+          "image_bytes",
+          "width",
+          "height",
+          "params",
+          "safety_filter_note",
+          "timings"
+        ],
+        "title": "ImageResponse",
+        "description": "Capability-specific ``result`` for a succeeded ideogram4 generate job."
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobImageResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobImageResponse"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds (model run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "ideogram4",
+  "x-kiapi-domain": "image",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

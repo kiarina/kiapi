@@ -1,0 +1,2 @@
+class AceStepEngineError(RuntimeError):
+    pass

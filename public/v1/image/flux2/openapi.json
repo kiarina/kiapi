@@ -1,0 +1,1266 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi FLUX.2 API",
+    "description": "Image generation, editing, and LoRA training (FLUX.2 Klein via mflux).\n\nThree operations on Black Forest Labs' FLUX.2 Klein models: `/generate`\n(text-to-image, or image-to-image when `init_image` is supplied), `/edit`\n(multi-reference image editing), and `/train` (LoRA finetune).\n\n## Upstream docs\n- [mflux — FLUX.2](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/flux2/README.md) — the MLX engine kiapi runs\n- [FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) — distilled `klein-9b` weights\n- [FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) / [base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) — trainable base weights\n\n## Models\n- **klein-9b** (default) — distilled. Fast, few steps (default 4), unquantized.\n  The everyday choice for generate/edit.\n- **klein-base-4b** — base. Slower (default 40 steps, q8) but trainable; the\n  default `/train` target.\n- **klein-base-9b** — base. Highest quality of the three, slowest; also trainable.\n\nPick the variant with `model` (aliases like `flux2-klein-9b` are accepted);\ndiscover variants at `GET /v1/image/flux2/models`. Variant-dependent defaults\n(`steps` / `guidance` / `quantize`) are filled in server-side when omitted, and\nthe resolved values are recorded in the result `params`. Only base variants are\ntrainable — `klein-9b` is rejected by `/train`.\n\n## generate vs edit\n- **generate** is text-to-image; pass `init_image` (+ optional `image_strength`)\n  to seed an img2img run from one image.\n- **edit** takes a list of reference `images` for multi-reference editing /\n  composition under a single prompt.\n\n## Resident vs transient runs\nThe warmed, resident model uses the server-default quantization. A request that\neither supplies `loras` or sets a `quantize` differing from the resident model\nbuilds a **one-off transient model** for that call — weights load fresh, so it is\nslower and not reused. For the fast path, omit `loras` and leave `quantize` unset.\n\n## LoRA workflow\nTrain an adapter via `/train` (always async, base variants only), then apply it on\n`/generate` or `/edit` by passing its `file` id in `loras` (up to 4, each\n`{file, scale}`). The dataset is a ZIP uploaded to the Files API; its layout\ndepends on `training_mode`.\n\n**`training_mode=text`** — each image has a same-stem `.txt` caption:\n\n```\ndataset.zip\n├── cat_01.png      # image\n├── cat_01.txt      # same-stem caption: \"a photo of a tabby cat\"\n├── cat_02.jpg\n└── cat_02.txt\n```\n\n**`training_mode=edit`** — `*_in.*` / `*_out.*` image pairs, the `*_in.txt`\nholding the edit prompt:\n\n```\ndataset.zip\n├── 01_in.png       # source image\n├── 01_in.txt       # edit prompt: \"make it snow\"\n├── 01_out.png      # target image\n├── 02_in.jpg\n├── 02_in.txt\n└── 02_out.jpg\n```\n\n## TIPS\n- For a quick image, call `sync` without `Accept: application/json` to get the\n  raw bytes straight back (`curl -o out.png`).\n- `width`/`height` must be multiples of 16 and at most 2048x2048 (default 1024).\n- `klein-9b` is the fast default; reach for the base variants only when you need\n  their quality or want to train.\n- First use downloads the FLUX.2 weights; run `kiapi activate` ahead of time to\n  avoid a cold-start download on the first request.\n\n## Performance\n- **klein-9b**: ~29 GiB peak RSS for 512 text/img2img, ~31.6 GiB for edit.\n- **klein-base-4b**: ~9.1 GiB peak at q8/512/40 steps.\n- **klein-base-9b**: ~16.8 GiB peak at q8/512/40 steps.\n- Transient runs (any `loras` or a `quantize` override) rebuild the model each\n  call and are slower than the resident path.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/image/flux2/generate": {
+      "post": {
+        "summary": "Generate Flux2 Endpoint",
+        "description": "Generate an image from a text prompt (FLUX.2 Klein, text-to-image / img2img).\n\nPlain text-to-image by default; supply `init_image` (+ optional\n`image_strength`) to run img2img instead — use `/v1/image/flux2/edit` for\nmulti-reference editing. The same endpoint serves both `sync` and `async` via\n`mode`. Variant defaults differ: `klein-9b` (default) is distilled and fast\n(few steps, unquantized); `klein-base-4b` / `klein-base-9b` are slower base\nvariants (more steps, q8).\n\nSync content negotiation: a single image is produced, so unless the client\nasks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /\n`X-Kiapi-Job-Id` headers — `curl -o out.png` just works. With\n`Accept: application/json` (or async) the Job JSON is returned, whose\n`result` follows ImageResponse.\n\nAny `loras` or a `quantize` differing from the resident model runs a one-off\ntransient model (slower, not reused). Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
+        "operationId": "generate_flux2_endpoint_v1_image_flux2_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobImageResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/image/flux2/edit": {
+      "post": {
+        "summary": "Edit Flux2 Endpoint",
+        "description": "Edit / combine one or more reference images with a prompt (FLUX.2 Klein).\n\nTakes a list of `images` (FileRefs, multi-reference editing) plus a `prompt`;\n`image_strength` controls how much of the input is preserved (lower = closer\nto input). For plain image-to-image from a single seed image, use `init_image`\non `/v1/image/flux2/generate` instead. The same endpoint serves both `sync`\nand `async` via `mode`.\n\nSync content negotiation, transient-model behavior (`loras` / `quantize`\noverride), and the ImageResponse `result` shape match\n`/v1/image/flux2/generate`.",
+        "operationId": "edit_flux2_endpoint_v1_image_flux2_edit_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobImageResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/image/flux2/train": {
+      "post": {
+        "summary": "Train Flux2 Endpoint",
+        "description": "Train a LoRA adapter on an image dataset (FLUX.2 Klein base, always async).\n\nLong-running, so this endpoint is always async: it returns 202 with a\njob_id — poll GET /v1/jobs/{job_id}. Only the base variants\n(`klein-base-4b` default, `klein-base-9b`) are trainable. `training_mode`\nselects the dataset layout: `text` uses captioned images (same-stem `.txt`),\n`edit` uses `*_in.*` / `*_out.*` pairs with `*_in.txt` prompts; the `dataset`\nis a Files-API ZIP. On success the job's `result` holds `adapter_file_id`\n(the trained `.safetensors`, also the artifact), `adapter_bytes`,\n`training_mode`, the resolved `config`, `lora_targets`, `checkpoint`, and\n`timings`; the adapter can then be passed back via `loras` on generate/edit.",
+        "operationId": "train_flux2_endpoint_v1_image_flux2_train_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "202": {
+            "description": "Training job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid model or dataset FileRef."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          }
+        }
+      }
+    },
+    "/v1/image/flux2/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_image_flux2_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Image Flux2 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "EditRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/image/flux2/models). Omit for the default `klein-9b`; `klein-base-4b` / `klein-base-9b` are the slower base variants. Aliases such as `flux2-klein-9b` are accepted."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the image (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Text prompt describing the desired edit (required)."
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Images",
+            "description": "One or more reference images to edit/combine, each a Files-API file id, http(s) URL, or data URL. Multi-reference editing draws on all of them."
+          },
+          "image_strength": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Strength",
+            "description": "How much the reference images are preserved, in 0..1. Lower keeps more of the input; higher follows the prompt more freely."
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps",
+            "description": "Number of denoising steps (1..100). Omit for the variant default (klein-9b 4, base variants 40)."
+          },
+          "guidance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance",
+            "description": "Classifier-free guidance scale. Omit for the variant default (1.0); higher follows the prompt more strictly."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits, one of {3, 4, 5, 6, 8}. Omit to use the resident model's quantization (klein-9b unquantized, base variants q8). A differing value builds a one-off transient model (slower, not reused)."
+          },
+          "scheduler": {
+            "type": "string",
+            "title": "Scheduler",
+            "description": "Noise scheduler. `flow_match_euler_discrete` is the default and only tested value.",
+            "default": "flow_match_euler_discrete"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "description": "Output image encoding for the produced file.",
+            "default": "png"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quality",
+            "description": "Encoder quality 1..100 (used for jpeg/webp; ignored for png).",
+            "default": 90
+          },
+          "loras": {
+            "items": {
+              "$ref": "#/components/schemas/LoraRef"
+            },
+            "type": "array",
+            "title": "Loras",
+            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused)."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt",
+          "images"
+        ],
+        "title": "EditRequest"
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/image/flux2/models). Omit for the default `klein-9b` (distilled, fast, few steps); `klein-base-4b` / `klein-base-9b` are the slower base variants. Aliases such as `flux2-klein-9b` are accepted."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the image (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Text prompt describing the image to generate (required)."
+          },
+          "init_image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional input image (Files-API file id, http(s) URL, or data URL). When set, `/generate` runs img2img seeded from this image; omit for plain txt2img."
+          },
+          "image_strength": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Strength",
+            "description": "img2img only: how much the `init_image` is preserved, in 0..1. Lower keeps more of the input; higher follows the prompt more freely. Ignored when `init_image` is absent."
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps",
+            "description": "Number of denoising steps (1..100). Omit for the variant default (klein-9b 4, base variants 40). More steps = slower, sometimes higher quality."
+          },
+          "guidance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance",
+            "description": "Classifier-free guidance scale. Omit for the variant default (1.0); higher follows the prompt more strictly."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits, one of {3, 4, 5, 6, 8}. Omit to use the resident model's quantization (klein-9b unquantized, base variants q8). A differing value builds a one-off transient model (slower, not reused)."
+          },
+          "scheduler": {
+            "type": "string",
+            "title": "Scheduler",
+            "description": "Noise scheduler. `flow_match_euler_discrete` is the default and only tested value.",
+            "default": "flow_match_euler_discrete"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "description": "Output image encoding for the produced file.",
+            "default": "png"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quality",
+            "description": "Encoder quality 1..100 (used for jpeg/webp; ignored for png).",
+            "default": 90
+          },
+          "loras": {
+            "items": {
+              "$ref": "#/components/schemas/LoraRef"
+            },
+            "type": "array",
+            "title": "Loras",
+            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused)."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateRequest"
+      },
+      "ImageResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model variant that produced the image (klein-9b | klein-base-4b | klein-base-9b)."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The prompt used for the run."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced image. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "image_bytes": {
+            "type": "integer",
+            "title": "Image Bytes",
+            "description": "Size of the produced image in bytes."
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "description": "Width in pixels of the produced image."
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "description": "Height in pixels of the produced image."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (model, seed, steps, guidance, quantize, scheduler, format, quality, loras, …), so the result is reproducible."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "prompt",
+          "file_id",
+          "image_bytes",
+          "width",
+          "height",
+          "params",
+          "timings"
+        ],
+        "title": "ImageResponse",
+        "description": "Capability-specific ``result`` for a succeeded flux2 generate/edit job."
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobImageResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobImageResponse"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "LoraRef": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "The LoRA adapter (`.safetensors`) to apply, as a Files-API file id, http(s) URL, or data URL."
+          },
+          "scale": {
+            "type": "number",
+            "title": "Scale",
+            "description": "Blend strength for this adapter. 1.0 applies it at full weight; lower values weaken its effect, higher values exaggerate it.",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "LoraRef",
+        "description": "One LoRA adapter to apply, by Files-API reference and blend scale.\n\nAny lora forces a one-off transient model (slower, not reused). Up to 4 may\nbe passed in a request's ``loras`` list."
+      },
+      "TrainRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Base variant to finetune: `klein-base-4b` (default) or `klein-base-9b`. The distilled `klein-9b` is not trainable."
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Training dataset as a Files-API reference to a ZIP. For `training_mode=text`: images with same-stem `.txt` captions (`cat.png` + `cat.txt`). For `training_mode=edit`: `*_in.*` / `*_out.*` image pairs with `*_in.txt` prompts."
+          },
+          "training_mode": {
+            "type": "string",
+            "enum": [
+              "text",
+              "edit"
+            ],
+            "title": "Training Mode",
+            "description": "`text` trains on captioned images; `edit` trains on in/out image pairs for editing-style adapters. Must match the dataset layout.",
+            "default": "text"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed for the training run.",
+            "default": 42
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps",
+            "description": "Inference/denoising steps used during training. Omit for the variant default (40)."
+          },
+          "guidance": {
+            "type": "number",
+            "title": "Guidance",
+            "description": "Guidance scale during training.",
+            "default": 1.0
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits during training, one of {3, 4, 5, 6, 8}. Omit for the variant default (8)."
+          },
+          "max_resolution": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Resolution",
+            "description": "Images are resized so their long side is at most this many pixels.",
+            "default": 512
+          },
+          "low_ram": {
+            "type": "boolean",
+            "title": "Low Ram",
+            "description": "Trade speed for lower peak memory during training.",
+            "default": true
+          },
+          "num_epochs": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Num Epochs",
+            "description": "Number of passes over the dataset.",
+            "default": 10
+          },
+          "batch_size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Batch Size",
+            "description": "Training batch size.",
+            "default": 1
+          },
+          "timestep_low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestep Low",
+            "description": "Lower diffusion-timestep bound to sample. Omit for the variant default (25)."
+          },
+          "timestep_high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestep High",
+            "description": "Upper diffusion-timestep bound to sample. Omit to use `steps`."
+          },
+          "learning_rate": {
+            "type": "number",
+            "title": "Learning Rate",
+            "description": "AdamW learning rate.",
+            "default": 0.0001
+          },
+          "save_frequency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Save Frequency",
+            "description": "Checkpoint every N steps. Omit to only keep the final checkpoint."
+          },
+          "lora_rank": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Lora Rank",
+            "description": "Rank of the trained LoRA adapter.",
+            "default": 8
+          },
+          "lora_include_ff": {
+            "type": "boolean",
+            "title": "Lora Include Ff",
+            "description": "Also train feed-forward layers (larger adapter), not just attention projections.",
+            "default": true
+          },
+          "lora_layers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lora Layers",
+            "description": "Advanced: explicit mflux LoRA target spec. Omit to use the built-in default targets derived from `lora_rank` / `lora_include_ff`."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "dataset"
+        ],
+        "title": "TrainRequest"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds (model run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "flux2",
+  "x-kiapi-domain": "image",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

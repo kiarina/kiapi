@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Bump version in pyproject.toml"
+#USAGE arg "<version>" help="New version (e.g. '1.0.0', '1.0.0-alpha.1')"
+
+set -euo pipefail
+
+new_version="$usage_version"
+
+if ! [[ "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+    echo "Invalid version format: $new_version"
+    echo "Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 1.0.0, 1.0.0-alpha.1)"
+    exit 1
+fi
+
+echo "Updating version to $new_version..."
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
+else
+    sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
+fi
+
+echo "Version updated in pyproject.toml."

@@ -1,0 +1,691 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi SeedVR2 API",
+    "description": "Image super-resolution upscaling (SeedVR2 via mflux).\n\nOne operation: `/upscale` takes an input image and produces a higher-resolution\nversion. SeedVR2 is diffusion-based super-resolution, **not** prompt-driven image\ngeneration — there is no prompt. To create or edit images from text, use the\nqwen / flux2 / zimage / ideogram4 families instead.\n\n## Upstream docs\n- [mflux — SeedVR2](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/seedvr2/README.md) — the MLX engine kiapi runs\n- [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) — weights\n\n## Models\n- **3b** (default) — faster, lighter; good general upscaler.\n- **7b** — larger variant, higher quality at a higher memory/time cost.\n\nDiscover variants at `GET /v1/image/seedvr2/models`. An omitted `quantize` uses\nthe resident model's quantization (q8); the resolved values are recorded in the\nresult `params`.\n\n## Sizing the output\n`resolution` accepts either form:\n- an **integer** shortest-edge pixel target (16..2048), or\n- a **scale factor** string like `2x` or `1.5x` (> 0 and at most 4.0x).\n\n`softness` (0..1) trades sharpness for smoothing; leave it at 0 for the crispest\nresult.\n\n## Resident vs transient runs\nThe warmed, resident model uses the server-default quantization (q8). A request\nthat sets a `quantize` differing from the resident model builds a **one-off\ntransient model** for that call — weights load fresh, so it is slower and not\nreused. For the fast path, leave `quantize` unset.\n\n## TIPS\n- For a quick result, call `sync` without `Accept: application/json` to get the\n  raw bytes straight back (`curl -o out.png`).\n- Upscaling a large source image to a high `resolution` raises peak memory; the\n  request can 503 if it does not fit the global memory budget — try the `3b`\n  variant or a smaller target.\n- First use downloads the SeedVR2 weights; run `kiapi activate` ahead of time to\n  avoid a cold-start download on the first request.\n\n## Performance\n- **3b**: 256→512 q8 first-run peak ~3929 MiB; cached 256→768 peak ~1756 MiB.\n- **7b**: larger variant; estimate only until measured locally.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/image/seedvr2/upscale": {
+      "post": {
+        "summary": "Upscale Seedvr2 Endpoint",
+        "description": "Upscale one image with diffusion super-resolution (SeedVR2 via mflux).\n\nTakes an input `image` (FileRef) and produces a higher-resolution version.\nSeedVR2 is super-resolution, not prompt-driven generation — there is no\nprompt. The target size is set by `resolution`: an integer shortest-edge\npixel target (16..2048) or a scale factor like `\"2x\"` (up to `4.0x`). The\nsame endpoint serves both `sync` and `async` via `mode`.\n\nSync content negotiation: a single image is produced, so unless the client\nasks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /\n`X-Kiapi-Job-Id` headers — `curl -o out.png` just works. With\n`Accept: application/json` (or async) the Job JSON is returned, whose\n`result` follows ImageResponse.\n\nA `quantize` differing from the resident model's quantization runs a one-off\ntransient model (slower, not reused). Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
+        "operationId": "upscale_seedvr2_endpoint_v1_image_seedvr2_upscale_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpscaleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobImageResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/image/seedvr2/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_image_seedvr2_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Image Seedvr2 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "ImageResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model variant that produced the image (3b or 7b)."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the upscaled image. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "image_bytes": {
+            "type": "integer",
+            "title": "Image Bytes",
+            "description": "Size of the produced image in bytes."
+          },
+          "input_width": {
+            "type": "integer",
+            "title": "Input Width",
+            "description": "Width in pixels of the input image."
+          },
+          "input_height": {
+            "type": "integer",
+            "title": "Input Height",
+            "description": "Height in pixels of the input image."
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "description": "Width in pixels of the upscaled image."
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "description": "Height in pixels of the upscaled image."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (model, resolution, softness, seed, quantize, format, quality), so the result is reproducible."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "file_id",
+          "image_bytes",
+          "input_width",
+          "input_height",
+          "width",
+          "height",
+          "params",
+          "timings"
+        ],
+        "title": "ImageResponse",
+        "description": "Capability-specific ``result`` for a succeeded seedvr2 upscale job."
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobImageResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobImageResponse"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "UpscaleRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/image/seedvr2/models). Omit for the default `3b`; `7b` is the larger, higher-quality variant. Aliases `seedvr2-3b` / `seedvr2-7b` are also accepted."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the image (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "image": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Input image to upscale (Files-API file id, http(s) URL, or data URL)."
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Resolution",
+            "description": "Target size: an integer shortest-edge pixel target (16..2048), or a scale factor string like `2x` / `1.5x` (> 0 and at most 4.0x). Default `2x`.",
+            "default": "2x"
+          },
+          "softness": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Softness",
+            "description": "Detail smoothing in 0..1. 0 keeps maximum sharpness; higher values soften the result. Default 0.0.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits, one of {3, 4, 5, 6, 8}. Omit to use the resident model's quantization (q8). A differing value builds a one-off transient model (slower, not reused)."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "title": "Format",
+            "description": "Output image encoding for the produced file.",
+            "default": "png"
+          },
+          "quality": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quality",
+            "description": "Encoder quality 1..100 (used for jpeg/webp; ignored for png).",
+            "default": 90
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "title": "UpscaleRequest"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock upscale time in seconds (model run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "seedvr2",
+  "x-kiapi-domain": "image",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

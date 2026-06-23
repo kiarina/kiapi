@@ -1,0 +1,531 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Web API",
+    "description": "Web search + single-page fetch for LLM agents.\n\nUse this family when an agent needs current web information or needs to read the\ncontents of a specific HTML page. Search returns structured JSON results; fetch\nrenders one page and returns Markdown by default, or PDF when requested.\n\n## When To Use\n- Use search when you need discovery: recent facts, unknown URLs, multiple\n  candidate sources, or comparison across sources.\n- Use fetch when you already have a URL and need the page body in agent-friendly\n  Markdown or as a rendered PDF artifact.\n- Search and fetch are separate steps. Search result snippets are useful for\n  triage, but fetch is better when the exact page content matters.\n\n## Search Tips\n- Search results are live and may change between calls.\n- SearXNG inline operators are useful for agents: `site:`, `!wp`, `!images`,\n  `:ja`, and engine/category bangs can be placed directly in `query`.\n- Use `categories`, `engines`, `language`, `time_range`, and `safesearch` to\n  narrow the search when the task has a clear domain.\n- Use `max_results` to keep responses small. It truncates one returned page of\n  SearXNG results; it does not aggregate multiple pages.\n\n## Fetch Tips\n- Fetch is for HTML pages only. It intentionally rejects binary resources such\n  as images, videos, audio files, archives, and PDFs instead of returning their\n  raw bytes.\n- Markdown output is best for reading and summarization. PDF output is useful\n  when layout, pagination, or visual preservation matters.\n- Successful fetches are also stored in the Files API. Use the returned\n  `X-Kiapi-File-Id` when the artifact needs to be referenced later.\n\n## Common Failures\n- `not_html`: the URL points to a non-HTML resource.\n- `empty_content`: the page loaded but produced no extractable content.\n- `unsupported_accept`: fetch was called with an Accept header that allows\n  neither Markdown nor PDF.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/web/search": {
+      "post": {
+        "summary": "Search Web",
+        "description": "Search the live web with SearXNG and return JSON results.\n\nThe request body maps to SearXNG's search parameters. `query` is passed\nthrough verbatim, so SearXNG inline operators such as `site:`, `!wp`,\n`!images`, and language operators like `:ja` work normally. `format=json` is\nalways added by kiapi.\n\nThis endpoint is synchronous from the client's perspective: it waits up to\n`KIAPI_SYNC_TIMEOUT_S` and returns `SearchResponse`. Internally it still\ncreates a Job and runs through the single-flight worker so web backends share\nthe same queue, setup checks, and resident subprocess lifecycle as other\ncapabilities.\n\nResults are live and non-deterministic. `results` is optionally truncated by\n`max_results`, while `answers`, `infoboxes`, `suggestions`, and\n`unresponsive_engines` are forwarded from SearXNG without truncation.",
+        "operationId": "search_web_v1_web_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown web model or invalid model selection."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "502": {
+            "description": "SearXNG backend was unreachable or returned an HTTP error."
+          },
+          "503": {
+            "description": "Backend Docker image is not activated or memory budget is exhausted."
+          },
+          "504": {
+            "description": "SearXNG or the sync job exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/web/fetch": {
+      "get": {
+        "summary": "Fetch Web",
+        "description": "Render one HTML page to Markdown or PDF and stream the raw body.\n\n`url` is supplied as a query parameter. The router resolves the `Accept`\nheader to the capability request's internal `format`: `application/pdf`\nselects PDF; Markdown-compatible, text-compatible, wildcard, browser default,\nor omitted Accept headers select Markdown. Incompatible concrete media types\nreturn HTTP 406 with a structured JSON error.\n\nFetch performs a cheap preflight check before rendering. Non-HTML resources\nare rejected with `not_html`; pages that render to no extractable text are\nrejected with `empty_content`. Successful bodies are stored in the Files API\nand streamed back directly with `X-Kiapi-File-Id`, `X-Kiapi-Job-Id`, and\nupstream `X-Kiapi-Content-Type` headers when available.",
+        "operationId": "fetch_web_v1_web_fetch_get",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Absolute http:// or https:// URL of an HTML page to fetch. Non-HTML resources such as images, audio, video, archives, and PDFs are rejected with `not_html`.",
+              "examples": [
+                "https://example.com/"
+              ],
+              "title": "Url"
+            },
+            "description": "Absolute http:// or https:// URL of an HTML page to fetch. Non-HTML resources such as images, audio, video, archives, and PDFs are rejected with `not_html`."
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Requested output media type. application/pdf returns PDF; text/markdown, text/plain, text/*, */*, browser default headers, or an omitted header return Markdown. application/json and other incompatible concrete media types return HTTP 406.",
+              "examples": [
+                "text/markdown",
+                "application/pdf"
+              ],
+              "title": "Accept"
+            },
+            "description": "Requested output media type. application/pdf returns PDF; text/markdown, text/plain, text/*, */*, browser default headers, or an omitted header return Markdown. application/json and other incompatible concrete media types return HTTP 406."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rendered page body. Markdown is returned by default; PDF is returned when the Accept header allows application/pdf.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-Url": {
+                "description": "Fetched URL recorded on the stored artifact.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-File-Id": {
+                "description": "Files-API id of the rendered Markdown or PDF artifact.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id created for the fetch operation.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Content-Type": {
+                "description": "Detected upstream page Content-Type, when known.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Accept header does not allow Markdown or PDF.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid URL, non-HTML resource, or empty rendered content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Target URL or Crawl4AI backend was unreachable or returned an HTTP error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Backend Docker image is not activated or memory budget is exhausted."
+          },
+          "504": {
+            "description": "Crawl4AI or the sync job exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/web/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_web_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Web Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FetchErrorResponse": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/_FetchErrorDetail",
+            "description": "Structured fetch error payload returned by FastAPI."
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "FetchErrorResponse"
+      },
+      "SearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query",
+            "description": "Search query passed to SearXNG as-is. SearXNG inline operators work here, for example `site:github.com kiapi`, `!wp Python`, `!images cat`, or `:ja mlx`.",
+            "examples": [
+              "site:github.com kiarina kiapi"
+            ]
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categories",
+            "description": "SearXNG categories to search. Omit to use `KIAPI_WEB_DEFAULT_CATEGORIES`; if that is unset, SearXNG chooses its own default. Common values include `general`, `it`, `science`, `news`, `images`, `videos`, `map`, `music`, `files`, and `social_media`.",
+            "examples": [
+              [
+                "general"
+              ],
+              [
+                "it",
+                "science"
+              ]
+            ]
+          },
+          "engines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engines",
+            "description": "Specific SearXNG engines to use. Omit to use `KIAPI_WEB_DEFAULT_ENGINES`; if that is unset, SearXNG selects engines from the requested categories. Examples: `google`, `bing`, `duckduckgo`, `github`, `wikipedia`, `arxiv`.",
+            "examples": [
+              [
+                "duckduckgo"
+              ],
+              [
+                "github",
+                "stackoverflow"
+              ]
+            ]
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "Optional SearXNG language code such as `ja`, `en`, or `en-US`. Omit to use `KIAPI_WEB_DEFAULT_LANGUAGE`.",
+            "examples": [
+              "ja",
+              "en"
+            ]
+          },
+          "time_range": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month",
+                  "year"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Range",
+            "description": "Optional freshness filter. Supported values are `day`, `week`, `month`, and `year`. Support depends on the selected engines."
+          },
+          "safesearch": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1,
+                  2
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safesearch",
+            "description": "SearXNG safe-search level: `0` disables filtering, `1` is moderate, and `2` is strict. Omit to use `KIAPI_WEB_DEFAULT_SAFESEARCH`."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "One-based SearXNG result page (`pageno`). kiapi fetches exactly one page per request; increase this value to request the next page.",
+            "default": 1
+          },
+          "max_results": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Results",
+            "description": "Maximum number of `results` to keep from the returned SearXNG page. SearXNG has no native max-results parameter, so kiapi truncates client-side. Omit to use `KIAPI_WEB_DEFAULT_MAX_RESULTS`; set the server default to null to keep the full page.",
+            "examples": [
+              5,
+              10
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest"
+      },
+      "SearchResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "Normalized query returned by SearXNG. This usually matches the submitted `query`, but SearXNG may normalize whitespace or operators."
+          },
+          "results": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "Search result dictionaries forwarded from SearXNG and truncated by `max_results`. Common keys include `title`, `url`, `content`, `engine`, `score`, `img_src`, and `publishedDate`; exact fields depend on the engine and result type."
+          },
+          "answers": {
+            "items": {},
+            "type": "array",
+            "title": "Answers",
+            "description": "Direct-answer blocks from SearXNG, forwarded without truncation."
+          },
+          "infoboxes": {
+            "items": {},
+            "type": "array",
+            "title": "Infoboxes",
+            "description": "Knowledge-panel style infoboxes from SearXNG, forwarded without truncation."
+          },
+          "suggestions": {
+            "items": {},
+            "type": "array",
+            "title": "Suggestions",
+            "description": "Search suggestions from SearXNG, forwarded without truncation."
+          },
+          "unresponsive_engines": {
+            "items": {},
+            "type": "array",
+            "title": "Unresponsive Engines",
+            "description": "SearXNG `unresponsive_engines`: engines that failed or timed out for this query, usually as `[engine, reason]` pairs. Results may still be usable when this list is non-empty."
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "results",
+          "answers",
+          "infoboxes",
+          "suggestions",
+          "unresponsive_engines"
+        ],
+        "title": "SearchResponse"
+      },
+      "_FetchErrorDetail": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Stable error code such as `unsupported_accept`, `invalid_request`, `not_html`, `empty_content`, or `fetch_failed`."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable error detail."
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "URL submitted to `/v1/web/fetch`."
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type",
+            "description": "Detected upstream Content-Type when known. Present for non-HTML resources and some fetch failures."
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "message",
+          "url"
+        ],
+        "title": "_FetchErrorDetail"
+      }
+    }
+  },
+  "x-kiapi-capability": "web",
+  "x-kiapi-domain": "web",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

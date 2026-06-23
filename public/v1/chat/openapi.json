@@ -1,0 +1,692 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Chat API",
+    "description": "OpenAI-compatible chat completions: multimodal, tool calling, streaming.\n\nPOST OpenAI Chat Completions to `/v1/chat/completions`.\n\n## Upstream docs\n- [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) — the multimodal MLX engine kiapi runs\n- [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) — `qwen3-omni` weights\n- [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) — `qwen3.6-27b` weights\n\n## Choosing A Model\n`model` selects a registered chat model (full catalog and aliases:\n`GET /v1/chat/models`). The currently served models differ by input modality, so\nchoose by what you send:\n- **qwen3-omni** (default) — text + image + **audio + video**. Use it for any\n  audio/video input. On video with a sound track, the audio is auto-demuxed and\n  also fed as audio, so the model both sees and hears the clip.\n  there is no audio/speech output (Qwen3-Omni's Talker is not exposed).\n- **qwen3.6-27b** — text + image only. Lighter on memory for text/image work;\n  sending audio or video to it returns HTTP 400.\n\n## Audio Input\nFormats:\n```json\n{\"type\": \"input_audio\", \"input_audio\": {\"data\": \"<base64>\", \"format\": \"wav\"}}\n```\nAliases accepting a source string (http(s) URL or data URL):\n```json\n{\"type\": \"audio_url\", \"audio_url\": {\"url\": \"https://example.com/voice.mp3\"}}\n{\"type\": \"audio_url\", \"audio_url\": {\"url\": \"data:audio/wav;base64,AAAA...\"}}\n{\"type\": \"audio\", \"audio\": \"https://example.com/voice.wav\"}\n```\nFor bare base64, set `format` (e.g. `\"wav\"`, `\"mp3\"`) so the extension is known.\n\nQwen3-Omni uses at most one audio input per request (mlx-vlm limitation; extras\nare ignored). A video's demuxed audio (below) counts toward this — don't also\npass a separate audio part alongside a sounded video.\n\n## Video Input\nFormats:\n```json\n{\"type\": \"video_url\", \"video_url\": {\"url\": \"https://example.com/clip.mp4\"}}\n{\"type\": \"video_url\", \"video_url\": {\"url\": \"data:video/mp4;base64,AAAA...\"}}\n```\nAliases accepting the same source string directly:\n```json\n{\"type\": \"video\", \"video\": \"https://example.com/clip.mp4\"}\n{\"type\": \"input_video\", \"input_video\": \"data:video/mp4;base64,AAAA...\"}\n{\"type\": \"input_video\", \"input_video\": {\"data\": \"<base64>\", \"format\": \"mp4\"}}\n```\n- **Frame sampling** — frames are sampled at `fps` (default 1.0). Lower it for\n  long clips to cut token and memory cost.\n- **Sound** — if the video carries an audio track it is auto-demuxed and fed as\n  audio too (toggle with `use_audio_in_video`), so the model both sees and hears\n  the clip. A separate audio part is then usually unnecessary.\n\n## Defaults When Omitted\nFields left unset fall back to server-side defaults, not the `null` shown in the\nschema:\n- `max_completion_tokens`: 512 (capped at 4096)\n- `temperature`: 0.7\n- `top_p`: 1.0\n- `fps`: 1.0 (video frame sampling)\n- `use_audio_in_video`: true\n\n## Limits\n- The selected model must fit the global memory budget; if it can't even after\n  evicting everything else, the request returns HTTP 503.\n- Large/long videos cost a lot of tokens and memory; keep them short and/or lower\n  `fps` (see Video Input).\n\n## Reliability Tips\n- For tool calling under heavy multimodal input, prefer `tool_choice=required`\n  or a specific function — a plain \"please call the tool\" instruction is more\n  likely to be ignored or malformed. `required`/specific choices prefill the\n  assistant turn with `<tool_call>` so the model commits to a call.\n- Interleave multiple images with text as separate ordered image parts; this\n  works well.\n- When streaming, plain text streams as the model emits chunks, but tool-call\n  deltas are held until the call is parseable.\n\n## Examples\n\n### Text (default model)\n```sh\ncurl -sS http://HOST:PORT/v1/chat/completions \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"messages\": [{\"role\": \"user\", \"content\": \"こんにちは\"}]\n  }'\n```\n\n### Image + text on qwen3.6-27b\n```sh\ncurl -sS http://HOST:PORT/v1/chat/completions \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"model\": \"qwen3.6-27b\",\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": [\n          {\"type\": \"text\", \"text\": \"この画像を説明して\"},\n          {\"type\": \"image_url\", \"image_url\": {\"url\": \"data:image/png;base64,iVBORw0...\"}}\n        ]\n      }\n    ]\n  }'\n```\n\n### Audio + video (omni model)\nSee Audio & Video Input for the source/sound rules. The video below carries its\nown sound, so the `input_audio` part is shown only to illustrate inline base64.\n```sh\ncurl -sS http://HOST:PORT/v1/chat/completions \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"model\": \"qwen3-omni\",\n    \"fps\": 1.0,\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": [\n          {\"type\": \"text\", \"text\": \"この動画で何が起きている? 音も踏まえて説明して\"},\n          {\"type\": \"video_url\", \"video_url\": {\"url\": \"https://example.com/clip.mp4\"}},\n          {\"type\": \"input_audio\", \"input_audio\": {\"data\": \"<base64>\", \"format\": \"wav\"}}\n        ]\n      }\n    ]\n  }'\n```\n\n### Force a specific tool\n```sh\ncurl -sS http://HOST:PORT/v1/chat/completions \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"messages\": [{\"role\": \"user\", \"content\": \"大阪の天気は?\"}],\n    \"tools\": [\n      {\n        \"type\": \"function\",\n        \"function\": {\n          \"name\": \"get_weather\",\n          \"parameters\": {\n            \"type\": \"object\",\n            \"properties\": {\"location\": {\"type\": \"string\"}},\n            \"required\": [\"location\"]\n          }\n        }\n      }\n    ],\n    \"tool_choice\": {\"type\": \"function\", \"function\": {\"name\": \"get_weather\"}}\n  }'\n```\n\n### Disable Qwen3.6 thinking (OpenAI SDK)\n```python\nclient.chat.completions.create(\n    model=\"qwen3.6-27b\",\n    messages=[...],\n    extra_body={\"chat_template_kwargs\": {\"enable_thinking\": False}},\n)\n```\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "summary": "Chat Completions",
+        "description": "Generate a chat completion (OpenAI-compatible).\n\nAccepts the OpenAI `chat.completions` request shape with multimodal\n`messages` (text / image / audio / video), function `tools`, and\n`tool_choice`. The resolved `model` (see GET /v1/models) determines which\ninput modalities are accepted.\n\nEvery request runs as a single-flight job, so it appears in /v1/jobs and is\nserialized with all other generation. Non-streaming callers wait up to the\nsync timeout and receive the full `chat.completion`; on timeout the job\nkeeps running and can be polled at /v1/jobs/{id}. Set `stream: true` to\nreceive incremental `chat.completion.chunk` SSE events instead.",
+        "operationId": "chat_completions_v1_chat_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Non-streaming: the full `chat.completion` object. Streaming (`stream: true`): an OpenAI `text/event-stream` of `chat.completion.chunk` events, each `data: {...}`, terminated by `data: [DONE]`. Tool calls arrive as `delta.tool_calls`; the final chunk carries `finish_reason`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, unknown model, or bad input/modality."
+          },
+          "503": {
+            "description": "Model not set up, or memory budget exceeded."
+          },
+          "504": {
+            "description": "Sync timeout exceeded; the job keeps running."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_chat_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Chat Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "summary": "List Openai Compatible Chat Models",
+        "description": "List OpenAI-compatible chat models.\n\nReturns the OpenAI /v1/models shape so OpenAI chat clients work unchanged.\nOther capabilities expose richer, family-specific model lists at\n/v1/{domain}/{family}/models.",
+        "operationId": "list_openai_compatible_chat_models_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "ChatCompletionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Completion id, e.g. `chatcmpl-<hex>`."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "Always `chat.completion`.",
+            "default": "chat.completion"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "description": "Unix timestamp (seconds) when created."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model name that answered."
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/_Choice"
+            },
+            "type": "array",
+            "title": "Choices",
+            "description": "Generated choices (one)."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/_Usage",
+            "description": "Token accounting for the request."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created",
+          "model",
+          "choices",
+          "usage",
+          "timings"
+        ],
+        "title": "ChatCompletionResponse"
+      },
+      "ChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Messages",
+            "description": "OpenAI-style conversation turns. Each item is `{role, content}` where `role` is `system` / `user` / `assistant` / `tool`. `content` is either a plain string or a list of typed parts for multimodal input: `{type: 'text', text}`, `{type: 'image_url', image_url: {url}}`, `{type: 'audio_url', audio_url: {url}}`, `{type: 'video_url', video_url: {url}}`, or inline base64 via `{type: 'input_audio', input_audio: {data, format}}`. A media `url` accepts an http(s) URL or a `data:` URL; `input_audio.data` is bare base64. Which modalities are accepted depends on the resolved model (see GET /v1/models)."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Registered chat model name, alias, or repo id. When omitted, the family default chat model answers. See GET /v1/models for the servable list and each model's accepted input modalities.",
+            "examples": [
+              "qwen3-omni"
+            ]
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "OpenAI function-tool definitions: `{type: 'function', function: {name, description, parameters}}` where `parameters` is a JSON Schema object. Tool calls are parsed from the model output and returned as `message.tool_calls`."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "How the model may call tools: `'auto'` (default when tools are given — model decides), `'none'` (never call a tool), `'required'`/`'any'` (must call at least one tool), or a specific tool `{type: 'function', function: {name}}`."
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "OpenAI-compatible. When false, at most one tool call is returned even if the model emits several.",
+            "default": true
+          },
+          "max_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Completion Tokens",
+            "description": "Upper bound on generated tokens. Replaces the deprecated `max_tokens`, which is rejected."
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature. Higher is more random; 0 is greedy."
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Nucleus sampling cutoff in (0, 1]."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Seed for reproducible sampling when set."
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fps",
+            "description": "kiapi extension (non-OpenAI). Frame sampling rate for video inputs, in frames per second."
+          },
+          "use_audio_in_video": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Audio In Video",
+            "description": "kiapi extension (non-OpenAI). Demux a video's audio track and feed it as audio alongside the frames. Overrides the server default."
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "kiapi extension (non-OpenAI). Extra kwargs forwarded verbatim to the tokenizer's `apply_chat_template`, e.g. `{'enable_thinking': false}` to turn off Qwen3.6's reasoning. Mirrors the vLLM/SGLang `extra_body={'chat_template_kwargs': {...}}` convention."
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "When true, stream the answer as OpenAI-style `text/event-stream` `chat.completion.chunk` events ending with `data: [DONE]`. When false, wait for and return the full `chat.completion` object.",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatRequest",
+        "examples": [
+          {
+            "messages": [
+              {
+                "content": "You are a helpful assistant.",
+                "role": "system"
+              },
+              {
+                "content": [
+                  {
+                    "text": "What is in this image?",
+                    "type": "text"
+                  },
+                  {
+                    "image_url": {
+                      "url": "https://example.com/cat.png"
+                    },
+                    "type": "image_url"
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "model": "qwen3-omni"
+          }
+        ]
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ModelListResponse": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "OpenAI-style list envelope marker.",
+            "default": "list",
+            "examples": [
+              "list"
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OpenAIModelSpec"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "Chat models available via the OpenAI-compatible /v1/models endpoint."
+          }
+        },
+        "type": "object",
+        "title": "ModelListResponse"
+      },
+      "OpenAIModelSpec": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Model name to pass in the chat request model field.",
+            "examples": [
+              "qwen3-omni"
+            ]
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "OpenAI-compatible object marker.",
+            "default": "model",
+            "examples": [
+              "model"
+            ]
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "description": "Unix timestamp (seconds) for when the model became available.",
+            "examples": [
+              1735689600
+            ]
+          },
+          "owned_by": {
+            "type": "string",
+            "title": "Owned By",
+            "description": "Owner marker for OpenAI-compatible model lists.",
+            "default": "kiapi",
+            "examples": [
+              "kiapi"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created"
+        ],
+        "title": "OpenAIModelSpec",
+        "description": "An OpenAI-compatible model spec (one entry in a model list)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "_Choice": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Choice index (always 0; kiapi returns one)."
+          },
+          "message": {
+            "$ref": "#/components/schemas/_ResponseMessage",
+            "description": "The generated assistant message."
+          },
+          "finish_reason": {
+            "type": "string",
+            "title": "Finish Reason",
+            "description": "`stop` for normal completion, `tool_calls` when tools were called."
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "message",
+          "finish_reason"
+        ],
+        "title": "_Choice"
+      },
+      "_FunctionCall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Called function name, matching a request tool."
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "Call arguments as a JSON-encoded string (OpenAI convention)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "arguments"
+        ],
+        "title": "_FunctionCall"
+      },
+      "_ResponseMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "Always `assistant`.",
+            "default": "assistant"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "Assistant text. Null when the turn is only tool calls; may hold the natural-language preamble that preceded a tool call."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/_ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "Tool calls the model requested, when any."
+          }
+        },
+        "type": "object",
+        "title": "_ResponseMessage"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      },
+      "_ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique id for this tool call, e.g. `call_<hex>`."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Always `function`.",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/_FunctionCall",
+            "description": "The function and its arguments."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "function"
+        ],
+        "title": "_ToolCall"
+      },
+      "_Usage": {
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "description": "Tokens in the prompt."
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "description": "Tokens generated."
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "Sum of prompt and completion tokens."
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "title": "_Usage"
+      }
+    }
+  },
+  "x-kiapi-capability": "chat",
+  "x-kiapi-domain": "chat",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

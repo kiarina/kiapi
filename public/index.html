@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kiapi API Docs</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 40px;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-weight: 650;
+    }
+    a {
+      color: #0969da;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>kiapi API Docs</h1>
+    <p>Static OpenAPI, Swagger UI, and ReDoc pages for kiapi.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>Summary</th>
+          <th>Swagger UI</th>
+          <th>ReDoc</th>
+          <th>OpenAPI JSON</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>kiapi Common API</td><td>Common endpoints and links to every capability.</td><td><a href="docs.html">Swagger UI</a></td><td><a href="redoc.html">ReDoc</a></td><td><a href="openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Chat API</td><td>OpenAI-compatible Chat Completions for text and multimodal conversations.</td><td><a href="v1/chat/docs.html">Swagger UI</a></td><td><a href="v1/chat/redoc.html">ReDoc</a></td><td><a href="v1/chat/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Embedding API</td><td>Create text and multimodal embeddings for retrieval and similarity search.</td><td><a href="v1/embedding/docs.html">Swagger UI</a></td><td><a href="v1/embedding/redoc.html">ReDoc</a></td><td><a href="v1/embedding/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi DepthPro API</td><td>Estimate depth maps from input images.</td><td><a href="v1/image/depthpro/docs.html">Swagger UI</a></td><td><a href="v1/image/depthpro/redoc.html">ReDoc</a></td><td><a href="v1/image/depthpro/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi ERNIE-Image API</td><td>Generate, edit, and train LoRA adapters for ERNIE-Image models.</td><td><a href="v1/image/ernie/docs.html">Swagger UI</a></td><td><a href="v1/image/ernie/redoc.html">ReDoc</a></td><td><a href="v1/image/ernie/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi FLUX.2 API</td><td>Generate, edit, and train LoRA adapters for FLUX.2 image models.</td><td><a href="v1/image/flux2/docs.html">Swagger UI</a></td><td><a href="v1/image/flux2/redoc.html">ReDoc</a></td><td><a href="v1/image/flux2/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Ideogram 4 API</td><td>Generate images from text prompts with Ideogram 4.</td><td><a href="v1/image/ideogram4/docs.html">Swagger UI</a></td><td><a href="v1/image/ideogram4/redoc.html">ReDoc</a></td><td><a href="v1/image/ideogram4/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Qwen Image API</td><td>Generate and edit images with Qwen Image models.</td><td><a href="v1/image/qwen/docs.html">Swagger UI</a></td><td><a href="v1/image/qwen/redoc.html">ReDoc</a></td><td><a href="v1/image/qwen/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi SeedVR2 API</td><td>Upscale and restore images with SeedVR2.</td><td><a href="v1/image/seedvr2/docs.html">Swagger UI</a></td><td><a href="v1/image/seedvr2/redoc.html">ReDoc</a></td><td><a href="v1/image/seedvr2/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Z-Image API</td><td>Generate images and train LoRA adapters with Z-Image models.</td><td><a href="v1/image/zimage/docs.html">Swagger UI</a></td><td><a href="v1/image/zimage/redoc.html">ReDoc</a></td><td><a href="v1/image/zimage/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi ACE-Step API</td><td>Generate songs, covers, repaints, and stems with ACE-Step.</td><td><a href="v1/audio/acestep/docs.html">Swagger UI</a></td><td><a href="v1/audio/acestep/redoc.html">ReDoc</a></td><td><a href="v1/audio/acestep/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi AudioGen API</td><td>Generate short sound effects from text prompts.</td><td><a href="v1/audio/audiogen/docs.html">Swagger UI</a></td><td><a href="v1/audio/audiogen/redoc.html">ReDoc</a></td><td><a href="v1/audio/audiogen/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi LTX-2 API</td><td>Generate video from text, image, and music or audio inputs.</td><td><a href="v1/video/ltx2/docs.html">Swagger UI</a></td><td><a href="v1/video/ltx2/redoc.html">ReDoc</a></td><td><a href="v1/video/ltx2/openapi.json">OpenAPI JSON</a></td></tr>
+        <tr><td>kiapi Web API</td><td>Search the web and fetch pages as Markdown or PDF artifacts.</td><td><a href="v1/web/docs.html">Swagger UI</a></td><td><a href="v1/web/redoc.html">ReDoc</a></td><td><a href="v1/web/openapi.json">OpenAPI JSON</a></td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

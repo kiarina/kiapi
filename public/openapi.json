@@ -1,0 +1,935 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Common API",
+    "description": "Common kiapi endpoints.\n\nStatic capability docs:\n- **kiapi Chat API** - OpenAI-compatible Chat Completions for text and multimodal conversations. [Swagger UI](v1/chat/docs.html), [ReDoc](v1/chat/redoc.html), [OpenAPI JSON](v1/chat/openapi.json)\n- **kiapi Embedding API** - Create text and multimodal embeddings for retrieval and similarity search. [Swagger UI](v1/embedding/docs.html), [ReDoc](v1/embedding/redoc.html), [OpenAPI JSON](v1/embedding/openapi.json)\n- **kiapi DepthPro API** - Estimate depth maps from input images. [Swagger UI](v1/image/depthpro/docs.html), [ReDoc](v1/image/depthpro/redoc.html), [OpenAPI JSON](v1/image/depthpro/openapi.json)\n- **kiapi ERNIE-Image API** - Generate, edit, and train LoRA adapters for ERNIE-Image models. [Swagger UI](v1/image/ernie/docs.html), [ReDoc](v1/image/ernie/redoc.html), [OpenAPI JSON](v1/image/ernie/openapi.json)\n- **kiapi FLUX.2 API** - Generate, edit, and train LoRA adapters for FLUX.2 image models. [Swagger UI](v1/image/flux2/docs.html), [ReDoc](v1/image/flux2/redoc.html), [OpenAPI JSON](v1/image/flux2/openapi.json)\n- **kiapi Ideogram 4 API** - Generate images from text prompts with Ideogram 4. [Swagger UI](v1/image/ideogram4/docs.html), [ReDoc](v1/image/ideogram4/redoc.html), [OpenAPI JSON](v1/image/ideogram4/openapi.json)\n- **kiapi Qwen Image API** - Generate and edit images with Qwen Image models. [Swagger UI](v1/image/qwen/docs.html), [ReDoc](v1/image/qwen/redoc.html), [OpenAPI JSON](v1/image/qwen/openapi.json)\n- **kiapi SeedVR2 API** - Upscale and restore images with SeedVR2. [Swagger UI](v1/image/seedvr2/docs.html), [ReDoc](v1/image/seedvr2/redoc.html), [OpenAPI JSON](v1/image/seedvr2/openapi.json)\n- **kiapi Z-Image API** - Generate images and train LoRA adapters with Z-Image models. [Swagger UI](v1/image/zimage/docs.html), [ReDoc](v1/image/zimage/redoc.html), [OpenAPI JSON](v1/image/zimage/openapi.json)\n- **kiapi ACE-Step API** - Generate songs, covers, repaints, and stems with ACE-Step. [Swagger UI](v1/audio/acestep/docs.html), [ReDoc](v1/audio/acestep/redoc.html), [OpenAPI JSON](v1/audio/acestep/openapi.json)\n- **kiapi AudioGen API** - Generate short sound effects from text prompts. [Swagger UI](v1/audio/audiogen/docs.html), [ReDoc](v1/audio/audiogen/redoc.html), [OpenAPI JSON](v1/audio/audiogen/openapi.json)\n- **kiapi LTX-2 API** - Generate video from text, image, and music or audio inputs. [Swagger UI](v1/video/ltx2/docs.html), [ReDoc](v1/video/ltx2/redoc.html), [OpenAPI JSON](v1/video/ltx2/openapi.json)\n- **kiapi Web API** - Search the web and fetch pages as Markdown or PDF artifacts. [Swagger UI](v1/web/docs.html), [ReDoc](v1/web/redoc.html), [OpenAPI JSON](v1/web/openapi.json)",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Inspect server readiness, queue depth, and resident model memory.\n\nUse this endpoint to see whether warmup has finished, how many jobs are\nqueued behind the single-flight worker, and which resident models currently\ncount against the global memory budget.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/files": {
+      "get": {
+        "summary": "List Files",
+        "description": "List stored files.\n\nFiles include explicit uploads and generated artifacts. File records are\ndisk-backed and can outlive in-memory jobs across process restarts.",
+        "operationId": "list_files_v1_files_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload",
+        "description": "Store a file and return a reusable file_id.\n\nUploaded files become persistent Files API records. Use the returned\nfile_id as a FileRef input for generation/editing endpoints, or download\nthe bytes later with GET /v1/files/{file_id}/download.",
+        "operationId": "upload_v1_files_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_v1_files_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/files/{file_id}": {
+      "get": {
+        "summary": "Get File",
+        "description": "Get metadata for a stored file.\n\nThis returns metadata only, not file bytes. Use the download endpoint when\nthe client needs the artifact body.",
+        "operationId": "get_file_v1_files__file_id__get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^file_[0-9a-f]+$",
+              "description": "Persistent file id returned by the Files API.",
+              "examples": [
+                "file_0123456789abcdef"
+              ],
+              "title": "File Id"
+            },
+            "description": "Persistent file id returned by the Files API."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete File",
+        "description": "Delete a stored file.\n\nDeleting a file removes the stored bytes and metadata. Existing job records\nmay still mention the deleted file_id in artifacts, but the file can no\nlonger be downloaded.",
+        "operationId": "delete_file_v1_files__file_id__delete",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^file_[0-9a-f]+$",
+              "description": "Persistent file id returned by the Files API.",
+              "examples": [
+                "file_0123456789abcdef"
+              ],
+              "title": "File Id"
+            },
+            "description": "Persistent file id returned by the Files API."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/files/{file_id}/download": {
+      "get": {
+        "summary": "Download File",
+        "description": "Download stored file bytes.\n\nThe response media type is the stored file's content_type, such as\nimage/png, audio/wav, video/mp4, text/markdown, or application/pdf.",
+        "operationId": "download_file_v1_files__file_id__download_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^file_[0-9a-f]+$",
+              "description": "Persistent file id returned by the Files API.",
+              "examples": [
+                "file_0123456789abcdef"
+              ],
+              "title": "File Id"
+            },
+            "description": "Persistent file id returned by the Files API."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored file bytes.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown file_id."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs": {
+      "get": {
+        "summary": "List Jobs",
+        "description": "List in-memory jobs.\n\nEvery generation request creates a job, including sync requests. Jobs are\nuseful for progress polling, result inspection, and discovering artifact\nfile_ids. They are not persisted across process restarts.",
+        "operationId": "list_jobs_v1_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "summary": "Get Job",
+        "description": "Get a job's status, progress, result, and artifacts.\n\nPoll this endpoint after an async response or after a sync request times\nout. When status is succeeded, artifact file ids can be downloaded through\nthe Files API.",
+        "operationId": "get_job_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^job_[0-9a-f]+$",
+              "description": "In-memory job id returned by async or sync inference requests.",
+              "examples": [
+                "job_0123456789abcdef"
+              ],
+              "title": "Job Id"
+            },
+            "description": "In-memory job id returned by async or sync inference requests."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Job",
+        "description": "Remove a job record from the in-memory store.\n\nQueued jobs are forgotten and effectively canceled. A running job cannot be\ninterrupted; deleting it only removes the record, and generated files are\nmanaged separately by the Files API.",
+        "operationId": "delete_job_v1_jobs__job_id__delete",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^job_[0-9a-f]+$",
+              "description": "In-memory job id returned by async or sync inference requests.",
+              "examples": [
+                "job_0123456789abcdef"
+              ],
+              "title": "Job Id"
+            },
+            "description": "In-memory job id returned by async or sync inference requests."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_upload_v1_files_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "File bytes to store and reference from inference requests."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_v1_files_post"
+      },
+      "FileDeleteResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "description": "True when the file record and stored bytes were deleted.",
+            "examples": [
+              true
+            ]
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Deleted file id.",
+            "examples": [
+              "file_0123456789abcdef"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "file_id"
+        ],
+        "title": "FileDeleteResponse"
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileListResponse": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "OpenAI-style list envelope marker.",
+            "default": "list",
+            "examples": [
+              "list"
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FileRecord"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "Stored files, including uploaded inputs and generated artifacts."
+          }
+        },
+        "type": "object",
+        "title": "FileListResponse"
+      },
+      "FileRecord": {
+        "properties": {
+          "file_id": {
+            "$ref": "#/components/schemas/FileID",
+            "description": "Persistent file id. Use this in FileRef inputs or download it with GET /v1/files/{file_id}/download.",
+            "examples": [
+              "file_0123456789abcdef"
+            ]
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Original or generated filename associated with the stored bytes.",
+            "examples": [
+              "image_1766200000.png"
+            ]
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "description": "Media type of the stored file.",
+            "examples": [
+              "image/png"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Size",
+            "description": "File size in bytes.",
+            "examples": [
+              123456
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the file was stored.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta",
+            "description": "Capability-specific metadata such as seed, request params, timings, dimensions, or artifact kind.",
+            "examples": [
+              {
+                "height": 1024,
+                "model": "turbo",
+                "width": 1024
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "filename",
+          "content_type",
+          "size",
+          "created_at"
+        ],
+        "title": "FileRecord",
+        "description": "A stored file's metadata. Doubles as the Files API response schema.\n\n``path`` is the on-disk location and is internal to the file store; it is\nexcluded from serialization so ``model_dump()`` yields the API/sidecar shape."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Service health marker. The value is ok when the API process is accepting requests.",
+            "examples": [
+              "ok"
+            ]
+          },
+          "warm": {
+            "type": "boolean",
+            "title": "Warm",
+            "description": "Whether startup warmup has finished. Warmup may skip models that are not activated.",
+            "examples": [
+              true
+            ]
+          },
+          "queue_len": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Queue Len",
+            "description": "Number of jobs waiting in the single-flight worker queue.",
+            "examples": [
+              0
+            ]
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryStats",
+            "description": "Resident model memory budget and loaded model snapshot."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "warm",
+          "queue_len",
+          "memory"
+        ],
+        "title": "HealthResponse"
+      },
+      "Job": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capability-specific result metadata. Completed generation jobs usually also expose produced file ids in artifacts.",
+            "examples": [
+              {
+                "file_id": "file_0123456789abcdef",
+                "image_bytes": 123456
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "Job"
+      },
+      "JobDeleteResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "description": "True when the job was removed from the in-memory job store.",
+            "examples": [
+              true
+            ]
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "Deleted job id.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "was_running": {
+            "type": "boolean",
+            "title": "Was Running",
+            "description": "True if the job was running when deleted. Running jobs cannot be interrupted; deletion only forgets the record.",
+            "examples": [
+              false
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "job_id",
+          "was_running"
+        ],
+        "title": "JobDeleteResponse"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobListResponse": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "OpenAI-style list envelope marker.",
+            "default": "list",
+            "examples": [
+              "list"
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "Jobs currently retained in the in-memory job store."
+          }
+        },
+        "type": "object",
+        "title": "JobListResponse"
+      },
+      "JobResult": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "MemoryStats": {
+        "properties": {
+          "loaded": {
+            "items": {
+              "$ref": "#/components/schemas/ResidentModelStats"
+            },
+            "type": "array",
+            "title": "Loaded",
+            "description": "Resident models currently held in memory."
+          },
+          "resident_gb": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Resident Gb",
+            "description": "Total resident model weight currently counted against the budget.",
+            "examples": [
+              12.0
+            ]
+          },
+          "budget_gb": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Budget Gb",
+            "description": "Effective global memory budget in GB shared by all resident models and the running job's peak headroom.",
+            "examples": [
+              100.0
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "resident_gb",
+          "budget_gb"
+        ],
+        "title": "MemoryStats",
+        "description": "Resident model memory budget snapshot, served by ``/health``."
+      },
+      "ResidentModelStats": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Model family and API identifier.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain such as chat, embedding, image, audio, video, or web.",
+            "examples": [
+              "image"
+            ]
+          },
+          "repo": {
+            "type": "string",
+            "title": "Repo",
+            "description": "Upstream model repository, Docker image, or local resource label.",
+            "examples": [
+              "mflux/z-image-turbo"
+            ]
+          },
+          "weight_gb": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Weight Gb",
+            "description": "Current resident weight estimate in GB.",
+            "examples": [
+              6.0
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Eviction priority. Lower values are evicted before higher values under budget pressure.",
+            "examples": [
+              0
+            ]
+          },
+          "idle_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Idle S",
+            "description": "Seconds since this resident model was last used.",
+            "examples": [
+              12.5
+            ]
+          },
+          "ttl_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl S",
+            "description": "Idle TTL in seconds. Null means the resident is pinned until budget pressure or shutdown.",
+            "examples": [
+              1800.0
+            ]
+          },
+          "expires_in_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In S",
+            "description": "Seconds until TTL eviction. Null when ttl_s is null.",
+            "examples": [
+              1787.5
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain",
+          "repo",
+          "weight_gb",
+          "priority",
+          "idle_s"
+        ],
+        "title": "ResidentModelStats",
+        "description": "Snapshot of one resident model held in the memory budget."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

@@ -1,0 +1,563 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi AudioGen API",
+    "description": "Sound-effect / ambient audio generation from text.\n\nAudioGen turns a text prompt into short non-musical audio events: environmental\nsounds, foley, impacts, ambience, machinery, footsteps, room tone, and similar\nSFX. Output is always 16 kHz mono WAV. It is not a music model — for songs,\nvocals, cover, repaint, or stem extraction use the ACE-Step family instead.\n\n## Upstream docs\n- [AudioGen medium](https://huggingface.co/facebook/audiogen-medium) — the\n  upstream model card\n- [mlx-audiocraft](https://github.com/theashishmaurya/mlx-audiocraft) — MLX port\n  of Meta AudioCraft\n\n## Models\n- **medium** (default) — `facebook/audiogen-medium`, 1.5B parameters, native up\n  to 10 seconds. The model is CC-BY-NC-4.0, so check the license before use.\n\nDiscover variants at `GET /v1/audio/audiogen/models`.\n\n## Prompt Tips\nBe concrete and additive. Name the source, action, material, distance, space, and\nenergy:\n- **good**: \"heavy rain on a tin roof, distant thunder, wide outdoor ambience\"\n- **good**: \"slow footsteps on wet gravel, close microphone, quiet night street\"\n- **less useful**: \"rain\" or \"scary sound\"\n\nSampling tweaks matter less than wording. Start with `duration`, `seed`, and\n`cfg_coef`; only adjust `top_k`, `top_p`, and `temperature` when exploring\nvariation.\n\n## Reproducibility\nSet `seed` to reproduce a clip with the same prompt and sampling parameters.\nLeave it null to explore alternatives; the resolved seed is recorded in the Job\n`result.params`.\n\n## Performance\n- First request after activate/idle may spend tens of seconds loading weights.\n- After loading, the model stays resident until idle TTL or memory budget pressure\n  frees it.\n- On M4 Max, generation is roughly half realtime: a 5 second clip takes about\n  10 seconds of compute.\n\n## Examples\n\n### Generate raw WAV (sync)\n```sh\ncurl -sS http://localhost:${PORT:-8000}/v1/audio/audiogen/generate \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"mode\":\"sync\",\"prompt\":\"keyboard typing, office ambience\",\"duration\":5}' \\\n  -o sfx.wav\n```\n\n### Generate as async job\n```sh\ncurl -sS http://localhost:${PORT:-8000}/v1/audio/audiogen/generate \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"mode\":\"async\",\"prompt\":\"ocean waves crashing on rocks\",\"duration\":5,\"seed\":42}'\n# -> {\"job_id\": \"...\"}; poll GET /v1/jobs/{job_id}\n```\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/audio/audiogen/generate": {
+      "post": {
+        "summary": "Generate Se",
+        "description": "Generate a short non-musical sound effect from a text prompt.\n\nTakes no source audio: `prompt` describes the sound event, environment, and\ntexture, while `duration` and the sampling knobs shape the clip. AudioGen is\nfor SFX/ambient audio such as rain, footsteps, impacts, machinery, or room\ntone; use `/v1/audio/acestep/generate` for music. The same endpoint serves\nboth `sync` and `async` via `mode`.\n\nSync content negotiation: one WAV is produced, so unless the client asks for\nJSON the raw audio bytes are returned with `X-Kiapi-File-Id` / `X-Kiapi-Job-Id`\nheaders. With `Accept: application/json` (or async) the Job JSON is returned,\nwhose `result` follows AudioResponse.\n\nAsync returns 202 immediately; poll GET /v1/jobs/{job_id} and fetch the\nartifact via GET /v1/files/{file_id}.",
+        "operationId": "generate_se_v1_audio_audiogen_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAudioResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/audiogen/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_audio_audiogen_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Audio Audiogen Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "AudioResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced WAV. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "audio_bytes": {
+            "type": "integer",
+            "title": "Audio Bytes",
+            "description": "Size of the produced WAV in bytes."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved AudioGen variant that produced the WAV."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Prompt used to generate the sound effect."
+          },
+          "duration_s": {
+            "type": "number",
+            "title": "Duration S",
+            "description": "Actual WAV duration in seconds, measured from the output samples."
+          },
+          "sample_rate": {
+            "type": "integer",
+            "title": "Sample Rate",
+            "description": "Output sample rate in Hz. AudioGen-medium produces 16 kHz mono WAV."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (model, prompt, duration, seed, top_k, top_p, temperature, cfg_coef), so the result is reproducible."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "audio_bytes",
+          "model",
+          "prompt",
+          "duration_s",
+          "sample_rate",
+          "params",
+          "timings"
+        ],
+        "title": "AudioResponse",
+        "description": "Capability-specific ``result`` for a succeeded AudioGen generate job."
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "AudioGen variant to use. Omit/null to use the family default (`medium`). `medium` is currently the only built-in variant; discover available variants at GET /v1/audio/audiogen/models."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the WAV (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Sound-effect prompt. Concrete, audible descriptors work best: source, surface, distance, room/space, intensity, and ambience. This is for non-musical audio events; use `/v1/audio/acestep/generate` for music.",
+            "examples": [
+              "heavy rain on a tin roof, distant thunder"
+            ]
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "description": "Requested clip length in seconds. Must be > 0 and is also capped server-side by `KIAPI_AUDIOGEN_MAX_DURATION` (default 10.0 seconds).",
+            "default": 5.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Null picks a random seed; the resolved seed is recorded in the result `params`."
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Top K",
+            "description": "Top-k sampling limit. Keeps only the most likely k tokens. Set 0 to disable top-k; ignored when `top_p` is greater than 0.",
+            "default": 250
+          },
+          "top_p": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Top P",
+            "description": "Nucleus sampling threshold. 0 disables nucleus sampling and uses `top_k`; values greater than 0 override `top_k`.",
+            "default": 0.0
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Temperature",
+            "description": "Sampling temperature. Lower values are more conservative; higher values increase variety and risk.",
+            "default": 1.0
+          },
+          "cfg_coef": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cfg Coef",
+            "description": "Classifier-free guidance strength. Higher values follow the prompt more strictly; lower values allow more ambient variation.",
+            "default": 3.0
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateRequest"
+      },
+      "JobAudioResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AudioResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobAudioResponse"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "audiogen",
+  "x-kiapi-domain": "audio",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

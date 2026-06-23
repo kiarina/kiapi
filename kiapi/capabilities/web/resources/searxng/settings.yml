@@ -1,0 +1,11 @@
+use_default_settings: true
+
+server:
+  # Local-only backend; override with KIAPI_SEARXNG_SECRET in the environment.
+  secret_key: "kiapi-searxng-local-dev-secret-change-me"
+
+search:
+  # kiapi consumes /search?format=json; SearXNG only enables json when listed here.
+  formats:
+    - html
+    - json

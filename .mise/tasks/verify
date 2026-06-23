@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#MISE description="Run all E2E verification scripts sequentially. Stops on the first error."
+# Usage: mise run verify
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$PROJECT_DIR"
+
+BASE_URL="${KIAPI_BASE_URL:-http://127.0.0.1:8000}"
+
+echo "Checking if kiapi server is running at $BASE_URL ..."
+if ! curl -sf "$BASE_URL/health" >/dev/null; then
+  echo "Error: kiapi server is not running or not accessible at $BASE_URL."
+  echo "Please start the server first (e.g. 'uv run kiapi run' or 'uv run kiapi service start')."
+  exit 1
+fi
+
+echo "Server is running. Starting verification scripts..."
+
+# Find all verification scripts and sort them alphabetically
+scripts=(scripts/verify_*.py)
+
+for script in "${scripts[@]}"; do
+  echo
+  echo "========================================================================"
+  echo "Running $script ..."
+  echo "========================================================================"
+  uv run python "$script" "$@"
+done
+
+echo
+echo "All verification scripts completed successfully!"

@@ -1,0 +1,738 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi LTX-2 API",
+    "description": "Short video generation with LTX-2 distilled.\n\nLTX-2 generates short MP4 videos from text, optional image conditioning, and\noptional audio.\n\n## Upstream docs\n- [mlx-video](https://github.com/Blaizzy/mlx-video) — the MLX engine kiapi runs\n- [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) — upstream model card and license source\n- [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) — distilled MLX weights used by kiapi\n\n## Model\n\n- **default model**: `distilled`\n- **repo**: `prince-canuma/LTX-2-distilled`\n- **pipeline**: two-stage distilled LTX-2 via `mlx-video`\n- **residency**: transient. The pipeline is loaded for each job, run, then freed.\n- **memory**: kiapi reserves about 40 GB for the transient run before generation.\n\nThe distilled pipeline does not use classifier-free guidance. Negative prompts\nand suppression phrases such as `no zoom`, `do not move`, or `avoid blur` are not\nreliable controls. Describe the desired subject, motion, framing, camera behavior,\nlighting, and texture directly.\n\n## Modes\n\nThe generation mode is inferred from attached inputs:\n\n- **T2V**: prompt only\n- **I2V**: prompt + `image`\n- **I2V(first+last)**: prompt + `image` + `end_image`\n- **I2V(last)**: prompt + `end_image`\n- **A2V**: prompt + `audio`\n- **A2V+I2V**: prompt + `image` + `audio`\n- **T2V+Audio**: prompt + `generate_audio=true`\n\nAn uploaded or referenced `audio` file drives timing and is muxed into the MP4.\nIt cannot be combined with `generate_audio=true`.\n\n## Practical Defaults\n\nThe server defaults target a useful quality/speed balance:\n\n- `width`: 512\n- `height`: 512\n- `num_frames`: 97\n- `fps`: 24\n\nAt 24 fps, common frame counts are roughly:\n\n- `97`: about 4 seconds\n- `161`: about 6.7 seconds\n- `241`: about 10 seconds\n- `481`: about 20 seconds\n- `721`: about 30 seconds\n\n`num_frames` must be `1 + 8*k`, and width/height must be multiples of 64.\n\n## Tips\n\n- Prefer positive direction over negative constraints. Write what should happen,\n  not what should be prevented.\n- For I2V, `image_strength=1.0` keeps the first frame very stable. Lower values\n  around `0.7` allow more visible motion or composition change.\n- Phrases like `looking at the camera` can encourage push-in/zoom behavior. If a\n  stable gaze is desired, try wording such as `looking ahead`.\n- Use seed sweeps for composition, pose, and camera variation. A few seeds are\n  often more effective than over-constraining the prompt.\n- 512x512 is the sweet spot for general use. Larger resolutions and longer frame\n  counts hold the single-flight queue for longer.\n\n## Performance Notes\n\nGeneration time depends heavily on frame count and resolution. A 512x512,\n97-frame job is the baseline used for synthetic progress; shorter/lower\nresolution jobs complete faster, while long 721-frame jobs can occupy the worker\nfor much longer.\n\nBecause kiapi is single-flight, one LTX-2 job blocks all other heavy jobs until\nit finishes. Use `mode=\"async\"` for longer videos so clients can poll\n`/v1/jobs/{job_id}` instead of holding an HTTP request open.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/video/ltx2/generate": {
+      "post": {
+        "summary": "Generate",
+        "description": "Generate a short MP4 with LTX-2 distilled (text/image/audio to video).\n\nThe mode is inferred from supplied inputs: prompt only is T2V; `image` adds\nfirst-frame I2V; `end_image` adds last-frame conditioning; `audio` drives A2V\ntiming/motion; and `generate_audio=true` asks LTX-2 to synthesize audio. The\nsame endpoint serves both `sync` and `async` via `mode`.\n\nSync content negotiation: the job produces one MP4 artifact, so unless the\nclient asks for JSON the raw video bytes are returned with\n`X-Kiapi-File-Id` / `X-Kiapi-Job-Id` headers. With\n`Accept: application/json` (or async), the Job JSON is returned, whose\n`result` follows VideoResponse.\n\nLTX-2 is a transient model: each call reserves the configured memory budget,\nloads the pipeline, generates, and frees it instead of keeping a resident\nmodel in `/health`. Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
+        "operationId": "generate_v1_video_ltx2_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobVideoResponse"
+                }
+              },
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/video/ltx2/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_video_ltx2_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Video Ltx2 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/video/ltx2/models). Omit for the default `distilled`; this is currently the only public variant."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the MP4 (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Text description of the desired video. Distilled LTX-2 has no negative guidance, so describe the motion, subject, framing, and visual qualities you want rather than what to avoid.",
+            "examples": [
+              "a cat walking through tall grass, sunny daylight, gentle camera"
+            ]
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional first-frame conditioning image (Files-API file id, http(s) URL, or data URL). Present with no audio => I2V; present with audio => A2V+I2V."
+          },
+          "end_image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional last-frame conditioning image. Use with `image` for a first+last-frame transition, or alone for last-frame conditioning."
+          },
+          "audio": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional driving audio file (Files-API file id, http(s) URL, or data URL). When present, the mode becomes A2V and the audio is muxed into the output MP4. Mutually exclusive with `generate_audio=true`."
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "Output width in pixels. Omit for server default 512. Must be a positive multiple of 64 and no greater than the configured cap (default 768)."
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "Output height in pixels. Omit for server default 512. Must be a positive multiple of 64 and no greater than the configured cap (default 768)."
+          },
+          "num_frames": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Frames",
+            "description": "Number of output frames. Omit for server default 97. Must satisfy `1 + 8*k` (for example 97, 161, 241, 481, 721) and stay within the configured cap (default 721). Duration is `num_frames / fps`."
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fps",
+            "description": "Output frame rate. Omit for server default 24. Must be positive; it sets playback duration but does not materially reduce generation work."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          },
+          "image_strength": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Image Strength",
+            "description": "First-frame conditioning strength in 0..1. 1.0 adheres tightly to the input frame; lower values such as ~0.7 allow larger motion or composition changes.",
+            "default": 1.0
+          },
+          "end_image_strength": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Image Strength",
+            "description": "Last-frame conditioning strength in 0..1. Omit to let mlx-video use its default behavior for the selected mode."
+          },
+          "generate_audio": {
+            "type": "boolean",
+            "title": "Generate Audio",
+            "description": "Ask LTX-2 to synthesize synchronized audio for the MP4. Mutually exclusive with an `audio` FileRef.",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateRequest"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "JobVideoResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobVideoResponse"
+      },
+      "VideoResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced MP4. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "video_bytes": {
+            "type": "integer",
+            "title": "Video Bytes",
+            "description": "Size of the produced MP4 in bytes."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "T2V",
+              "I2V",
+              "I2V(first+last)",
+              "I2V(last)",
+              "A2V",
+              "A2V+I2V",
+              "T2V+Audio"
+            ],
+            "title": "Mode",
+            "description": "Detected generation mode, inferred from image/end_image/audio inputs and `generate_audio`."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Prompt used for the generation."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (prompt, dimensions, frame count, fps, seed, conditioning strengths, and generate_audio), so the result is reproducible."
+          },
+          "has_audio": {
+            "type": "boolean",
+            "title": "Has Audio",
+            "description": "Whether an auxiliary audio track was produced or supplied and muxed into the MP4."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "video_bytes",
+          "mode",
+          "prompt",
+          "params",
+          "has_audio",
+          "timings"
+        ],
+        "title": "VideoResponse",
+        "description": "Capability-specific ``result`` for a succeeded LTX-2 generation job."
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds (model run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "ltx2",
+  "x-kiapi-domain": "video",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

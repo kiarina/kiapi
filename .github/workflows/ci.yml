@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-15
+    env:
+      MISE_GITHUB_ATTESTATIONS: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.5.0
+          cache: true
+          install: false
+
+      - name: Setup tools via mise
+        run: mise install
+
+      - name: Install dependencies
+        run: mise exec -- uv sync --all-extras --all-groups
+
+      - name: Run tests
+        run: mise exec -- make test
+
+      - name: Run format, lint, and docs generation
+        run: mise exec -- make
+
+      - name: Build package
+        run: mise exec -- make build

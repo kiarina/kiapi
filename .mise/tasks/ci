@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Run release-quality checks"
+
+set -euo pipefail
+
+echo "Running unit tests..."
+make test
+
+echo "Running format, lint, config generation, and API docs generation..."
+make
+
+echo "Building package..."
+mise run build
+
+echo "CI checks passed."

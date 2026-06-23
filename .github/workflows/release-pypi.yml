@@ -1,0 +1,67 @@
+name: Release PyPI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build-and-publish:
+    name: Build and publish to PyPI
+    runs-on: macos-15
+    env:
+      MISE_GITHUB_ATTESTATIONS: "false"
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.5.0
+          cache: true
+          install: false
+
+      - name: Setup tools via mise
+        run: mise install
+
+      - name: Install dependencies
+        run: mise exec -- uv sync --all-extras --all-groups
+
+      - name: Run release checks
+        run: mise run ci
+
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Version: $VERSION"
+
+          if mise run changelog:extract "$VERSION" --output /tmp/release_notes.md; then
+            echo "use_auto_notes=false" >> "$GITHUB_OUTPUT"
+            cat /tmp/release_notes.md
+          else
+            echo "use_auto_notes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          body_path: ${{ steps.changelog.outputs.use_auto_notes == 'false' && '/tmp/release_notes.md' || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.use_auto_notes == 'true' }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true
+          verbose: true

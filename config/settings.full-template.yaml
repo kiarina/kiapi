@@ -1,0 +1,755 @@
+#--------------------------------------------------------------------------------
+# Settings for API server binding, authentication, and sync request waits.
+#--------------------------------------------------------------------------------
+kiapi.api:
+  # Bind host: str
+  #   Hostname or IP address that the kiapi API server binds to.
+  #   Use 127.0.0.1 for local-only access, or 0.0.0.0 in a trusted environment when other devices on the same network should connect.
+  # host: 127.0.0.1
+  #--------------------------------------------------
+  # Bind port: int
+  #   TCP port that the kiapi API server binds to.
+  #   The usual value is 8000.
+  # port: 8000
+  #--------------------------------------------------
+  # API auth token: SecretStr | None
+  #   When set, API calls must use Bearer token authentication.
+  #   When unset, requests are accepted without authentication.
+  # auth_token: 
+  #--------------------------------------------------
+  # Sync request wait seconds: float
+  #   Maximum number of seconds a sync-mode API call waits for job completion.
+  #   If this is exceeded, kiapi returns a timeout error instead of switching the request to async mode.
+  # sync_timeout_s: 600.0
+
+#--------------------------------------------------------------------------------
+# Settings for the global kiapi logging level.
+#--------------------------------------------------------------------------------
+kiapi.core.logging:
+  # Log level: LogLevel
+  #   Verbosity of emitted logs.
+  #   Standard Python logging levels such as DEBUG, INFO, WARNING, ERROR, and CRITICAL are accepted.
+  # log_level: INFO
+
+#--------------------------------------------------------------------------------
+# Settings for application-wide user directories.
+#--------------------------------------------------------------------------------
+kiapi.core.app:
+  # User cache directory: str | None
+  #   Directory where kiapi may store user-specific cache files.
+  #   When unset, XDG_CACHE_HOME is used when available, otherwise the platform default for the running user is used.
+  #   ~ is expanded as the home directory of the running user.
+  # user_cache_dir: 
+  #--------------------------------------------------
+  # User config directory: str | None
+  #   Directory where kiapi may store user-specific configuration files.
+  #   When unset, XDG_CONFIG_HOME is used when available, otherwise the platform default for the running user is used.
+  #   ~ is expanded as the home directory of the running user.
+  # user_config_dir: 
+  #--------------------------------------------------
+  # User data directory: str | None
+  #   Directory where kiapi may store user-specific persistent data files.
+  #   When unset, XDG_DATA_HOME is used when available, otherwise the platform default for the running user is used.
+  #   ~ is expanded as the home directory of the running user.
+  # user_data_dir: 
+
+#--------------------------------------------------------------------------------
+# Settings for per-request temporary work directories.
+#--------------------------------------------------------------------------------
+kiapi.core.workdir:
+  # Temporary work directory root: str
+  #   Root directory for temporary work files created while handling requests.
+  #   Each operation creates a purpose-specific child directory under this root.
+  # tmp_root: /tmp/kiapi/work
+
+#--------------------------------------------------------------------------------
+# Settings for the file store that keeps uploads and generated artifacts.
+#--------------------------------------------------------------------------------
+kiapi.core.file:
+  # File storage directory: str
+  #   Directory where uploaded files and generated artifacts are stored.
+  #   The default is under /tmp so files may disappear after reboot or tmp cleanup.
+  #   ~ is expanded as the home directory of the running user.
+  # files_root: /tmp/kiapi/files
+
+#--------------------------------------------------------------------------------
+# Settings for the model residency memory budget and idle TTL shared by all capabilities.
+#--------------------------------------------------------------------------------
+kiapi.core.memory:
+  # Memory budget GB: float | None
+  #   Memory budget in GB shared by resident models and runtime peaks across all capabilities.
+  #   If unset, kiapi uses 80% of the machine's total memory.
+  #   Before a job starts, lower-priority and older resident models are released until the job fits within this value.
+  # memory_limit_gb: 
+  #--------------------------------------------------
+  # Default idle TTL seconds: float
+  #   Default number of seconds before an unused resident model is auto-released.
+  #   Set to 0.0 or less to disable TTL release and evict only under memory pressure.
+  # default_ttl_s: 1800.0
+
+#--------------------------------------------------------------------------------
+# Settings for the single worker queue, TTL sweeping, and startup warmup.
+#--------------------------------------------------------------------------------
+kiapi.core.worker:
+  # TTL sweep interval seconds: float
+  #   Interval for background checks of resident models that exceeded their idle TTL.
+  #   Set to 0.0 to completely disable the background sweep.
+  # ttl_sweep_interval_s: 60.0
+  #--------------------------------------------------
+  # Startup warmup models: list[ModelKey]
+  #   List of model keys to preload when the server starts.
+  #   Each item uses the model registry key format. An empty list keeps models lazily loaded.
+  # warmup_models: []
+
+#--------------------------------------------------------------------------------
+# Network safety settings for accessing user-provided URLs.
+#--------------------------------------------------------------------------------
+kiapi.core.net:
+  # Allow private URLs: bool
+  #   When true, disables the SSRF guard and allows URLs that resolve to private, loopback, or link-local addresses.
+  #   Enable this only in a trusted local development environment.
+  # allow_private_urls: false
+
+#--------------------------------------------------------------------------------
+# Settings for Chat Completions generation defaults and input-processing limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.chat:
+  # Default maximum generated tokens: int
+  #   Generation token limit used when a request omits max_tokens.
+  # default_max_tokens: 512
+  #--------------------------------------------------
+  # Default temperature: float
+  #   Sampling temperature used when a request omits temperature.
+  #   Lower values are more stable; higher values are more diverse.
+  # default_temperature: 0.7
+  #--------------------------------------------------
+  # Default top_p: float
+  #   Nucleus sampling threshold used when a request omits top_p.
+  #   Use a value greater than 0 and less than or equal to 1.0.
+  # default_top_p: 1.0
+  #--------------------------------------------------
+  # Default video input sampling FPS: float
+  #   Default FPS for extracting frames from video input before passing them to the model.
+  #   Higher values provide finer video understanding, but increase processing time and input size.
+  # default_fps: 1.0
+  #--------------------------------------------------
+  # Use audio in video: bool
+  #   When true, audio tracks in video files are demuxed and passed to the model as audio input.
+  # use_audio_in_video: true
+  #--------------------------------------------------
+  # Maximum generated token cap: int
+  #   Server-side upper limit for max_tokens accepted in a request.
+  #   This protects the single worker queue from being blocked for a long time.
+  # max_tokens_cap: 4096
+
+#--------------------------------------------------------------------------------
+# Settings for Embedding input length limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.embedding:
+  # Maximum input token length: int
+  #   Maximum token length passed to the embedding model tokenizer.
+  #   Inputs longer than this are truncated before model processing.
+  # max_length: 512
+
+#--------------------------------------------------------------------------------
+# Settings for Depth Pro quantization, input image limits, and progress display.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.depthpro:
+  # Default quantization bits: int | None
+  #   Default quantization bit count used when loading the Depth Pro model.
+  #   Use a bit count such as 8, or None to disable quantization.
+  # default_quantize: 8
+  #--------------------------------------------------
+  # Maximum input pixels: int
+  #   Maximum total pixel count for an input image passed to Depth Pro.
+  #   This protects the single worker queue from being blocked for a long time by very large images.
+  # max_input_pixels: 16777216
+  #--------------------------------------------------
+  # Progress ETA seconds: float
+  #   Expected processing seconds used to show synthetic progress while Depth Pro runs.
+  #   Set to 0 to keep progress at the coarse value until completion.
+  # progress_eta_s: 8.0
+
+#--------------------------------------------------------------------------------
+# Settings for ERNIE-Image model variants, generation/edit defaults, and LoRA training.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.ernie:
+  # Turbo model repo: str
+  #   Hugging Face repo ID used as the ERNIE-Image turbo variant.
+  # turbo_model: baidu/ERNIE-Image-Turbo
+  #--------------------------------------------------
+  # Base model repo: str
+  #   Hugging Face repo ID used as the ERNIE-Image base variant.
+  # base_model: baidu/ERNIE-Image
+  #--------------------------------------------------
+  # Default steps by variant: dict[str, int]
+  #   Diffusion step count used when a generation or edit request omits steps.
+  #   Keys are variant names such as turbo or base; values are step counts.
+  # default_steps:
+  #   turbo: 8
+  #   base: 50
+  #--------------------------------------------------
+  # Default guidance by variant: dict[str, float]
+  #   Guidance strength used when a generation or edit request omits guidance.
+  #   Keys are variant names; values are guidance values.
+  # default_guidance:
+  #   turbo: 1.0
+  #   base: 4.0
+  #--------------------------------------------------
+  # Default quantization bits by variant: dict[str, int | None]
+  #   Default quantization bit count used when loading a model.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # default_quantize:
+  #   turbo: 8
+  #   base: 8
+  #--------------------------------------------------
+  # Default width: int
+  #   Output image width in pixels used when a request omits width.
+  # default_width: 1024
+  #--------------------------------------------------
+  # Default height: int
+  #   Output image height in pixels used when a request omits height.
+  # default_height: 1024
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the output image width accepted in a request.
+  # max_width: 2048
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the output image height accepted in a request.
+  # max_height: 2048
+  #--------------------------------------------------
+  # Maximum inference steps: int
+  #   Upper limit for the diffusion step count accepted in a request.
+  # max_steps: 100
+  #--------------------------------------------------
+  # Maximum LoRA count: int
+  #   Maximum number of LoRA adapters that can be applied in one generation or edit request.
+  # max_loras: 4
+  #--------------------------------------------------
+  # Require square edit input: bool
+  #   When true, ERNIE image-to-image/edit avoids non-square sizes.
+  #   This conservative default works around mflux VAE latent-packing constraints.
+  # edit_require_square: true
+  #--------------------------------------------------
+  # LoRA training reserved memory GB: float
+  #   Memory in GB reserved for the runtime peak of an ERNIE-Image LoRA training job.
+  # train_reserve_gb: 24.0
+  #--------------------------------------------------
+  # Training steps by variant: dict[str, int]
+  #   Step count used when a LoRA training request omits steps.
+  #   Keys are variant names; values are training step counts.
+  # train_steps:
+  #   turbo: 8
+  #   base: 50
+  #--------------------------------------------------
+  # Training timestep lower bound by variant: dict[str, int]
+  #   Lower bound of the timestep range used during LoRA training.
+  #   Keys are variant names; values are lower-bound timestep values.
+  # train_timestep_low:
+  #   turbo: 1
+  #   base: 1
+  #--------------------------------------------------
+  # Training quantization bits by variant: dict[str, int | None]
+  #   Quantization bit count applied to the model during LoRA training.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # train_quantize:
+  #   turbo: 8
+  #   base: 8
+
+#--------------------------------------------------------------------------------
+# Settings for FLUX.2 model variants, generation defaults, and LoRA training.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.flux2:
+  # Klein 9B model name: str
+  #   Name registered in the model registry for the FLUX.2 Klein 9B variant.
+  # klein_9b_model: flux2-klein-9b
+  #--------------------------------------------------
+  # Klein Base 4B model name: str
+  #   Name registered in the model registry for the FLUX.2 Klein Base 4B variant.
+  # klein_base_4b_model: flux2-klein-base-4b
+  #--------------------------------------------------
+  # Klein Base 9B model name: str
+  #   Name registered in the model registry for the FLUX.2 Klein Base 9B variant.
+  # klein_base_9b_model: flux2-klein-base-9b
+  #--------------------------------------------------
+  # Default steps by variant: dict[str, int]
+  #   Diffusion step count used when a generation or edit request omits steps.
+  #   Keys are variant names such as klein-9b; values are step counts.
+  # default_steps:
+  #   klein-9b: 4
+  #   klein-base-4b: 40
+  #   klein-base-9b: 40
+  #--------------------------------------------------
+  # Default guidance by variant: dict[str, float]
+  #   Guidance strength used when a generation or edit request omits guidance.
+  #   Keys are variant names; values are guidance values.
+  # default_guidance:
+  #   klein-9b: 1.0
+  #   klein-base-4b: 1.0
+  #   klein-base-9b: 1.0
+  #--------------------------------------------------
+  # Default quantization bits by variant: dict[str, int | None]
+  #   Default quantization bit count used when loading a model.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # default_quantize:
+  #   klein-9b: 
+  #   klein-base-4b: 8
+  #   klein-base-9b: 8
+  #--------------------------------------------------
+  # Default width: int
+  #   Output image width in pixels used when a request omits width.
+  # default_width: 1024
+  #--------------------------------------------------
+  # Default height: int
+  #   Output image height in pixels used when a request omits height.
+  # default_height: 1024
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the output image width accepted in a request.
+  # max_width: 2048
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the output image height accepted in a request.
+  # max_height: 2048
+  #--------------------------------------------------
+  # Maximum inference steps: int
+  #   Upper limit for the diffusion step count accepted in a request.
+  # max_steps: 100
+  #--------------------------------------------------
+  # Maximum LoRA count: int
+  #   Maximum number of LoRA adapters that can be applied in one generation or edit request.
+  # max_loras: 4
+  #--------------------------------------------------
+  # Default LoRA training model: str
+  #   FLUX.2 variant name used when a LoRA training request omits model.
+  #   Usually this should be a training-capable variant such as klein-base-4b or klein-base-9b.
+  # train_default_model: klein-base-4b
+  #--------------------------------------------------
+  # LoRA training reserved memory GB: float
+  #   Memory in GB reserved for the runtime peak of a FLUX.2 LoRA training job.
+  # train_reserve_gb: 24.0
+  #--------------------------------------------------
+  # Training steps by variant: dict[str, int]
+  #   Step count used when a LoRA training request omits steps.
+  #   Keys are variant names; values are training step counts.
+  # train_steps:
+  #   klein-base-4b: 40
+  #   klein-base-9b: 40
+  #--------------------------------------------------
+  # Training timestep lower bound by variant: dict[str, int]
+  #   Lower bound of the timestep range used during LoRA training.
+  #   Keys are variant names; values are lower-bound timestep values.
+  # train_timestep_low:
+  #   klein-base-4b: 25
+  #   klein-base-9b: 25
+  #--------------------------------------------------
+  # Training quantization bits by variant: dict[str, int | None]
+  #   Quantization bit count applied to the model during LoRA training.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # train_quantize:
+  #   klein-base-4b: 8
+  #   klein-base-9b: 8
+
+#--------------------------------------------------------------------------------
+# Settings for the Ideogram 4 model, image sizes, presets, and quantization.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.ideogram4:
+  # Ideogram 4 model repo: str
+  #   Hugging Face repo ID for the Ideogram 4 model used for image generation.
+  # model_repo: ideogram-ai/ideogram-4-fp8
+  #--------------------------------------------------
+  # Default width: int
+  #   Output image width in pixels used when a request omits width.
+  # default_width: 1024
+  #--------------------------------------------------
+  # Default height: int
+  #   Output image height in pixels used when a request omits height.
+  # default_height: 1024
+  #--------------------------------------------------
+  # Minimum width: int
+  #   Lower pixel limit for the output image width accepted in a request.
+  # min_width: 256
+  #--------------------------------------------------
+  # Minimum height: int
+  #   Lower pixel limit for the output image height accepted in a request.
+  # min_height: 256
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the output image width accepted in a request.
+  # max_width: 2048
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the output image height accepted in a request.
+  # max_height: 2048
+  #--------------------------------------------------
+  # Default preset: str
+  #   Ideogram 4 preset name used when a request omits preset.
+  #   The value must be included in presets.
+  # default_preset: V4_DEFAULT_20
+  #--------------------------------------------------
+  # Available presets: tuple[str, Ellipsis]
+  #   List of Ideogram 4 preset names accepted by the API.
+  # presets:
+  #   - V4_DEFAULT_20
+  #   - V4_QUALITY_48
+  #   - V4_TURBO_12
+  #--------------------------------------------------
+  # Default quantization bits: int | None
+  #   Default quantization bit count used when loading the Ideogram 4 model.
+  #   When None, the model repo's default precision is used. A numeric value quantizes to that bit count.
+  # default_quantize: 
+
+#--------------------------------------------------------------------------------
+# Settings for Qwen Image models, generation defaults, and LoRA limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.qwen:
+  # Image generation model repo: str
+  #   Hugging Face repo ID used for Qwen Image text-to-image generation.
+  # image_model: Qwen/Qwen-Image
+  #--------------------------------------------------
+  # Image editing model repo: str
+  #   Hugging Face repo ID used for Qwen Image editing.
+  # edit_model: Qwen/Qwen-Image-Edit-2509
+  #--------------------------------------------------
+  # Default quantization bits: int | None
+  #   Default quantization bit count used when loading the Qwen Image model.
+  #   Use a bit count such as 8, or None to disable quantization.
+  # default_quantize: 8
+  #--------------------------------------------------
+  # Default width: int
+  #   Output image width in pixels used when a request omits width.
+  # default_width: 1024
+  #--------------------------------------------------
+  # Default height: int
+  #   Output image height in pixels used when a request omits height.
+  # default_height: 1024
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the output image width accepted in a request.
+  # max_width: 2048
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the output image height accepted in a request.
+  # max_height: 2048
+  #--------------------------------------------------
+  # Maximum inference steps: int
+  #   Upper limit for the diffusion step count accepted in a request.
+  # max_steps: 100
+  #--------------------------------------------------
+  # Maximum LoRA count: int
+  #   Maximum number of LoRA adapters that can be applied in one generation or edit request.
+  # max_loras: 4
+  #--------------------------------------------------
+  # Default generation steps: int
+  #   Diffusion step count used when a text-to-image request omits steps.
+  # generate_steps: 30
+  #--------------------------------------------------
+  # Default generation guidance: float
+  #   Guidance strength used when a text-to-image request omits guidance.
+  # generate_guidance: 4.0
+  #--------------------------------------------------
+  # Default editing steps: int
+  #   Diffusion step count used when an image editing request omits steps.
+  # edit_steps: 30
+  #--------------------------------------------------
+  # Default editing guidance: float
+  #   Guidance strength used when an image editing request omits guidance.
+  # edit_guidance: 2.5
+
+#--------------------------------------------------------------------------------
+# Settings for the SeedVR2 upscaling model, scale factors, and resolution limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.seedvr2:
+  # SeedVR2 model repo: str
+  #   Hugging Face repo ID for the SeedVR2 model used for video and image upscaling.
+  # model_repo: numz/SeedVR2_comfyUI
+  #--------------------------------------------------
+  # Default output resolution: str
+  #   Upscaling resolution used when a request omits resolution.
+  #   Use a scale notation such as 2x, or another resolution value accepted by the implementation.
+  # default_resolution: 2x
+  #--------------------------------------------------
+  # Default softness: float
+  #   Correction amount used when a request omits softness.
+  #   0.0 is the baseline; higher values produce softer results.
+  # default_softness: 0.0
+  #--------------------------------------------------
+  # Default quantization bits: int | None
+  #   Default quantization bit count used when loading the SeedVR2 model.
+  #   Use a bit count such as 8, or None to disable quantization.
+  # default_quantize: 8
+  #--------------------------------------------------
+  # Maximum scale factor: float
+  #   Upper limit for the upscaling scale factor accepted in a request.
+  # max_scale: 4.0
+  #--------------------------------------------------
+  # Maximum output resolution: int
+  #   Upper pixel limit for the output width or height accepted in a request.
+  # max_resolution: 2048
+  #--------------------------------------------------
+  # Minimum output resolution: int
+  #   Lower pixel limit for the output width or height accepted in a request.
+  # min_resolution: 16
+
+#--------------------------------------------------------------------------------
+# Settings for Z-Image model variants, generation defaults, and LoRA training defaults.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.zimage:
+  # Turbo model repo: str
+  #   Hugging Face repo ID used as the Z-Image turbo variant.
+  # turbo_repo: filipstrand/Z-Image-Turbo-mflux-4bit
+  #--------------------------------------------------
+  # Base model repo: str
+  #   Hugging Face repo ID used as the Z-Image base variant.
+  # base_repo: Tongyi-MAI/Z-Image
+  #--------------------------------------------------
+  # Default quantization bits by variant: dict[str, int | None]
+  #   Default quantization bit count used when loading a generation model.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # default_quantize:
+  #   turbo: 
+  #   base: 8
+  #--------------------------------------------------
+  # Default steps by variant: dict[str, int]
+  #   Diffusion step count used when a generation request omits steps.
+  #   Keys are variant names such as turbo or base; values are step counts.
+  # default_steps:
+  #   turbo: 9
+  #   base: 28
+  #--------------------------------------------------
+  # Default guidance by variant: dict[str, float | None]
+  #   Guidance strength used when a generation request omits guidance.
+  #   Keys are variant names; values are guidance values. None uses the model default.
+  # default_guidance:
+  #   turbo: 
+  #   base: 4.0
+  #--------------------------------------------------
+  # Default width: int
+  #   Output image width in pixels used when a request omits width.
+  # default_width: 1024
+  #--------------------------------------------------
+  # Default height: int
+  #   Output image height in pixels used when a request omits height.
+  # default_height: 1024
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the output image width accepted in a request.
+  # max_width: 2048
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the output image height accepted in a request.
+  # max_height: 2048
+  #--------------------------------------------------
+  # Maximum inference steps: int
+  #   Upper limit for the diffusion step count accepted in a request.
+  # max_steps: 100
+  #--------------------------------------------------
+  # Maximum LoRA count: int
+  #   Maximum number of LoRA adapters that can be applied in one generation request.
+  # max_loras: 4
+  #--------------------------------------------------
+  # LoRA training reserved memory GB: float
+  #   Memory in GB reserved for the runtime peak of a Z-Image LoRA training job.
+  # train_reserve_gb: 24.0
+  #--------------------------------------------------
+  # Training steps by variant: dict[str, int]
+  #   Step count used when a LoRA training request omits steps.
+  #   Keys are variant names; values are training step counts.
+  # train_steps:
+  #   turbo: 9
+  #   base: 20
+  #--------------------------------------------------
+  # Training timestep lower bound by variant: dict[str, int]
+  #   Lower bound of the timestep range used during LoRA training.
+  #   Keys are variant names; values are lower-bound timestep values.
+  # train_timestep_low:
+  #   turbo: 4
+  #   base: 0
+  #--------------------------------------------------
+  # Training quantization bits by variant: dict[str, int | None]
+  #   Quantization bit count applied to the model during LoRA training.
+  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
+  # train_quantize:
+  #   turbo: 8
+  #   base: 8
+  #--------------------------------------------------
+  # Default LoRA training epochs: int
+  #   Epoch count used when a LoRA training request omits epochs.
+  # train_default_epochs: 10
+  #--------------------------------------------------
+  # Default LoRA training rank: int
+  #   LoRA rank used when a LoRA training request omits rank.
+  #   Higher values increase expressiveness and memory usage.
+  # train_default_rank: 16
+  #--------------------------------------------------
+  # Default LoRA training learning rate: float
+  #   Learning rate used when a LoRA training request omits lr.
+  # train_default_lr: 0.0001
+  #--------------------------------------------------
+  # Maximum LoRA training epochs: int
+  #   Upper limit for epochs accepted in a LoRA training request.
+  # train_max_epochs: 1000
+
+#--------------------------------------------------------------------------------
+# Settings for the ACE-Step isolated venv subprocess, checkpoints, and generation duration.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.acestep:
+  # ACE-Step Python executable: str | None
+  #   Python path for the dedicated venv where ACE-Step dependencies are installed.
+  #   When unset, kiapi uses the ACE-Step venv under the user data directory.
+  # python_path: 
+  #--------------------------------------------------
+  # ACE-Step working directory: str | None
+  #   Directory where ACE-Step writes support files such as .cache/acestep.
+  #   When unset, kiapi uses an ACE-Step project directory under the user data directory.
+  # project_root: 
+  #--------------------------------------------------
+  # ACE-Step checkpoint directory: str | None
+  #   Directory containing checkpoint subdirectories such as acestep-5Hz-lm-1.7B and acestep-v15-*.
+  #   When unset, kiapi uses the ACE-Step checkpoint directory under the user data directory.
+  # checkpoint_dir: 
+  #--------------------------------------------------
+  # Shared LLM checkpoint name: str
+  #   Subdirectory name under checkpoint_dir for the ACE-Step language model checkpoint.
+  # llm_model: acestep-5Hz-lm-1.7B
+  #--------------------------------------------------
+  # Subprocess ready timeout seconds: float
+  #   Maximum seconds to wait for the ACE-Step subprocess to load models and become ready.
+  # ready_timeout_s: 600.0
+  #--------------------------------------------------
+  # Generation job timeout seconds: float
+  #   Maximum runtime seconds allowed for one ACE-Step generation job.
+  # job_timeout_s: 1200.0
+  #--------------------------------------------------
+  # Maximum generation seconds: int
+  #   Upper limit for music generation duration in seconds accepted in a request.
+  #   Longer values occupy the worker and keep memory resident for longer.
+  # max_duration: 300
+
+#--------------------------------------------------------------------------------
+# Settings for AudioGen sound-effect duration defaults and limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.audiogen:
+  # Maximum generation seconds: float
+  #   Maximum sound-effect duration in seconds accepted in a request.
+  #   AudioGen medium is naturally limited to about 10 seconds, and this also protects the worker.
+  # max_duration: 10.0
+  #--------------------------------------------------
+  # Default generation seconds: float
+  #   Sound-effect duration in seconds used when a request omits duration.
+  # default_duration: 5.0
+
+#--------------------------------------------------------------------------------
+# Settings for LTX-2 models, video dimensions, frame counts, and progress display.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.ltx2:
+  # LTX-2 model repo: str
+  #   Hugging Face repo ID for the LTX-2 model used for video generation.
+  # model_repo: prince-canuma/LTX-2-distilled
+  #--------------------------------------------------
+  # Text encoder repo: str | None
+  #   Hugging Face repo ID for a text encoder from a separate repo.
+  #   When None, the model's default text encoder is used.
+  # text_encoder_repo: 
+  #--------------------------------------------------
+  # Maximum frame count: int
+  #   Upper limit for the video frame count accepted in a request.
+  # max_num_frames: 721
+  #--------------------------------------------------
+  # Maximum width: int
+  #   Upper pixel limit for the video width accepted in a request.
+  # max_width: 768
+  #--------------------------------------------------
+  # Maximum height: int
+  #   Upper pixel limit for the video height accepted in a request.
+  # max_height: 768
+  #--------------------------------------------------
+  # Default width: int
+  #   Video width in pixels used when a request omits width.
+  # default_width: 512
+  #--------------------------------------------------
+  # Default height: int
+  #   Video height in pixels used when a request omits height.
+  # default_height: 512
+  #--------------------------------------------------
+  # Default frame count: int
+  #   Generated frame count used when a request omits num_frames.
+  # default_num_frames: 97
+  #--------------------------------------------------
+  # Default FPS: int
+  #   Output video FPS used when a request omits fps.
+  # default_fps: 24
+  #--------------------------------------------------
+  # Progress ETA base seconds: float
+  #   Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2 job.
+  #   The value is scaled by frame count and resolution. Set to 0 to disable it.
+  # progress_eta_base_s: 90.0
+
+#--------------------------------------------------------------------------------
+# Settings for Web search/fetch backends and request defaults.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.web:
+  # Search backend Docker image: str
+  #   SearXNG Docker image name launched as the Web search backend.
+  # search_image: "searxng/searxng:latest"
+  #--------------------------------------------------
+  # Fetch backend Docker image: str
+  #   Crawl4AI Docker image name launched as the Web page fetch backend.
+  # fetch_image: "unclecode/crawl4ai:latest"
+  #--------------------------------------------------
+  # Backend ready timeout seconds: float
+  #   Maximum seconds to wait for the search/fetch backend subprocess to become ready.
+  # backend_ready_timeout_s: 60.0
+  #--------------------------------------------------
+  # Backend log directory: str
+  #   Directory where search/fetch backend subprocess logs are written.
+  # backend_log_dir: /tmp/kiapi/logs/web
+  #--------------------------------------------------
+  # Search timeout seconds: float
+  #   Maximum seconds allowed for one search request to SearXNG.
+  # timeout_s: 10.0
+  #--------------------------------------------------
+  # Default search categories: list[str] | None
+  #   Categories passed to SearXNG when a request omits categories.
+  #   When None, SearXNG decides from its own defaults.
+  # default_categories: 
+  #--------------------------------------------------
+  # Default search engines: list[str] | None
+  #   SearXNG engine names used when a request omits engines.
+  #   When None, SearXNG decides from its own defaults.
+  # default_engines: 
+  #--------------------------------------------------
+  # Default search language: str | None
+  #   Language code passed to SearXNG when a request omits language.
+  #   When None, SearXNG decides from its own defaults.
+  # default_language: 
+  #--------------------------------------------------
+  # Default SafeSearch level: int | None
+  #   SearXNG SafeSearch value used when a request omits safesearch.
+  #   Typically 0 disables it, 1 is moderate, and 2 is stricter. None uses the SearXNG default.
+  # default_safesearch: 
+  #--------------------------------------------------
+  # Default maximum search results: int | None
+  #   Maximum number of results returned when a request omits max_results.
+  #   Set to None to disable client-side truncation in kiapi.
+  # default_max_results: 10
+  #--------------------------------------------------
+  # Page fetch timeout seconds: float
+  #   Maximum seconds allowed for one page fetch request to Crawl4AI.
+  # fetch_timeout_s: 30.0
+  #--------------------------------------------------
+  # Minimum fetched content characters: int
+  #   Minimum stripped Markdown length before fetched content is treated as empty.
+  #   With 1, only truly empty renders fail. Higher values also reject near-empty pages.
+  # fetch_min_content_chars: 1
+  #--------------------------------------------------
+  # Fetch Markdown filter: str
+  #   Body extraction mode for Crawl4AI /md.
+  #   fit returns readability-pruned Markdown; raw returns Markdown closer to the full DOM.
+  # fetch_filter: fit
+  #--------------------------------------------------
+  # Fetch cache-bust value: str
+  #   Cache control value passed to Crawl4AI /md.
+  #   0 lets the server cache normally. Changing the value can act as a cache-busting identifier.
+  # fetch_cache: 0

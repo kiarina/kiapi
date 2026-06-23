@@ -1,0 +1,692 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi DepthPro API",
+    "description": "Monocular depth estimation from a single image (Apple Depth Pro via mflux).\n\nThis is **image-to-depth**, not prompt-driven image generation: you give one\nimage and get back a metric depth map.\n\n## Upstream docs\n- [mflux](https://github.com/filipstrand/mflux) — the MLX engine kiapi runs\n- [apple/DepthPro](https://huggingface.co/apple/DepthPro) — model weights\n- [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) — original Depth Pro code and paper\n\n## What you get back\n- A grayscale depth **PNG** where brighter pixels are nearer and darker pixels\n  are farther — ready to display or overlay.\n- Optionally (default on, `include_depth_data=true`) a compressed **NPZ**\n  containing the raw float depth array plus `min_depth` / `max_depth` in meters,\n  for downstream numeric use (point clouds, masking, measurement).\n\nThe depth array is loadable with NumPy: `np.load(path)[\"depth\"]`, with scalar\n`min_depth` / `max_depth` also stored in the same archive.\n\n## Models\n- **base** (default) — `apple/DepthPro`. The only variant today.\n\n## Quantization\n`quantize` selects the model's bit-width (one of 3, 4, 5, 6, 8; server default\n8). The warmed, resident model uses the server default; requesting a *different*\n`quantize` builds a one-off transient model for that call, which loads weights\nfresh and is therefore slower and not reused. Keep `quantize` unset (or equal to\nthe default) for the fast resident path.\n\n## TIPS\n- For a quick visual, leave `include_depth_data=false` and call `sync` — you get\n  the PNG bytes straight back (`curl -o depth.png`).\n- For measurement or 3D work, keep `include_depth_data=true` and read the NPZ.\n- Large uploads are bounded by an input pixel cap; downscale very large images\n  before sending. Depth Pro resizes internally, so modest inputs are fine.\n- First use downloads Apple's Depth Pro weights; run `kiapi activate` ahead of\n  time to avoid a cold-start download on the first request.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/image/depthpro/estimate": {
+      "post": {
+        "summary": "Estimate",
+        "description": "Estimate a depth map from one image (Depth Pro, image-to-depth).\n\nProduces a grayscale depth PNG (near = bright, far = dark) and, unless\n`include_depth_data` is false, a compressed NPZ holding the raw float depth\narray plus min/max depth. The same endpoint serves both `sync` and `async`\nvia `mode`.\n\nSync content negotiation: when exactly one artifact is produced (i.e.\n`include_depth_data=false`) and the client does not ask for JSON, the raw PNG\nbytes are returned with `X-Kiapi-File-Id` / `X-Kiapi-Job-Id` headers — so\n`curl -o depth.png` just works. Otherwise (JSON requested, two artifacts, or\nasync) the Job JSON is returned, whose `result` follows EstimateResponse.\n\nA `quantize` value differing from the resident model runs a one-off transient\nmodel (slower, not reused). Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch artifacts via GET /v1/files/{file_id}.",
+        "operationId": "estimate_v1_image_depthpro_estimate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobEstimateResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/image/depthpro/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_image_depthpro_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Image Depthpro Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "EstimateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/image/depthpro/models). Omit for the default `base`. Aliases `depthpro`, `depth-pro`, `DepthPro` are accepted."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the depth map (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "image": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Input image to estimate depth for, as a Files-API file id, http(s) URL, or data URL. Must not exceed the configured input pixel cap."
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantize",
+            "description": "Quantization bits, one of {3, 4, 5, 6, 8}. Omit to use the server default (8). A value differing from the resident model's quantization runs a one-off transient model (no resident reuse), so it is slower."
+          },
+          "include_depth_data": {
+            "type": "boolean",
+            "title": "Include Depth Data",
+            "description": "When true, also store a compressed NPZ with the raw float depth array and min/max depth (`depth_data_file_id`) alongside the grayscale PNG. When false, only the PNG is produced, so a sync call can return the raw PNG bytes directly (single artifact, unless Accept: application/json).",
+            "default": true
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "title": "EstimateRequest"
+      },
+      "EstimateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model variant that produced the depth map."
+          },
+          "depth_image_file_id": {
+            "type": "string",
+            "title": "Depth Image File Id",
+            "description": "Files-API id of the grayscale depth PNG (near = bright, far = dark). Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "depth_image_bytes": {
+            "type": "integer",
+            "title": "Depth Image Bytes",
+            "description": "Size of the depth PNG in bytes."
+          },
+          "depth_data_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Data File Id",
+            "description": "Files-API id of the compressed NPZ holding the raw float depth array plus min/max depth, or null when `include_depth_data` was false."
+          },
+          "depth_data_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Data Bytes",
+            "description": "Size of the NPZ in bytes, or null when no depth data was stored."
+          },
+          "input_width": {
+            "type": "integer",
+            "title": "Input Width",
+            "description": "Width in pixels of the submitted image."
+          },
+          "input_height": {
+            "type": "integer",
+            "title": "Input Height",
+            "description": "Height in pixels of the submitted image."
+          },
+          "input_mode": {
+            "type": "string",
+            "title": "Input Mode",
+            "description": "PIL mode of the submitted image (e.g. RGB, L, RGBA)."
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "description": "Width in pixels of the produced depth map."
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "description": "Height in pixels of the produced depth map."
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "PIL mode of the produced depth PNG (typically L)."
+          },
+          "array_shape": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Array Shape",
+            "description": "Shape of the raw depth array stored in the NPZ (rows, cols)."
+          },
+          "min_depth": {
+            "type": "number",
+            "title": "Min Depth",
+            "description": "Minimum depth value in the raw array, in meters."
+          },
+          "max_depth": {
+            "type": "number",
+            "title": "Max Depth",
+            "description": "Maximum depth value in the raw array, in meters."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters used for the run (model, quantize, etc.)."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "depth_image_file_id",
+          "depth_image_bytes",
+          "depth_data_file_id",
+          "depth_data_bytes",
+          "input_width",
+          "input_height",
+          "input_mode",
+          "width",
+          "height",
+          "mode",
+          "array_shape",
+          "min_depth",
+          "max_depth",
+          "params",
+          "timings"
+        ],
+        "title": "EstimateResponse",
+        "description": "Capability-specific ``result`` for a succeeded depthpro estimate job."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "JobEstimateResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstimateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobEstimateResponse"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock depth-estimation time in seconds (model run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "depthpro",
+  "x-kiapi-domain": "image",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

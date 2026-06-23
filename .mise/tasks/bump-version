@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#MISE description="Bump pyproject.toml version and move CHANGELOG.md Unreleased notes"
+
+set -euo pipefail
+
+if [ "$#" -gt 1 ]; then
+    echo "Usage: mise run bump-version [version]"
+    exit 1
+fi
+
+version="${1:-}"
+
+if [ -z "$version" ]; then
+    read -r -p "Version (e.g. 0.2.0): " version
+fi
+
+if [ -z "$version" ]; then
+    echo "Version is required"
+    exit 1
+fi
+
+if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+    echo "Invalid version format: $version"
+    echo "Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 0.2.0, 1.0.0-alpha.1)"
+    exit 1
+fi
+
+mise run pyproject:bump-version "$version"
+mise run changelog:bump-version "$version"
+
+echo ""
+echo "Version bump prepared for $version."
+echo ""
+echo "Next steps:"
+echo "  1. make test && make"
+echo "  2. mise run build"
+echo "  3. git add pyproject.toml CHANGELOG.md && git commit -m 'chore(release): prepare v$version'"
+echo "  4. git tag v$version && git push origin main --tags"

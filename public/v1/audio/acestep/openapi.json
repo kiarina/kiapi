@@ -1,0 +1,1485 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi ACE-Step API",
+    "description": "Music generation (ACE-Step 1.5): compose, cover, repaint, extract.\n\nFour operations on ACE-Step 1.5: `/generate` (text2music — a new song from a\nstyle prompt + lyrics), `/cover` (re-style an existing track), `/repaint`\n(regenerate a time range), and `/extract` (separate into stems). ACE-Step runs in\nan isolated subprocess (it pins an older transformers than chat/embedding); the\nfirst request after idle pays a load cost of tens of seconds, then it stays\nresident until the idle TTL or budget pressure frees it.\n\n## Upstream docs\n- [ACE-Step](https://github.com/ace-step/ACE-Step) — the upstream model\n\n## Models\n- **xl-base** (default) — highest quality. 32 inference steps, CFG 7.0.\n  ~25 s per 30 s of audio on M4 Max.\n- **turbo** — fastest. 8 inference steps, no CFG. ~4 s per 15 s on M4 Max. Great\n  for prototyping / iterating on prompts.\n\nPick the preset with `model`; discover variants at `GET /v1/audio/acestep/models`.\nThe sampling overrides (`inference_steps`, `guidance_scale`, `shift`) default to\nthe preset's tuned values — set them only to deviate.\n\n## Source workflow\n`/cover`, `/repaint`, and `/extract` operate on an existing track: POST the source\nWAV to `/v1/files` to get a `file_id`, then pass it as `source`. `/generate` needs\nno source.\n\n## Prompt tips\nDescribe the SOUND, not the story — a narrative sentence beats a keyword list.\nUseful elements to mention:\n- **genre**: Modern J-Pop / Acoustic Jazz / Dark Trap / Lo-fi Hip-hop / Anime OST\n- **tempo**: 132 BPM / slow and intimate / driving beat / half-time feel\n- **instruments**: bright piano / smooth saxophone / 808 sub-bass / nylon guitar\n- **vocal**: emotional female vocal / whispered delivery / powerful male tenor\n- **mood**: melancholic / triumphant / cozy / aggressive / dreamy / nostalgic\n- **production**: polished radio-ready / lo-fi vinyl texture / orchestral / live band\n\n- **good**: \"A melancholic piano ballad where soft female vocals weave through\n  gentle strings, intimate and heartbreaking. 80 BPM.\"\n- **bad**: \"piano, sad, female, slow\"\n\n## Lyrics format (generate)\nUse `[Square Bracket]` section tags at the start of a line: `[Intro]`,\n`[Verse 1]`, `[Pre-Chorus]`, `[Chorus]`, `[Bridge]`, `[Instrumental]`, `[Outro]`.\nModifiers work too, e.g. `[Verse 1 - Female]`, `[Chorus - Both]`,\n`[Bridge - Whispered]`. Set lyrics to `[Instrumental]` for no vocals. Keep the\nlyric length proportionate to `duration` — sparse lyrics over a long duration\ndegrade quality.\n\n## Language codes (lang, generate)\nISO 639-1: `ja` Japanese, `en` English, `ko` Korean, `zh` Mandarin, `yue`\nCantonese, `es` Spanish, `fr` French, `de` German, …. `unknown` auto-detects\n(may reduce quality).\n\n## TIPS\n- For a quick track, call `sync` without `Accept: application/json` to get the raw\n  WAV bytes straight back (`curl -o out.wav`). `/extract` is multi-artifact, so it\n  always returns Job JSON.\n- Reuse a `seed` (≠ -1) with the same params to reproduce a result.\n- Run `kiapi activate` ahead of time so the first request doesn't pay a cold-start\n  weight download.\n\n## Examples\n\n### Generate (sync, turbo)\n```sh\njq -n \\\n--arg prompt \"Modern J-Pop, 132 BPM, bright piano, emotional electric guitar, upbeat drums, polished anime opening production\" \\\n--arg lyrics '[Verse 1]\n加速する世界の中で\n君の声が聴こえてくる\n\n[Pre-Chorus]\n夜明け前の空に\nまだ見ぬ明日を描いた\n\n[Chorus]\n僕らは光を追いかける\n終わらない夢の向こうへ\n何度でも手を伸ばして\n新しい風になる\n' \\\n'{\n  \"model\": \"turbo\",\n  \"mode\": \"sync\",\n  \"prompt\": $prompt,\n  \"lyrics\": $lyrics,\n  \"duration\": 30,\n  \"lang\": \"ja\",\n  \"seed\": 1\n}' |\ncurl -sS -X POST http://localhost:${PORT:-8000}/v1/audio/acestep/generate \\\n  -H 'Content-Type: application/json' \\\n  --data-binary @- \\\n  -o acestep_generate.wav\n```\n\n### Cover (async, turbo)\n```sh\ncurl -sS http://HOST:PORT/v1/audio/acestep/cover \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"model\": \"turbo\",\n    \"mode\": \"async\",\n    \"source\": \"<file_id>\",\n    \"prompt\": \"lo-fi chillhop, warm tape\",\n    \"strength\": 0.7\n  }'\n# -> {\"job_id\": \"...\"}; poll GET /v1/jobs/{job_id}\n```\n\n### Extract stems\n```sh\ncurl -sS http://HOST:PORT/v1/audio/acestep/extract \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"source\": \"<file_id>\",\n    \"targets\": [\"vocals\", \"drums\", \"bass\", \"other\"]\n  }'\n# -> one job, artifacts = 4 file_ids (one WAV per target)\n```\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/audio/acestep/generate": {
+      "post": {
+        "summary": "Generate Music",
+        "description": "Generate a brand-new song from a style prompt + lyrics (text2music).\n\nTakes no source track: `prompt` describes the SOUND, `lyrics` carries the\nsection-tagged words (or `[Instrumental]`), and `duration`/`lang` shape the\noutput. To restyle or edit an existing track use `/cover`, `/repaint`, or\n`/extract` instead. The same endpoint serves both `sync` and `async` via\n`mode`.\n\nSync content negotiation: one WAV is produced, so unless the client asks for\nJSON the raw audio bytes are returned with `X-Kiapi-File-Id` / `X-Kiapi-Job-Id`\nheaders — `curl -o out.wav` just works. With `Accept: application/json` (or\nasync) the Job JSON is returned, whose `result` follows TrackResponse.\n\nAsync returns 202 immediately; poll GET /v1/jobs/{job_id} and fetch the\nartifact via GET /v1/files/{file_id}.",
+        "operationId": "generate_music_v1_audio_acestep_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobTrackResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/acestep/cover": {
+      "post": {
+        "summary": "Cover Music",
+        "description": "Re-style an existing track while preserving its structure (cover).\n\nRequires a `source` track and a `prompt` describing the target style;\n`strength` (0..1) trades creative freedom against faithfulness to the source.\nTo regenerate only a time range use `/repaint`; to make a song from scratch\nuse `/generate`. The same endpoint serves both `sync` and `async` via `mode`.\n\nSync content negotiation and the TrackResponse `result` shape match\n`/v1/audio/acestep/generate` (one WAV artifact; `result.src` references the\nsource file_id).",
+        "operationId": "cover_music_v1_audio_acestep_cover_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobTrackResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/acestep/repaint": {
+      "post": {
+        "summary": "Repaint Music",
+        "description": "Regenerate one time range of an existing track (repaint).\n\nRequires a `source` track, a `prompt` for the section's style, and a\n`start`/`end` window (`end=-1` runs to the end of the track); `strength`\n(0..1) controls how aggressively that window is regenerated while it blends\ninto the rest. To restyle the whole track use `/cover`. The same endpoint\nserves both `sync` and `async` via `mode`.\n\nSync content negotiation and the TrackResponse `result` shape match\n`/v1/audio/acestep/generate` (one WAV artifact; `result.src` references the\nsource file_id).",
+        "operationId": "repaint_music_v1_audio_acestep_repaint_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepaintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobTrackResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/acestep/extract": {
+      "post": {
+        "summary": "Extract Music",
+        "description": "Separate a track into stems / source separation (extract).\n\nRequires a `source` track and a list of `targets` (e.g. vocals / drums / bass\n/ other). One job produces one WAV stem per target, so `artifacts` holds a\nfile_id per target. The same endpoint serves both `sync` and `async` via\n`mode`.\n\nUnlike the other operations this is a multi-artifact job, so sync always\nreturns the Job JSON (no raw-bytes shortcut). The `result` follows\nExtractResponse, whose `stems[]` carry one file_id each. Fetch each via\nGET /v1/files/{file_id}.",
+        "operationId": "extract_music_v1_audio_acestep_extract_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobExtractResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/acestep/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_audio_acestep_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Audio Acestep Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "CoverRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "pattern": "^(xl-base|turbo)$",
+            "title": "Model",
+            "description": "Preset (see GET /v1/audio/acestep/models). `xl-base` (default) = highest quality (32 steps, CFG 7.0). `turbo` = fastest (8 steps, no CFG), good for prototyping.",
+            "default": "xl-base"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the track (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed for reproducibility. `-1` picks a random seed; the same seed with the same params reproduces the output. The resolved seed is recorded in the result `params`.",
+            "default": -1
+          },
+          "inference_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Steps",
+            "description": "Override the preset's denoising step count (xl-base 32 / turbo 8). More steps = higher quality, slower. Omit to use the preset default."
+          },
+          "guidance_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance Scale",
+            "description": "Override classifier-free guidance strength (xl-base default 7.0). Higher follows the prompt more strictly. Ignored by `turbo`, which runs without CFG. Omit to use the preset default."
+          },
+          "shift": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift",
+            "description": "Override the timestep schedule shift. 3.0 is correct; values near 1.0 produce noisy output. Omit to use the preset default."
+          },
+          "source": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Source audio to re-style (Files-API file id, http(s) URL, or data URL). POST the WAV to /v1/files first to get a file id."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Target style description for the cover — the SOUND to move toward (genre, instruments, mood, production)."
+          },
+          "strength": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "description": "How closely to follow the source structure, in 0..1. 0 = free / more creative, 1 = strict / more faithful. 0.7 preserves structure well.",
+            "default": 0.7
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 300.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "description": "Output length in seconds (5-300). Omit to match the source length."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "source",
+          "prompt"
+        ],
+        "title": "CoverRequest"
+      },
+      "ExtractRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "pattern": "^(xl-base|turbo)$",
+            "title": "Model",
+            "description": "Preset (see GET /v1/audio/acestep/models). `xl-base` (default) = highest quality (32 steps, CFG 7.0). `turbo` = fastest (8 steps, no CFG), good for prototyping.",
+            "default": "xl-base"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the track (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed for reproducibility. `-1` picks a random seed; the same seed with the same params reproduces the output. The resolved seed is recorded in the result `params`.",
+            "default": -1
+          },
+          "inference_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Steps",
+            "description": "Override the preset's denoising step count (xl-base 32 / turbo 8). More steps = higher quality, slower. Omit to use the preset default."
+          },
+          "guidance_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance Scale",
+            "description": "Override classifier-free guidance strength (xl-base default 7.0). Higher follows the prompt more strictly. Ignored by `turbo`, which runs without CFG. Omit to use the preset default."
+          },
+          "shift": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift",
+            "description": "Override the timestep schedule shift. 3.0 is correct; values near 1.0 produce noisy output. Omit to use the preset default."
+          },
+          "source": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Source audio to separate (Files-API file id, http(s) URL, or data URL). POST the WAV to /v1/files first to get a file id."
+          },
+          "targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Targets",
+            "description": "Stems to separate out, e.g. vocals / drums / bass / other (default: all four). Each target becomes one artifact (file_id) within the single job.",
+            "default": [
+              "vocals",
+              "drums",
+              "bass",
+              "other"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "ExtractRequest"
+      },
+      "ExtractResponse": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "title": "Task",
+            "description": "Always `extract` for this endpoint."
+          },
+          "source_file_id": {
+            "type": "string",
+            "title": "Source File Id",
+            "description": "Files-API id of the source track that was separated."
+          },
+          "targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Targets",
+            "description": "The requested stems, in the order they appear in `stems`."
+          },
+          "stems": {
+            "items": {
+              "$ref": "#/components/schemas/_Stem"
+            },
+            "type": "array",
+            "title": "Stems",
+            "description": "One produced stem per target; each references its own WAV file_id."
+          }
+        },
+        "type": "object",
+        "required": [
+          "task",
+          "source_file_id",
+          "targets",
+          "stems"
+        ],
+        "title": "ExtractResponse",
+        "description": "Capability-specific ``result`` for a succeeded extract job.\n\nA single job produces one stem per requested target; ``artifacts`` lists the\nsame file_ids in ``stems`` order."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "pattern": "^(xl-base|turbo)$",
+            "title": "Model",
+            "description": "Preset (see GET /v1/audio/acestep/models). `xl-base` (default) = highest quality (32 steps, CFG 7.0). `turbo` = fastest (8 steps, no CFG), good for prototyping.",
+            "default": "xl-base"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the track (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed for reproducibility. `-1` picks a random seed; the same seed with the same params reproduces the output. The resolved seed is recorded in the result `params`.",
+            "default": -1
+          },
+          "inference_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Steps",
+            "description": "Override the preset's denoising step count (xl-base 32 / turbo 8). More steps = higher quality, slower. Omit to use the preset default."
+          },
+          "guidance_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance Scale",
+            "description": "Override classifier-free guidance strength (xl-base default 7.0). Higher follows the prompt more strictly. Ignored by `turbo`, which runs without CFG. Omit to use the preset default."
+          },
+          "shift": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift",
+            "description": "Override the timestep schedule shift. 3.0 is correct; values near 1.0 produce noisy output. Omit to use the preset default."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Music style description — the SOUND (genre, tempo, instruments, mood, production), not the lyric content. A narrative sentence works better than a keyword list.",
+            "default": "Modern J-Pop, 132 BPM, bright piano, emotional electric guitar, upbeat drums"
+          },
+          "lyrics": {
+            "type": "string",
+            "title": "Lyrics",
+            "description": "Lyrics, using [Verse 1]/[Chorus]/[Bridge]/… section tags at the start of a line. Use `[Instrumental]` for a fully instrumental output. Match the lyric length to `duration` — sparse lyrics over a long duration hurt quality.",
+            "default": "[Instrumental]"
+          },
+          "duration": {
+            "type": "integer",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Duration",
+            "description": "Output length in seconds (5-300). Also capped server-side by the acestep `max_duration` setting (422 if exceeded).",
+            "default": 60
+          },
+          "lang": {
+            "type": "string",
+            "title": "Lang",
+            "description": "Vocal language as an ISO 639-1 code: ja / en / ko / zh / yue / es / fr / de / …. `unknown` auto-detects (may reduce quality). Ignored for `[Instrumental]` lyrics.",
+            "default": "ja"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "GenerateRequest"
+      },
+      "JobExtractResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtractResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobExtractResponse"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobTrackResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrackResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobTrackResponse"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "RepaintRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "pattern": "^(xl-base|turbo)$",
+            "title": "Model",
+            "description": "Preset (see GET /v1/audio/acestep/models). `xl-base` (default) = highest quality (32 steps, CFG 7.0). `turbo` = fastest (8 steps, no CFG), good for prototyping.",
+            "default": "xl-base"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`sync` waits for the track (504 on timeout); `async` returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}.",
+            "default": "sync"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed for reproducibility. `-1` picks a random seed; the same seed with the same params reproduces the output. The resolved seed is recorded in the result `params`.",
+            "default": -1
+          },
+          "inference_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Steps",
+            "description": "Override the preset's denoising step count (xl-base 32 / turbo 8). More steps = higher quality, slower. Omit to use the preset default."
+          },
+          "guidance_scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guidance Scale",
+            "description": "Override classifier-free guidance strength (xl-base default 7.0). Higher follows the prompt more strictly. Ignored by `turbo`, which runs without CFG. Omit to use the preset default."
+          },
+          "shift": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift",
+            "description": "Override the timestep schedule shift. 3.0 is correct; values near 1.0 produce noisy output. Omit to use the preset default."
+          },
+          "source": {
+            "$ref": "#/components/schemas/FileRef",
+            "description": "Source audio to repaint (Files-API file id, http(s) URL, or data URL). POST the WAV to /v1/files first to get a file id."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Style description for the repainted section (the SOUND to apply)."
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Start of the section to regenerate, in seconds from the track start."
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "End of the section, in seconds. `-1` repaints from `start` to the end of the track.",
+            "default": -1
+          },
+          "strength": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "description": "How aggressively to regenerate the section, in 0..1. 0 = subtle, blends into the rest; 1 = aggressive.",
+            "default": 0.5
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "source",
+          "prompt",
+          "start"
+        ],
+        "title": "RepaintRequest"
+      },
+      "TrackResponse": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "title": "Task",
+            "description": "Operation that produced the track: text2music, cover, or repaint."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved preset that produced the track (xl-base or turbo)."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced WAV. Fetch metadata at GET /v1/files/{id} or bytes at /download. This is also the artifact returned as raw bytes by a single-artifact sync call."
+          },
+          "audio_bytes": {
+            "type": "integer",
+            "title": "Audio Bytes",
+            "description": "Size of the produced WAV in bytes."
+          },
+          "src": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Src",
+            "description": "Files-API id of the source track. Present for cover/repaint; null for generate (which takes no source)."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (prompt, lyrics, duration, seed, inference_steps, guidance_scale, shift, …), so the result is reproducible."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/kiapi__api__audio__acestep___views__track_response___Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "task",
+          "model",
+          "file_id",
+          "audio_bytes",
+          "params",
+          "timings"
+        ],
+        "title": "TrackResponse",
+        "description": "Capability-specific ``result`` for a succeeded generate/cover/repaint job."
+      },
+      "_Stem": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "Stem name, e.g. vocals / drums / bass / other."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved preset that produced the stem."
+          },
+          "src": {
+            "type": "string",
+            "title": "Src",
+            "description": "Files-API id of the source track."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of this stem's WAV. Fetch metadata at GET /v1/files/{id} or bytes at /download."
+          },
+          "audio_bytes": {
+            "type": "integer",
+            "title": "Audio Bytes",
+            "description": "Size of the stem WAV in bytes."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters used to separate this stem."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/kiapi__api__audio__acestep___views__extract_response___Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "model",
+          "src",
+          "file_id",
+          "audio_bytes",
+          "params",
+          "timings"
+        ],
+        "title": "_Stem"
+      },
+      "kiapi__api__audio__acestep___views__extract_response___Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock separation time in seconds for this stem."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      },
+      "kiapi__api__audio__acestep___views__track_response___Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds (subprocess run only)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "acestep",
+  "x-kiapi-domain": "audio",
+  "x-kiapi-root-openapi": "/openapi.json"
+}
