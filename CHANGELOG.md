@@ -25,3 +25,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Declared `uv` in `mise.toml` so GitHub Actions installs it before running `uv sync`.
+- Moved PyPI publishing to a Linux runner while keeping macOS release checks and builds.
