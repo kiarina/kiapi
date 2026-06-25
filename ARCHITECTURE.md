@@ -22,6 +22,10 @@ kiapi/
     workdir/           # temporary working directory management
     net/               # network guard for user-provided URLs
     logging/           # logging setup
+    relay/             # relay abstraction, plugin registry, and local dispatcher
+
+  relay/
+    gcp/               # Firebase RTDB notifications + GCS payload transport
 
   capabilities/        # one package per family (dir == family)
     chat/              # OpenAI-compatible chat completions (multimodal / tool / stream)
@@ -143,6 +147,44 @@ request with mode=async
 Web search/fetch also runs through the worker. `memory.acquire` starts the
 resident SearXNG or Crawl4AI Docker subprocess on first use, waits for its
 healthcheck, and passes the local backend URL to the capability handler.
+
+## Remote Job Relay
+
+The relay is an optional background subsystem enabled by
+`KIAPI_RELAY_DEFAULT` or `kiapi run --relay ...`. `core/relay` defines the
+stable `Relay` / `RelayDelivery` protocols and plugin registry.
+`relay/gcp` implements the GCP transport.
+
+```text
+requester
+  → GCS request.json
+  → RTDB request notification
+      ┊
+GCP relay SSE listener
+  → RTDB queued
+  → local relay queue
+  → RTDB running
+  → ASGI dispatch to the in-process FastAPI app
+  → GCS response.body (binary only)
+  → GCS response.json (create-only generation precondition)
+  → atomic RTDB terminal response + request deletion
+```
+
+The listener runs independently from delivery processing, so it can queue new
+requests while the current request is running. The relay runner consumes
+deliveries serially. The API worker still controls GPU job serialization;
+relay progress represents bridge progress rather than internal job state.
+
+RTDB uses its REST streaming API with Google OAuth credentials. Terminal
+delivery uses a root-level multi-location `PATCH`, making response publication
+and request deletion atomic. GCS publishes body first and metadata last.
+`response.json` is the commit marker and uses `if_generation_match=0`.
+
+If `response.json` already exists when a queued delivery is consumed, the relay
+recovers its content type and size, republishes the terminal RTDB notification,
+and skips API dispatch. This provides at-least-once notification handling
+without intentionally repeating completed work. Duplicate kiapi processes can
+still execute concurrently, but only one can create the GCS commit marker.
 
 ## Models
 

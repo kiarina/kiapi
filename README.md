@@ -196,6 +196,44 @@ kiapi service stop
 kiapi service uninstall
 ```
 
+## Remote Job Relay
+
+The optional GCP relay lets a kiapi node inside a closed network receive API
+work without exposing an inbound socket. Firebase Realtime Database carries
+small notifications, while Cloud Storage carries request and response bodies.
+
+```sh
+export KIAPI_RELAY_GCP_NODE_ID="studio-1"
+export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
+export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
+export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
+
+# Uses Application Default Credentials by default.
+kiapi run --relay gcp
+```
+
+The requester writes
+`{prefix}/sessions/{session_id}/request.json` in GCS, then writes a notification
+to `{prefix}/nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
+`queued`, `running`, and the terminal result below the requester node's
+`responses` path.
+
+- Requests are dispatched directly to the in-process FastAPI app and handled
+  one at a time by the relay.
+- JSON responses use `response.json`. Binary responses write `response.body`
+  before `response.json`.
+- `response.json` uses a GCS create-only generation precondition. A completed
+  response found after restart is reported without executing the API again.
+- The terminal RTDB response and request deletion use one atomic multi-location
+  update.
+- Startup installs a prefix-scoped lifecycle rule that deletes session objects
+  after one day. Set `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE=false` when
+  infrastructure manages this rule.
+
+Use a dedicated bucket and narrowly scoped RTDB/GCS permissions. Google
+credentials are configured through
+[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
+
 ## Architecture
 
 > [!NOTE]

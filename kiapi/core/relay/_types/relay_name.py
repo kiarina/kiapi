@@ -1,0 +1,1 @@
+type RelayName = str

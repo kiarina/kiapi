@@ -22,6 +22,10 @@ kiapi/
     workdir/           # 実行中の一時作業ディレクトリ管理
     net/               # ネットワークガード（ユーザー指定 URL の SSRF 検証）
     logging/           # ロギング設定
+    relay/             # relay 抽象、plugin registry、process 内 dispatcher
+
+  relay/
+    gcp/               # Firebase RTDB 通知 + GCS payload transport
 
   capabilities/        # ファミリーごとに 1 パッケージ（dir == family）
     chat/              # OpenAI 互換 chat completions（マルチモーダル / tool / stream）
@@ -185,6 +189,43 @@ GPU を使うモデルだけでなく、Web backend のような常駐 subproces
 SearXNG / Crawl4AI は Docker container そのものとしてではなく、kiapi が所有する
 resident subprocess の payload として扱う。起動コマンドが `docker run --rm` なので、
 kiapi 停止や eviction で subprocess を止めれば container も掃除される。
+
+## Remote Job Relay
+
+relay は `KIAPI_RELAY_DEFAULT` または `kiapi run --relay ...` で有効化する optional
+background subsystem である。`core/relay` は安定した `Relay` / `RelayDelivery` protocol
+と plugin registry を定義し、`relay/gcp` が GCP transport を実装する。
+
+```text
+requester
+  → GCS request.json
+  → RTDB request notification
+      ┊
+GCP relay SSE listener
+  → RTDB queued
+  → local relay queue
+  → RTDB running
+  → process 内 FastAPI app へ ASGI dispatch
+  → GCS response.body（binary のみ）
+  → GCS response.json（create-only generation precondition）
+  → atomic RTDB terminal response + request deletion
+```
+
+listener は delivery processing と独立して動作するため、現在の request を実行中でも次の
+request を local queue に積める。relay runner は delivery を直列に消費する。GPU job の
+直列化は API worker が引き続き管理し、relay progress は内部 job state ではなく bridge
+の進捗を表す。
+
+RTDB には Google OAuth credential を使う REST streaming API でアクセスする。terminal
+delivery は root-level multi-location `PATCH` を使い、response 公開と request 削除を
+atomic に行う。GCS は body、metadata の順で公開する。`response.json` が commit marker
+であり、`if_generation_match=0` を使用する。
+
+queued delivery の消費時に `response.json` が存在する場合、content type と size を復旧し、
+terminal RTDB notification を再送して API dispatch を skip する。これにより、完了済み
+処理を意図的に繰り返さず at-least-once notification handling を実現する。同じ node ID の
+kiapi process が複数あれば実行は重複し得るが、GCS commit marker を作成できるのは 1
+process だけである。
 
 ---
 

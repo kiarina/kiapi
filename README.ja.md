@@ -197,6 +197,42 @@ kiapi service stop
 kiapi service uninstall
 ```
 
+## Remote Job Relay
+
+オプションの GCP relay を使うと、閉鎖ネットワーク内の kiapi node に inbound socket を
+公開せず API 処理を依頼できます。小さな通知は Firebase Realtime Database、request /
+response body は Cloud Storage で受け渡します。
+
+```sh
+export KIAPI_RELAY_GCP_NODE_ID="studio-1"
+export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
+export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
+export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
+
+# 既定では Application Default Credentials を使用
+kiapi run --relay gcp
+```
+
+requester は GCS の
+`{prefix}/sessions/{session_id}/request.json` を書き込んだ後、RTDB の
+`{prefix}/nodes/{node_id}/requests/{session_id}` へ通知を書き込みます。relay は
+requester node の `responses` path へ `queued`、`running`、terminal result を通知します。
+
+- request は process 内の FastAPI app へ直接 dispatch され、relay が 1 件ずつ処理します。
+- JSON response は `response.json`、binary response は `response.body` の後に
+  `response.json` を書き込みます。
+- `response.json` は GCS の create-only generation precondition で排他します。再起動後に
+  完了済み response が見つかった場合、API を再実行せず結果を再通知します。
+- terminal RTDB response の通知と request 削除は 1 回の atomic multi-location update
+  で行います。
+- 起動時に session object を 1 日後に削除する prefix 限定 lifecycle rule を設定します。
+  infrastructure 側で管理する場合は
+  `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE=false` を指定してください。
+
+専用 bucket と必要最小限の RTDB / GCS 権限を使用してください。Google credential は
+[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google)
+で設定します。
+
 ## Architecture
 
 > [!NOTE]

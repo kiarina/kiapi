@@ -111,6 +111,104 @@ kiapi.core.net:
   # allow_private_urls: false
 
 #--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+kiapi.core.relay:
+  # Default relay: RelaySpecifier | None
+  #   Relay specifier started with the API server.
+  #   Leave unset to disable remote relay processing.
+  # default: 
+  #--------------------------------------------------
+  # Relay presets: dict[RelayName, str]
+  #   Built-in relay factories keyed by relay name.
+  # presets:
+  #   gcp: "kiapi.relay.gcp:create_gcp_relay"
+  #--------------------------------------------------
+  # Custom relays: dict[RelayName, str]
+  #   Custom relay factories keyed by relay name.
+  # customs: {}
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+kiapi.relay.gcp:
+  # Relay node ID: str
+  #   Unique RTDB node ID for this kiapi instance.
+  node_id:
+  #--------------------------------------------------
+  # Firebase Realtime Database URL: str
+  #   Database root URL, for example https://project.firebaseio.com.
+  database_url:
+  #--------------------------------------------------
+  # GCS bucket: str
+  #   Bucket used for relay request and response payloads.
+  bucket:
+  #--------------------------------------------------
+  # Object and RTDB prefix: str
+  #   Shared prefix used below both RTDB and GCS roots.
+  # prefix: kiapi
+  #--------------------------------------------------
+  # Google settings key: str | None
+  #   Named kiarina.lib.google settings entry used for RTDB and GCS access.
+  # google_settings_key: 
+  #--------------------------------------------------
+  # GCS lifecycle age days: int
+  #   Delete relay session objects after this many days. The matching bucket lifecycle rule is installed at startup.
+  # lifecycle_age_days: 1
+  #--------------------------------------------------
+  # Manage GCS lifecycle: bool
+  #   Install the prefix-scoped delete lifecycle rule at startup.
+  # manage_bucket_lifecycle: true
+  #--------------------------------------------------
+  # RTDB reconnect delay seconds: float
+  #   Delay before reconnecting the RTDB SSE watch after an error.
+  # reconnect_delay_s: 1.0
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+kiarina.lib.google:
+  # default: default
+  configs:
+    default:
+      # type: Literal['default', 'service_account', 'user_account', 'api_key']
+      # type: default
+      #--------------------------------------------------
+      # project_id: str | None
+      # project_id: 
+      #--------------------------------------------------
+      # impersonate_service_account: str | None
+      # impersonate_service_account: 
+      #--------------------------------------------------
+      # scopes: list[str]
+      # scopes: []
+      #--------------------------------------------------
+      # service_account_email: str | None
+      # service_account_email: 
+      #--------------------------------------------------
+      # service_account_file: str | None
+      # service_account_file: 
+      #--------------------------------------------------
+      # service_account_data: SecretStr | None
+      # service_account_data: 
+      #--------------------------------------------------
+      # user_account_email: str | None
+      # user_account_email: 
+      #--------------------------------------------------
+      # client_secret_file: str | None
+      # client_secret_file: 
+      #--------------------------------------------------
+      # client_secret_data: SecretStr | None
+      # client_secret_data: 
+      #--------------------------------------------------
+      # authorized_user_file: str | None
+      # authorized_user_file: 
+      #--------------------------------------------------
+      # authorized_user_data: SecretStr | None
+      # authorized_user_data: 
+      #--------------------------------------------------
+      # api_key: SecretStr | None
+      # api_key: 
+  # aliases: {}
+
+#--------------------------------------------------------------------------------
 # Settings for Chat Completions generation defaults and input-processing limits.
 #--------------------------------------------------------------------------------
 kiapi.capabilities.chat:

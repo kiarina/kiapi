@@ -11,6 +11,8 @@ from kiapi.core.app import AppContext
 from kiapi.core.capability import capability_spec_registry
 from kiapi.core.logging import setup_logger
 from kiapi.core.model import model_registry
+from kiapi.core.relay import RelayRunner, relay_registry
+from kiapi.core.relay import settings_manager as relay_settings_manager
 from kiapi.core.worker import create_worker
 
 from .audio.acestep.router import router as acestep_router
@@ -65,10 +67,19 @@ async def lifespan(app: FastAPI):  # type: ignore
     app.state.worker = worker
 
     worker.start()
-
     asyncio.create_task(worker.warmup())  # noqa: RUF006
 
+    relay_runner: RelayRunner | None = None
+
+    if relay_settings_manager.get_settings().default is not None:
+        relay_runner = RelayRunner(relay_registry.resolve(), app)
+        relay_runner.start()
+        app.state.relay_runner = relay_runner
+
     yield
+
+    if relay_runner is not None:
+        await relay_runner.stop()
 
     await worker.stop()
 
