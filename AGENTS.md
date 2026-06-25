@@ -18,6 +18,12 @@
 - https://github.com/kiarina/crystal-architecture
 - https://github.com/kiarina/pydantic-settings-manager
 
+プラグイン機能やシングルトンの実装を行う場合、下記を把握してください。
+- https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-utils-common
+
+Google 認証が必要な機能を実装する場合、下記を把握してください。
+- https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google
+
 ## README の運用
 
 - 常に `README.md` と `README.ja.md` の両方を作成します。
