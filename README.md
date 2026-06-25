@@ -234,6 +234,9 @@ Use a dedicated bucket and narrowly scoped RTDB/GCS permissions. Google
 credentials are configured through
 [`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
 
+See [GCP Relay setup](kiapi/relay/gcp/README.md) for resource creation, IAM,
+authentication, configuration, and verification steps.
+
 ## Architecture
 
 > [!NOTE]

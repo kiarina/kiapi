@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 from google.api_core.exceptions import PreconditionFailed
+from google.auth.credentials import with_scopes_if_required
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.cloud import storage  # type: ignore[import-untyped]
 from kiarina.lib.google import Credentials, get_credentials
@@ -26,6 +27,12 @@ from .gcp_relay_delivery import GCPRelayDelivery
 
 logger = logging.getLogger(__name__)
 
+_GCP_SCOPES = [
+    "https://www.googleapis.com/auth/cloud-platform",
+    "https://www.googleapis.com/auth/firebase.database",
+    "https://www.googleapis.com/auth/userinfo.email",
+]
+
 
 class GCPRelay:
     def __init__(self, settings: GCPRelaySettings) -> None:
@@ -33,9 +40,13 @@ class GCPRelay:
         google_settings = google_settings_manager.get_settings(
             settings.google_settings_key
         )
-        self._credentials: Credentials = get_credentials(
+        credentials = get_credentials(
             settings=google_settings,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            scopes=_GCP_SCOPES,
+        )
+        self._credentials: Credentials = with_scopes_if_required(
+            credentials,
+            _GCP_SCOPES,
         )
         self._storage_client = storage.Client(
             project=google_settings.project_id,

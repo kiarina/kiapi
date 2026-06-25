@@ -5,6 +5,7 @@ from typing import Any
 
 from kiapi.core.relay import RelayFileBody, RelayJsonBody, RelayResponse
 from kiapi.relay.gcp import GCPRelay, GCPRelaySettings
+from kiapi.relay.gcp._services.gcp_relay import _GCP_SCOPES
 
 
 class _Blob:
@@ -122,3 +123,11 @@ def test_rtdb_url_uses_firebase_root_json_path() -> None:
         relay._rtdb_url("private/kiapi/nodes/worker/requests")
         == "https://example.firebaseio.com/private/kiapi/nodes/worker/requests.json"
     )
+
+
+def test_gcp_scopes_cover_storage_and_rtdb_rest() -> None:
+    assert _GCP_SCOPES == [
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/firebase.database",
+        "https://www.googleapis.com/auth/userinfo.email",
+    ]
