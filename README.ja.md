@@ -31,20 +31,26 @@ make
 make test
 ```
 
-各パッケージは独立してバージョン管理・リリースします。各パッケージの
-`CHANGELOG.md` と [Releasing](#releasing) を参照してください。
+ワークスペース全体で単一のバージョンを共有し、ルートの `VERSION` ファイルで管理します。
+ルートの `CHANGELOG.md` にプロジェクト全体の変更を記録し、各パッケージも個別の
+`CHANGELOG.md` を持ちます。詳細は [Releasing](#releasing) を参照してください。
 
 ## Releasing
 
-リリースはパッケージ単位で、`<package>-v<version>` 形式のタグを push して実行します。
+リリースは単一の共有バージョンと `v<version>` 形式のタグ 1 本で実行します。
+`bump-version` は CHANGELOG に未リリースの変更があるパッケージを自動検出し、
+それらだけを新バージョンへ bump します（変更のないパッケージは据え置きです）。
 
 ```bash
-make bump-version PKG=kiapi VERSION=0.2.1
+make bump-version VERSION=0.3.0
 # 差分を確認してから:
-git add packages/kiapi/pyproject.toml packages/kiapi/CHANGELOG.md uv.lock
-git commit -m "chore(release): prepare kiapi-v0.2.1"
-git tag kiapi-v0.2.1 && git push origin main --tags
+git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock
+git commit -m "chore(release): prepare v0.3.0"
+git tag v0.3.0 && git push origin main --tags
 ```
+
+タグを push するとリリースワークフローが起動し、対象パッケージをビルドして、
+ルートの `CHANGELOG.md` から単一の GitHub Release を作成し、成果物を PyPI に公開します。
 
 ## License
 

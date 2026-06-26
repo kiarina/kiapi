@@ -31,20 +31,27 @@ make
 make test
 ```
 
-Each package is versioned and released independently. See each package's
-`CHANGELOG.md` and the [Releasing](#releasing) section.
+The whole workspace shares a single version, tracked in the root `VERSION`
+file. The root `CHANGELOG.md` records project-wide notes; each package keeps its
+own `CHANGELOG.md`. See the [Releasing](#releasing) section.
 
 ## Releasing
 
-Releases are per-package and triggered by pushing a tag named `<package>-v<version>`:
+Releases use one shared version and a single `v<version>` tag. `bump-version`
+detects every package that has unreleased changelog entries and bumps only those
+to the new version; packages without changes keep their current version.
 
 ```bash
-make bump-version PKG=kiapi VERSION=0.2.1
+make bump-version VERSION=0.3.0
 # review the diff, then:
-git add packages/kiapi/pyproject.toml packages/kiapi/CHANGELOG.md uv.lock
-git commit -m "chore(release): prepare kiapi-v0.2.1"
-git tag kiapi-v0.2.1 && git push origin main --tags
+git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock
+git commit -m "chore(release): prepare v0.3.0"
+git tag v0.3.0 && git push origin main --tags
 ```
+
+Pushing the tag triggers the release workflow, which builds the selected
+packages, creates a single GitHub Release from the root `CHANGELOG.md`, and
+publishes the artifacts to PyPI.
 
 ## License
 

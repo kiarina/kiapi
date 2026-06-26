@@ -99,13 +99,16 @@ config:
 pages:
 	uv run python scripts/build_pages.py
 #--------------------------------------------------
-# Release targets are package-scoped. Pass PKG=<package> (and VERSION for bump).
+# Releases use a single repository version (VERSION file) and a v<version> tag.
+# `bump-version` updates VERSION plus the pyproject/CHANGELOG of every package
+# that has unreleased changes. `build`/`publish` accept an optional PKG=<package>
+# for local one-off builds.
 # Examples:
-#   make bump-version PKG=kiapi VERSION=0.2.1
+#   make bump-version VERSION=0.3.0
 #   make build PKG=kiapi-relay
 #   make publish PKG=kiapi-proxy
 bump-version:
-	mise run bump-version $(PKG) $(VERSION)
+	mise run bump-version $(VERSION)
 clean:
 	mise run clean
 build:
