@@ -630,7 +630,7 @@ wheels = [
 
 [[package]]
 name = "kiapi"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
