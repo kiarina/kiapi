@@ -9,6 +9,20 @@
 - Configuration management uses Pydantic Settings Manager.
   - [kiarina/pydantic-settings-manager](https://github.com/kiarina/pydantic-settings-manager)
 
+The repository is a uv workspace with three independently versioned packages:
+
+```sh
+packages/
+  kiapi/        # src/kiapi/        the MLX inference API server (Apple Silicon)
+  kiapi-relay/  # src/kiapi_relay/  relay transport (platform-agnostic, gcp extra)
+  kiapi-proxy/  # src/kiapi_proxy/  HTTP proxy that relays requests to kiapi
+```
+
+`kiapi` and `kiapi-proxy` both depend on `kiapi-relay`; `kiapi-proxy` does not
+depend on `kiapi`, so it installs without MLX and runs anywhere.
+
+The `kiapi` package (`packages/kiapi/src/kiapi`) is structured as:
+
 ```sh
 kiapi/
   core/                # capability-independent foundation
@@ -22,10 +36,6 @@ kiapi/
     workdir/           # temporary working directory management
     net/               # network guard for user-provided URLs
     logging/           # logging setup
-    relay/             # relay abstraction, plugin registry, and local dispatcher
-
-  relay/
-    gcp/               # Firebase RTDB notifications + GCS payload transport
 
   capabilities/        # one package per family (dir == family)
     chat/              # OpenAI-compatible chat completions (multimodal / tool / stream)
@@ -150,11 +160,13 @@ healthcheck, and passes the local backend URL to the capability handler.
 
 ## Remote Job Relay
 
-The relay is an optional background subsystem enabled by
-`KIAPI_RELAY_DEFAULT` or `kiapi run --relay ...`. `core/relay` defines the
-stable `Relay` / `RelayDelivery` protocols and plugin registry. `relay/gcp`
-implements the GCP transport, and `relay/local` implements a filesystem-backed
-transport for local verification.
+The relay lives in the separate `kiapi-relay` package and is an optional
+background subsystem enabled by `KIAPI_RELAY_DEFAULT` or `kiapi run --relay ...`.
+`kiapi_relay` defines the stable `Relay` / `RelayDelivery` protocols, the request
+client, and the plugin registry. `kiapi_relay.gcp` implements the GCP transport,
+and `kiapi_relay.local` implements a filesystem-backed transport for local
+verification. The `kiapi-proxy` package uses the same `kiapi_relay` request
+client to forward HTTP requests to a kiapi instance over the relay.
 
 ```text
 requester
