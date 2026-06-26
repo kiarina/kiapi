@@ -204,6 +204,13 @@ Official references:
 
 GCPRelay obtains credentials through
 [`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
+Install kiapi with the `relay-gcp` extra so the Google Cloud Storage client and
+Google authentication helper are available:
+
+```sh
+python3.12 -m pip install --upgrade "kiapi[relay-gcp]"
+uv tool install --python 3.12 "kiapi[relay-gcp]"
+```
 
 It requests these OAuth scopes:
 

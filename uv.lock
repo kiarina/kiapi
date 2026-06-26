@@ -635,9 +635,7 @@ source = { editable = "." }
 dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-cloud-storage", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiarina-lib-google", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mflux", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mlx-audiocraft", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -659,6 +657,12 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 
+[package.optional-dependencies]
+relay-gcp = [
+    { name = "google-cloud-storage", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiarina-lib-google", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "httpx2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -678,9 +682,9 @@ lint = [
 requires-dist = [
     { name = "click" },
     { name = "fastapi", specifier = "<0.137" },
-    { name = "google-cloud-storage", specifier = ">=3.7.0" },
+    { name = "google-cloud-storage", marker = "extra == 'relay-gcp'", specifier = ">=3.7.0" },
     { name = "httpx" },
-    { name = "kiarina-lib-google", specifier = ">=2.2.1" },
+    { name = "kiarina-lib-google", marker = "extra == 'relay-gcp'", specifier = ">=2.2.1" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", specifier = ">=0.18.0" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
@@ -701,6 +705,7 @@ requires-dist = [
     { name = "torchvision" },
     { name = "uvicorn", extras = ["standard"] },
 ]
+provides-extras = ["relay-gcp"]
 
 [package.metadata.requires-dev]
 dev = [

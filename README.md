@@ -201,6 +201,12 @@ kiapi service uninstall
 The optional GCP relay lets a kiapi node inside a closed network receive API
 work without exposing an inbound socket. Firebase Realtime Database carries
 small notifications, while Cloud Storage carries request and response bodies.
+Install kiapi with the `relay-gcp` extra to enable it:
+
+```sh
+python3.12 -m pip install --upgrade "kiapi[relay-gcp]"
+uv tool install --python 3.12 "kiapi[relay-gcp]"
+```
 
 ```sh
 export KIAPI_RELAY_GCP_NODE_ID="studio-1"

@@ -46,8 +46,6 @@ dependencies = [
     "pillow",
     "psutil", # process RSS measurement (framework-agnostic fallback)
     "httpx", # web search capability: async HTTP client for the SearXNG backend
-    "google-cloud-storage>=3.7.0",
-    "kiarina-lib-google>=2.2.1",
     "kiarina-utils-common>=2.2.0",
     # --- embedding capability (mlx-embeddings) ---
     "mlx-embeddings>=0.1.0",
@@ -70,6 +68,12 @@ dependencies = [
     "torchaudio",
     "mflux>=0.18.0",
     "pydantic-settings-manager>=3.7.0",
+]
+
+[project.optional-dependencies]
+relay-gcp = [
+    "google-cloud-storage>=3.7.0",
+    "kiarina-lib-google>=2.2.1",
 ]
 
 [project.scripts]

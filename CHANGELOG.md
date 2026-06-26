@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Moved GCP relay dependencies into the optional `relay-gcp` extra.
 - Updated the minimum `pydantic-settings-manager` dependency to 3.7.0.
 
 ### Fixed
