@@ -17,6 +17,7 @@ path. It is heavier than verify_local.py.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import os
 import sys
@@ -24,14 +25,17 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
-from _client import (
-    LocalRelayClient,
-    RelayResult,
+from _helpers import (
     assert_json,
+    consume_body,
     data_url,
     query_path,
+    relay_request,
     run_checks,
 )
+
+from kiapi.core.relay import Relay
+from kiapi.relay.local import create_local_relay
 
 HERE = Path(__file__).resolve().parents[2]
 ASSETS = Path(os.environ.get("KIAPI_ASSETS_DIR", HERE / "tests" / "assets"))
@@ -39,34 +43,35 @@ IMAGE = Path(os.environ.get("KIAPI_IMAGE", ASSETS / "miineko.png"))
 UPLOAD_BYTES = b"relay multipart upload\n"
 
 
-def main() -> int:
+async def main() -> int:
     fast = "--fast" in sys.argv
-    client = LocalRelayClient()
+    client = create_local_relay()
     state: dict[str, Any] = {}
 
-    def health() -> str:
-        result = client.request("GET", "/health", timeout_s=60.0)
+    async def health() -> str:
+        result = await relay_request(client, "GET", "/health", timeout_s=60.0)
         body = assert_json(result)
         assert result.status == 200, result.status
         assert body["status"] == "ok", body
         return "GET /health"
 
-    def files_list() -> str:
-        result = client.request("GET", "/v1/files", timeout_s=60.0)
+    async def files_list() -> str:
+        result = await relay_request(client, "GET", "/v1/files", timeout_s=60.0)
         body = assert_json(result)
         assert result.status == 200, result.status
         assert body["object"] == "list", body
         return f"{len(body['data'])} files listed"
 
-    def jobs_list() -> str:
-        result = client.request("GET", "/v1/jobs", timeout_s=60.0)
+    async def jobs_list() -> str:
+        result = await relay_request(client, "GET", "/v1/jobs", timeout_s=60.0)
         body = assert_json(result)
         assert result.status == 200, result.status
         assert body["object"] == "list", body
         return f"{len(body['data'])} jobs listed"
 
-    def files_upload() -> str:
-        result = client.request(
+    async def files_upload() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/files",
             headers={"Accept": "application/json"},
@@ -92,8 +97,9 @@ def main() -> int:
         state["uploaded_file_id"] = body["file_id"]
         return f"file_id={body['file_id']}"
 
-    def chat_text() -> str:
-        result = client.request(
+    async def chat_text() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/chat/completions",
             body={
@@ -107,8 +113,9 @@ def main() -> int:
         assert body["choices"][0]["message"]["content"], body
         return "non-stream text completion"
 
-    def chat_media() -> str:
-        result = client.request(
+    async def chat_media() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/chat/completions",
             body={
@@ -135,8 +142,9 @@ def main() -> int:
         assert body["choices"][0]["message"]["content"], body
         return "image input completion"
 
-    def chat_stream() -> str:
-        result = client.request(
+    async def chat_stream() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/chat/completions",
             body={
@@ -152,8 +160,9 @@ def main() -> int:
         assert body and body[-1] == "[DONE]", body[-3:]
         return f"{len(body)} stream events"
 
-    def embedding_text() -> str:
-        result = client.request(
+    async def embedding_text() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/embedding",
             body={"text": "relay text embedding"},
@@ -164,8 +173,9 @@ def main() -> int:
         assert body["dimension"] == len(body["embedding"]), body
         return f"dimension={body['dimension']}"
 
-    def embedding_image() -> str:
-        result = client.request(
+    async def embedding_image() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/embedding",
             body={"model": "vl", "image": data_url(IMAGE, "image/png")},
@@ -176,8 +186,9 @@ def main() -> int:
         assert body["dimension"] == len(body["embedding"]), body
         return f"dimension={body['dimension']}"
 
-    def ernie_generate() -> str:
-        result = client.request(
+    async def ernie_generate() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/image/ernie/generate",
             headers={"Accept": "application/json"},
@@ -199,8 +210,9 @@ def main() -> int:
         state["image_job_id"] = body["id"]
         return f"file_id={state['image_file_id']}"
 
-    def ernie_edit() -> str:
-        result = client.request(
+    async def ernie_edit() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/image/ernie/edit",
             headers={"Accept": "application/json"},
@@ -223,8 +235,9 @@ def main() -> int:
         assert body["artifacts"], body
         return f"file_id={body['artifacts'][0]}"
 
-    def audiogen_sync() -> str:
-        result = client.request(
+    async def audiogen_sync() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/audio/audiogen/generate",
             headers={"Accept": "application/json"},
@@ -242,8 +255,9 @@ def main() -> int:
         state["audio_file_id"] = body["artifacts"][0]
         return f"file_id={state['audio_file_id']}"
 
-    def audiogen_async() -> str:
-        result = client.request(
+    async def audiogen_async() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/audio/audiogen/generate",
             headers={"Accept": "application/json"},
@@ -257,13 +271,14 @@ def main() -> int:
         )
         body = assert_json(result)
         assert result.status == 202, result.status
-        job = _poll_job(client, body["job_id"], timeout_s=900.0)
+        job = await _poll_job(client, body["job_id"], timeout_s=900.0)
         assert job["status"] == "succeeded", job
         state["async_job_id"] = body["job_id"]
         return f"job_id={body['job_id']}"
 
-    def ltx2_text2video() -> str:
-        result = client.request(
+    async def ltx2_text2video() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/video/ltx2/generate",
             headers={"Accept": "application/json"},
@@ -287,8 +302,9 @@ def main() -> int:
         state["video_file_id"] = body["artifacts"][0]
         return f"file_id={state['video_file_id']}"
 
-    def ltx2_image2video() -> str:
-        result = client.request(
+    async def ltx2_image2video() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/video/ltx2/generate",
             headers={"Accept": "application/json"},
@@ -312,8 +328,9 @@ def main() -> int:
         assert body["result"]["mode"] == "I2V", body
         return f"file_id={body['artifacts'][0]}"
 
-    def web_search() -> str:
-        result = client.request(
+    async def web_search() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/web/search",
             body={"query": "kiapi github", "max_results": 3},
@@ -324,56 +341,66 @@ def main() -> int:
         assert isinstance(body["results"], list), body
         return f"{len(body['results'])} results"
 
-    def web_fetch() -> str:
-        result = client.request(
+    async def web_fetch() -> str:
+        result = await relay_request(
+            client,
             "GET",
             query_path("/v1/web/fetch", url="https://example.com"),
             headers={"Accept": "text/markdown"},
             timeout_s=300.0,
         )
         assert result.status == 200, result.status
-        content = _body_bytes(result)
+        content = consume_body(result)
         assert b"Example Domain" in content, content[:120]
         file_id = result.headers.get("x-kiapi-file-id")
         assert file_id, result.headers
         state["fetch_file_id"] = file_id
         return f"file_id={file_id}"
 
-    def file_metadata_download_delete() -> str:
+    async def file_metadata_download_delete() -> str:
         file_id = (
             state.get("uploaded_file_id")
             or state.get("fetch_file_id")
             or state.get("image_file_id")
         )
         assert file_id, "no file_id captured from earlier checks"
-        metadata = client.request("GET", f"/v1/files/{file_id}", timeout_s=60.0)
+        metadata = await relay_request(
+            client, "GET", f"/v1/files/{file_id}", timeout_s=60.0
+        )
         body = assert_json(metadata)
         assert metadata.status == 200, metadata.status
         assert body["file_id"] == file_id, body
 
-        download = client.request(
-            "GET", f"/v1/files/{file_id}/download", timeout_s=120.0
+        download = await relay_request(
+            client, "GET", f"/v1/files/{file_id}/download", timeout_s=120.0
         )
         assert download.status == 200, download.status
-        assert download.body, "empty download"
+        content = consume_body(download)
+        assert content, "empty download"
         if file_id == state.get("uploaded_file_id"):
-            assert download.body == UPLOAD_BYTES, download.body
+            assert content == UPLOAD_BYTES, content
 
-        deleted = client.request("DELETE", f"/v1/files/{file_id}", timeout_s=60.0)
+        deleted = await relay_request(
+            client, "DELETE", f"/v1/files/{file_id}", timeout_s=60.0
+        )
         deleted_body = assert_json(deleted)
         assert deleted.status == 200, deleted.status
         assert deleted_body["deleted"] is True, deleted_body
         return f"metadata/download/delete {file_id}"
 
-    def job_get_delete() -> str:
+    async def job_get_delete() -> str:
         job_id = state.get("async_job_id") or state.get("image_job_id")
         assert job_id, "no job_id captured from earlier checks"
-        result = client.request("GET", f"/v1/jobs/{job_id}", timeout_s=60.0)
+        result = await relay_request(
+            client, "GET", f"/v1/jobs/{job_id}", timeout_s=60.0
+        )
         body = assert_json(result)
         assert result.status == 200, result.status
         assert body["id"] == job_id, body
 
-        deleted = client.request("DELETE", f"/v1/jobs/{job_id}", timeout_s=60.0)
+        deleted = await relay_request(
+            client, "DELETE", f"/v1/jobs/{job_id}", timeout_s=60.0
+        )
         deleted_body = assert_json(deleted)
         assert deleted.status == 200, deleted.status
         assert deleted_body["deleted"] is True, deleted_body
@@ -401,18 +428,15 @@ def main() -> int:
         ("core /v1/jobs get/delete", job_get_delete),
     ]
 
-    try:
-        return run_checks(checks, fast=fast)
-    finally:
-        client.close()
+    return await run_checks(checks, fast=fast)
 
 
-def _poll_job(
-    client: LocalRelayClient, job_id: str, *, timeout_s: float
-) -> dict[str, Any]:
-    deadline = time.time() + timeout_s
-    while time.time() < deadline:
-        result = client.request("GET", f"/v1/jobs/{job_id}", timeout_s=60.0)
+async def _poll_job(client: Relay, job_id: str, *, timeout_s: float) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        result = await relay_request(
+            client, "GET", f"/v1/jobs/{job_id}", timeout_s=60.0
+        )
         body = assert_json(result)
         if body["status"] not in {"queued", "running"}:
             return cast(dict[str, Any], body)
@@ -422,15 +446,9 @@ def _poll_job(
             print(f"  job {job_id}: {progress * 100:.1f}% {label}".rstrip())
         else:
             print(f"  job {job_id}: {body['status']}")
-        time.sleep(1.0)
+        await asyncio.sleep(1.0)
     raise TimeoutError(f"job {job_id} did not finish in {timeout_s}s")
 
 
-def _body_bytes(result: RelayResult) -> bytes:
-    body = result.body
-    assert body, "missing response body"
-    return body
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

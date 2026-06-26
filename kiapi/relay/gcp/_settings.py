@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings_manager import SettingsManager
@@ -12,6 +14,11 @@ class GCPRelaySettings(BaseSettings):
     node_id: str = Field(
         title="Relay node ID",
         description="Unique RTDB node ID for this kiapi instance.",
+    )
+    source_node_id: str = Field(
+        default_factory=lambda: f"node-{uuid.uuid4().hex[:8]}",
+        title="Relay source node ID",
+        description="Identifies this client when issuing relay requests.",
     )
     database_url: str = Field(
         title="Firebase Realtime Database URL",
@@ -53,12 +60,18 @@ class GCPRelaySettings(BaseSettings):
         title="RTDB reconnect delay seconds",
         description="Delay before reconnecting the RTDB SSE watch after an error.",
     )
+    request_poll_interval_s: float = Field(
+        default=0.5,
+        gt=0,
+        title="RTDB request poll interval seconds",
+        description="Delay between response polls when issuing relay requests.",
+    )
 
-    @field_validator("node_id")
+    @field_validator("node_id", "source_node_id")
     @classmethod
     def validate_node_id(cls, value: str) -> str:
         if not value or "/" in value or value in {".", ".."}:
-            raise ValueError("node_id must be a non-empty RTDB path segment")
+            raise ValueError("node id must be a non-empty RTDB path segment")
         return value
 
     @field_validator("database_url")

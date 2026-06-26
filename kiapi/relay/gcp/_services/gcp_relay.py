@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -18,7 +19,10 @@ from kiapi.core.relay import (
     RelayFileBody,
     RelayJsonBody,
     RelayRequest,
+    RelayRequestError,
     RelayResponse,
+    build_relay_response,
+    new_relay_session_id,
 )
 
 from .._schemas.gcp_relay_notification import GCPRelayNotification
@@ -60,9 +64,7 @@ class GCPRelay:
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         if self.settings.manage_bucket_lifecycle:
             await asyncio.to_thread(self._ensure_bucket_lifecycle)
-        self._http = httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=30.0, read=None, write=30.0, pool=30.0)
-        )
+        self._ensure_http()
         listener = asyncio.create_task(
             self._listen_forever(),
             name="kiapi-relay-gcp-listener",
@@ -101,6 +103,94 @@ class GCPRelay:
             listener.cancel()
             await asyncio.gather(listener, return_exceptions=True)
             await self._http.aclose()
+
+    async def request(
+        self,
+        request: RelayRequest,
+        *,
+        timeout_s: float = 1800.0,
+    ) -> RelayResponse:
+        self._ensure_http()
+        session_id = new_relay_session_id()
+        await asyncio.to_thread(self._upload_request, session_id, request)
+        await self._put_request_notification(session_id)
+
+        notification = await self._wait_for_response(session_id, timeout_s)
+        if notification.get("status") == "failed":
+            raise RelayRequestError(
+                RelayError.model_validate(notification.get("error") or {})
+            )
+        return await asyncio.to_thread(self._read_response, session_id)
+
+    async def aclose(self) -> None:
+        if hasattr(self, "_http"):
+            await self._http.aclose()
+            del self._http
+
+    def _ensure_http(self) -> None:
+        if not hasattr(self, "_http"):
+            self._http = httpx.AsyncClient(
+                timeout=httpx.Timeout(connect=30.0, read=None, write=30.0, pool=30.0)
+            )
+
+    def _upload_request(self, session_id: str, request: RelayRequest) -> None:
+        self._bucket.blob(self._request_object(session_id)).upload_from_string(
+            request.model_dump_json().encode(),
+            content_type="application/json",
+        )
+
+    async def _put_request_notification(self, session_id: str) -> None:
+        url = self._rtdb_url(f"{self._requests_path()}/{session_id}")
+        headers = await self._authorized_headers("PUT", url)
+        response = await self._http.put(
+            url,
+            headers=headers,
+            json={
+                "session_id": session_id,
+                "source_node_id": self.settings.source_node_id,
+            },
+        )
+        response.raise_for_status()
+
+    async def _wait_for_response(
+        self,
+        session_id: str,
+        timeout_s: float,
+    ) -> dict[str, Any]:
+        path = (
+            f"{self.settings.prefix}/nodes/{self.settings.source_node_id}"
+            f"/responses/{session_id}"
+        )
+        deadline = time.monotonic() + timeout_s
+        last_status: str | None = None
+        while time.monotonic() < deadline:
+            payload = await self._get_json(path)
+            if isinstance(payload, dict):
+                status = payload.get("status")
+                if status in {"succeeded", "failed"}:
+                    return payload
+                if status != last_status:
+                    logger.info("relay %s: %s", session_id, status)
+                    last_status = status
+            await asyncio.sleep(self.settings.request_poll_interval_s)
+        raise TimeoutError(f"relay session {session_id} did not finish in {timeout_s}s")
+
+    async def _get_json(self, path: str) -> Any:
+        url = self._rtdb_url(path)
+        headers = await self._authorized_headers("GET", url)
+        response = await self._http.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+    def _read_response(self, session_id: str) -> RelayResponse:
+        metadata = json.loads(
+            self._bucket.blob(
+                self._response_json_object(session_id)
+            ).download_as_bytes()
+        )
+        body_blob = self._bucket.blob(self._response_body_object(session_id))
+        body_bytes = body_blob.download_as_bytes() if body_blob.exists() else None
+        return build_relay_response(metadata, body_bytes)
 
     async def mark_running(self, notification: GCPRelayNotification) -> None:
         await self._put_response(
