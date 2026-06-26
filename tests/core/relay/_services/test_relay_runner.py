@@ -12,6 +12,7 @@ from kiapi.core.relay import (
     RelayMultipartBody,
     RelayMultipartFile,
     RelayRequest,
+    RelayResponse,
     RelayRunner,
 )
 
@@ -20,6 +21,14 @@ class _Relay:
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         queue: asyncio.Queue[RelayDelivery] = asyncio.Queue()
         yield await queue.get()
+
+    async def request(
+        self,
+        request: RelayRequest,
+        *,
+        timeout_s: float = 1800.0,
+    ) -> RelayResponse:
+        raise NotImplementedError
 
 
 def _app() -> FastAPI:

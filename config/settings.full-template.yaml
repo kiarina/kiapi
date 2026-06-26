@@ -135,6 +135,10 @@ kiapi.relay.gcp:
   #   Unique RTDB node ID for this kiapi instance.
   node_id:
   #--------------------------------------------------
+  # Relay source node ID: str
+  #   Identifies this client when issuing relay requests.
+  # source_node_id: node-a5a6c48e
+  #--------------------------------------------------
   # Firebase Realtime Database URL: str
   #   Database root URL, for example https://project.firebaseio.com.
   database_url:
@@ -162,6 +166,10 @@ kiapi.relay.gcp:
   # RTDB reconnect delay seconds: float
   #   Delay before reconnecting the RTDB SSE watch after an error.
   # reconnect_delay_s: 1.0
+  #--------------------------------------------------
+  # RTDB request poll interval seconds: float
+  #   Delay between response polls when issuing relay requests.
+  # request_poll_interval_s: 0.5
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
@@ -169,6 +177,10 @@ kiapi.relay.local:
   # Relay node ID: str
   #   Unique local relay node ID for this kiapi instance.
   # node_id: local
+  #--------------------------------------------------
+  # Relay source node ID: str
+  #   Identifies this client when issuing relay requests.
+  # source_node_id: node-1ee1aa9d
   #--------------------------------------------------
   # Local relay root: Path
   #   Directory used for local relay request and response payloads.

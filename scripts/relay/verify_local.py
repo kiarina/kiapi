@@ -14,24 +14,29 @@ Then run:
 
 from __future__ import annotations
 
+import asyncio
 import sys
 
-from _client import LocalRelayClient, assert_json, run_checks
+from _helpers import assert_json, consume_body, relay_request, run_checks
+
+from kiapi.core.relay import RelayFileBody, RelayRequest, RelayRequestError
+from kiapi.relay.local import create_local_relay
 
 
-def main() -> int:
+async def main() -> int:
     fast = "--fast" in sys.argv
-    client = LocalRelayClient()
+    client = create_local_relay()
 
-    def health() -> str:
-        result = client.request("GET", "/health", timeout_s=60.0)
+    async def health() -> str:
+        result = await relay_request(client, "GET", "/health", timeout_s=60.0)
         body = assert_json(result)
         assert result.status == 200, result.status
         assert body["status"] == "ok", body
         return "GET /health returned JSON"
 
-    def event_stream() -> str:
-        result = client.request(
+    async def event_stream() -> str:
+        result = await relay_request(
+            client,
             "POST",
             "/v1/chat/completions",
             headers={"Accept": "text/event-stream"},
@@ -48,23 +53,34 @@ def main() -> int:
         assert body and body[-1] == "[DONE]", body[-3:]
         return "text/event-stream was committed as JSON events"
 
-    def binary_body() -> str:
-        result = client.request(
+    async def binary_body() -> str:
+        result = await relay_request(
+            client,
             "GET",
             "/docs",
             headers={"Accept": "text/html"},
             timeout_s=60.0,
         )
         assert result.status == 200, result.status
-        assert result.body, "missing response.body"
-        assert result.content_type.startswith("text/html"), result.content_type
-        return f"response.body size={len(result.body)}"
+        assert isinstance(result.body, RelayFileBody), result.body
+        content_type = result.body.content_type
+        content = consume_body(result)
+        assert content, "missing response body"
+        assert content_type.startswith("text/html"), content_type
+        return f"response body size={len(content)}"
 
-    def invalid_request() -> str:
+    async def invalid_request() -> str:
+        bad = RelayRequest.model_construct(
+            method="GET",
+            path="https://example.com/health",
+            headers={},
+            body=None,
+            multipart=None,
+        )
         try:
-            client.request("GET", "https://example.com/health", timeout_s=30.0)
-        except RuntimeError as exc:
-            assert "invalid_relay_request" in str(exc), exc
+            await client.request(bad, timeout_s=30.0)
+        except RelayRequestError as exc:
+            assert exc.error.code == "invalid_relay_request", exc
             return "invalid non-local path failed through relay"
         raise AssertionError("invalid relay request unexpectedly succeeded")
 
@@ -75,11 +91,8 @@ def main() -> int:
         ("local invalid request failure", invalid_request),
     ]
 
-    try:
-        return run_checks(checks, fast=fast)
-    finally:
-        client.close()
+    return await run_checks(checks, fast=fast)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

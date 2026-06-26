@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import shutil
+import time
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,10 @@ from kiapi.core.relay import (
     RelayFileBody,
     RelayJsonBody,
     RelayRequest,
+    RelayRequestError,
     RelayResponse,
+    build_relay_response,
+    new_relay_session_id,
 )
 
 from .._schemas.local_relay_notification import LocalRelayNotification
@@ -61,6 +65,60 @@ class LocalRelay:
         finally:
             listener.cancel()
             await asyncio.gather(listener, return_exceptions=True)
+
+    async def request(
+        self,
+        request: RelayRequest,
+        *,
+        timeout_s: float = 1800.0,
+    ) -> RelayResponse:
+        self._ensure_directories()
+        session_id = new_relay_session_id()
+        self._session_dir(session_id).mkdir(parents=True, exist_ok=True)
+        self._request_path(session_id).write_bytes(request.model_dump_json().encode())
+        self._request_notification_path(session_id).write_bytes(
+            LocalRelayNotification(
+                session_id=session_id,
+                source_node_id=self.settings.source_node_id,
+            )
+            .model_dump_json()
+            .encode()
+        )
+
+        notification = await self._wait_for_response(session_id, timeout_s)
+        if notification.get("status") == "failed":
+            raise RelayRequestError(
+                RelayError.model_validate(notification.get("error") or {})
+            )
+        return await asyncio.to_thread(self._read_response, session_id)
+
+    async def _wait_for_response(
+        self,
+        session_id: str,
+        timeout_s: float,
+    ) -> dict[str, Any]:
+        path = self._responses_dir(self.settings.source_node_id) / f"{session_id}.json"
+        deadline = time.monotonic() + timeout_s
+        last_status: str | None = None
+        while time.monotonic() < deadline:
+            if path.exists():
+                payload = json.loads(path.read_bytes())
+                if not isinstance(payload, dict):
+                    raise ValueError(f"invalid relay notification: {payload!r}")
+                status = payload.get("status")
+                if status in {"succeeded", "failed"}:
+                    return payload
+                if status != last_status:
+                    logger.info("relay %s: %s", session_id, status)
+                    last_status = status
+            await asyncio.sleep(self.settings.poll_interval_s)
+        raise TimeoutError(f"relay session {session_id} did not finish in {timeout_s}s")
+
+    def _read_response(self, session_id: str) -> RelayResponse:
+        metadata = json.loads(self._response_json_path(session_id).read_bytes())
+        body_path = self._response_body_path(session_id)
+        body_bytes = body_path.read_bytes() if body_path.exists() else None
+        return build_relay_response(metadata, body_bytes)
 
     async def mark_running(self, notification: LocalRelayNotification) -> None:
         self._write_response_notification(
