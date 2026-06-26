@@ -1,0 +1,65 @@
+[project]
+name = "kiapi-proxy"
+version = "0.1.0"
+description = "Proxy server that forwards HTTP requests to a kiapi instance over a relay and returns the result (JSON, files, and chat event streams). Runs anywhere, no MLX required."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "kiarina", email = "kiarinadawa@gmail.com" }]
+keywords = [
+    "agent",
+    "api",
+    "fastapi",
+    "kiapi",
+    "proxy",
+    "relay",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "click",
+    "pydantic>=2",
+    "pydantic-settings",
+    "pydantic-settings-manager>=3.7.0",
+    "python-multipart",      # parse incoming multipart/form-data uploads
+    "kiapi-relay",
+]
+
+[project.optional-dependencies]
+gcp = [
+    "kiapi-relay[gcp]",
+]
+
+[project.scripts]
+kiapi-proxy = "kiapi_proxy.cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/kiarina/kiapi"
+Repository = "https://github.com/kiarina/kiapi"
+Changelog = "https://github.com/kiarina/kiapi/blob/main/packages/kiapi-proxy/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kiapi_proxy"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/tests",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true

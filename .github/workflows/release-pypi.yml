@@ -3,7 +3,10 @@ name: Release PyPI
 on:
   push:
     tags:
-      - "v*.*.*"
+      # Per-package tags: <package>-v<version>, e.g. kiapi-v0.2.1, kiapi-relay-v0.1.0
+      - "kiapi-v*.*.*"
+      - "kiapi-relay-v*.*.*"
+      - "kiapi-proxy-v*.*.*"
 
 permissions:
   contents: write
@@ -15,9 +18,24 @@ jobs:
     runs-on: macos-15
     env:
       MISE_GITHUB_ATTESTATIONS: "false"
+    outputs:
+      package: ${{ steps.parse.outputs.package }}
+      version: ${{ steps.parse.outputs.version }}
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Parse package and version from tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PACKAGE="${TAG%-v*}"
+          VERSION="${TAG##*-v}"
+          echo "Tag:     $TAG"
+          echo "Package: $PACKAGE"
+          echo "Version: $VERSION"
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Install mise
         uses: jdx/mise-action@v4
@@ -35,6 +53,9 @@ jobs:
       - name: Run release checks
         run: mise run ci
 
+      - name: Build the tagged package
+        run: mise run build "${{ steps.parse.outputs.package }}"
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -45,10 +66,10 @@ jobs:
       - name: Extract release notes from CHANGELOG
         id: changelog
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          echo "Version: $VERSION"
+          PACKAGE="${{ steps.parse.outputs.package }}"
+          VERSION="${{ steps.parse.outputs.version }}"
 
-          if mise run changelog:extract "$VERSION" --output /tmp/release_notes.md; then
+          if mise run changelog:extract "$PACKAGE" "$VERSION" --output /tmp/release_notes.md; then
             echo "use_auto_notes=false" >> "$GITHUB_OUTPUT"
             cat /tmp/release_notes.md
           else
@@ -72,7 +93,7 @@ jobs:
     needs: build
     environment:
       name: pypi
-      url: https://pypi.org/project/kiapi/
+      url: https://pypi.org/project/${{ needs.build.outputs.package }}/
 
     steps:
       - name: Download dist artifact

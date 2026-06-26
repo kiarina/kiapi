@@ -112,7 +112,7 @@ kiapi.core.net:
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
-kiapi.core.relay:
+kiapi_relay:
   # Default relay: RelaySpecifier | None
   #   Relay specifier started with the API server.
   #   Leave unset to disable remote relay processing.
@@ -121,8 +121,8 @@ kiapi.core.relay:
   # Relay presets: dict[RelayName, str]
   #   Built-in relay factories keyed by relay name.
   # presets:
-  #   gcp: "kiapi.relay.gcp:create_gcp_relay"
-  #   local: "kiapi.relay.local:create_local_relay"
+  #   gcp: "kiapi_relay.gcp:create_gcp_relay"
+  #   local: "kiapi_relay.local:create_local_relay"
   #--------------------------------------------------
   # Custom relays: dict[RelayName, str]
   #   Custom relay factories keyed by relay name.
@@ -130,14 +130,14 @@ kiapi.core.relay:
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
-kiapi.relay.gcp:
+kiapi_relay.gcp:
   # Relay node ID: str
   #   Unique RTDB node ID for this kiapi instance.
   node_id:
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-a5a6c48e
+  # source_node_id: node-c652a9f8
   #--------------------------------------------------
   # Firebase Realtime Database URL: str
   #   Database root URL, for example https://project.firebaseio.com.
@@ -173,14 +173,14 @@ kiapi.relay.gcp:
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
-kiapi.relay.local:
+kiapi_relay.local:
   # Relay node ID: str
   #   Unique local relay node ID for this kiapi instance.
   # node_id: local
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-1ee1aa9d
+  # source_node_id: node-397c7c37
   #--------------------------------------------------
   # Local relay root: Path
   #   Directory used for local relay request and response payloads.

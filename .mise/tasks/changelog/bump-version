@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-#MISE description="Move CHANGELOG.md Unreleased notes into a bumped version entry"
+#MISE description="Move a package CHANGELOG.md Unreleased notes into a bumped version entry"
+#USAGE arg "<package>" help="Workspace package (e.g. 'kiapi', 'kiapi-relay', 'kiapi-proxy')"
 #USAGE arg "<version>" help="Version to add (e.g. '0.2.0')"
 
 set -euo pipefail
 
+package="$usage_package"
 version="$usage_version"
 
 if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
@@ -12,20 +14,20 @@ if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
     exit 1
 fi
 
-changelog_file="CHANGELOG.md"
+changelog_file="packages/$package/CHANGELOG.md"
 
 if [ ! -f "$changelog_file" ]; then
-    echo "CHANGELOG.md not found"
+    echo "$changelog_file not found"
     exit 1
 fi
 
 if grep -q "^## \[$version\]" "$changelog_file"; then
-    echo "Version $version already exists in CHANGELOG.md"
+    echo "Version $version already exists in $changelog_file"
     exit 0
 fi
 
 if ! grep -q "^## \[Unreleased\]" "$changelog_file"; then
-    echo "No Unreleased section found in CHANGELOG.md"
+    echo "No Unreleased section found in $changelog_file"
     exit 1
 fi
 
@@ -117,4 +119,4 @@ END {
 
 mv "$temp_file" "$changelog_file"
 
-echo "CHANGELOG.md updated for $version ($current_date)."
+echo "$changelog_file updated for $version ($current_date)."

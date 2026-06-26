@@ -1,14 +1,30 @@
 #!/usr/bin/env bash
-#MISE description="Bump pyproject.toml version and move CHANGELOG.md Unreleased notes"
+#MISE description="Bump a package's pyproject.toml version and move its CHANGELOG.md Unreleased notes"
 
 set -euo pipefail
 
-if [ "$#" -gt 1 ]; then
-    echo "Usage: mise run bump-version [version]"
+if [ "$#" -gt 2 ]; then
+    echo "Usage: mise run bump-version <package> [version]"
+    echo "  package: kiapi | kiapi-relay | kiapi-proxy"
     exit 1
 fi
 
-version="${1:-}"
+package="${1:-}"
+version="${2:-}"
+
+if [ -z "$package" ]; then
+    read -r -p "Package (kiapi | kiapi-relay | kiapi-proxy): " package
+fi
+
+if [ -z "$package" ]; then
+    echo "Package is required"
+    exit 1
+fi
+
+if [ ! -f "packages/$package/pyproject.toml" ]; then
+    echo "Unknown package: $package (packages/$package/pyproject.toml not found)"
+    exit 1
+fi
 
 if [ -z "$version" ]; then
     read -r -p "Version (e.g. 0.2.0): " version
@@ -25,14 +41,16 @@ if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
     exit 1
 fi
 
-mise run pyproject:bump-version "$version"
-mise run changelog:bump-version "$version"
+mise run pyproject:bump-version "$package" "$version"
+mise run changelog:bump-version "$package" "$version"
+
+tag="$package-v$version"
 
 echo ""
-echo "Version bump prepared for $version."
+echo "Version bump prepared for $package $version."
 echo ""
 echo "Next steps:"
 echo "  1. make test && make"
-echo "  2. mise run build"
-echo "  3. git add pyproject.toml CHANGELOG.md && git commit -m 'chore(release): prepare v$version'"
-echo "  4. git tag v$version && git push origin main --tags"
+echo "  2. mise run build $package"
+echo "  3. git add packages/$package/pyproject.toml packages/$package/CHANGELOG.md uv.lock && git commit -m 'chore(release): prepare $tag'"
+echo "  4. git tag $tag && git push origin main --tags"

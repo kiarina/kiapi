@@ -19,8 +19,8 @@ import sys
 
 from _helpers import assert_json, consume_body, relay_request, run_checks
 
-from kiapi.core.relay import RelayFileBody, RelayRequest, RelayRequestError
-from kiapi.relay.local import create_local_relay
+from kiapi_relay import RelayFileBody, RelayRequest, RelayRequestError
+from kiapi_relay.local import create_local_relay
 
 
 async def main() -> int:

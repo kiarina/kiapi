@@ -8,6 +8,28 @@ supported-markers = [
     "platform_machine == 'arm64' and sys_platform == 'darwin'",
 ]
 
+[manifest]
+members = [
+    "kiapi",
+    "kiapi-proxy",
+    "kiapi-relay",
+]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "httpx2", specifier = ">=2.4.0" },
+    { name = "mypy", specifier = ">=1.14.1" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "ruff", specifier = ">=0.12.1" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
+]
+lint = [
+    { name = "mypy", specifier = ">=1.14.1" },
+    { name = "ruff", specifier = ">=0.12.1" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
+]
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.2"
@@ -631,11 +653,12 @@ wheels = [
 [[package]]
 name = "kiapi"
 version = "0.2.0"
-source = { editable = "." }
+source = { editable = "packages/kiapi" }
 dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mflux", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mlx-audiocraft", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -659,32 +682,16 @@ dependencies = [
 
 [package.optional-dependencies]
 relay-gcp = [
-    { name = "google-cloud-storage", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiarina-lib-google", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "httpx2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "mypy", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pytest", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pytest-asyncio", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "ruff", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "types-pyyaml", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-lint = [
-    { name = "mypy", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "ruff", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "types-pyyaml", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiapi-relay", extra = ["gcp"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click" },
     { name = "fastapi", specifier = "<0.137" },
-    { name = "google-cloud-storage", marker = "extra == 'relay-gcp'", specifier = ">=3.7.0" },
     { name = "httpx" },
-    { name = "kiarina-lib-google", marker = "extra == 'relay-gcp'", specifier = ">=2.2.1" },
+    { name = "kiapi-relay", editable = "packages/kiapi-relay" },
+    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'relay-gcp'", editable = "packages/kiapi-relay" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", specifier = ">=0.18.0" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
@@ -707,20 +714,71 @@ requires-dist = [
 ]
 provides-extras = ["relay-gcp"]
 
-[package.metadata.requires-dev]
-dev = [
-    { name = "httpx2", specifier = ">=2.4.0" },
-    { name = "mypy", specifier = ">=1.14.1" },
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-asyncio", specifier = ">=1.4.0" },
-    { name = "ruff", specifier = ">=0.12.1" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
+[[package]]
+name = "kiapi-proxy"
+version = "0.1.0"
+source = { editable = "packages/kiapi-proxy" }
+dependencies = [
+    { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "python-multipart", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "uvicorn", extra = ["standard"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
-lint = [
-    { name = "mypy", specifier = ">=1.14.1" },
-    { name = "ruff", specifier = ">=0.12.1" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
+
+[package.optional-dependencies]
+gcp = [
+    { name = "kiapi-relay", extra = ["gcp"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "click" },
+    { name = "fastapi" },
+    { name = "kiapi-relay", editable = "packages/kiapi-relay" },
+    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'gcp'", editable = "packages/kiapi-relay" },
+    { name = "pydantic", specifier = ">=2" },
+    { name = "pydantic-settings" },
+    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
+    { name = "python-multipart" },
+    { name = "uvicorn", extras = ["standard"] },
+]
+provides-extras = ["gcp"]
+
+[[package]]
+name = "kiapi-relay"
+version = "0.1.0"
+source = { editable = "packages/kiapi-relay" }
+dependencies = [
+    { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+
+[package.optional-dependencies]
+gcp = [
+    { name = "google-cloud-storage", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiarina-lib-google", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi" },
+    { name = "google-cloud-storage", marker = "extra == 'gcp'", specifier = ">=3.7.0" },
+    { name = "httpx" },
+    { name = "kiarina-lib-google", marker = "extra == 'gcp'", specifier = ">=2.2.1" },
+    { name = "kiarina-utils-common", specifier = ">=2.2.0" },
+    { name = "pydantic", specifier = ">=2" },
+    { name = "pydantic-settings" },
+    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
+]
+provides-extras = ["gcp"]
 
 [[package]]
 name = "kiarina-lib-google"

@@ -1,119 +1,15 @@
-[project]
-name = "kiapi"
-version = "0.2.0"
-description = "Unified local inference API server for LLM agents on Apple Silicon (MLX): chat, embedding, image, music, sound-effect, and video — one process, one global memory budget, one single-flight queue, unified jobs and files."
-readme = "README.md"
-requires-python = ">=3.12,<3.13"
-license = "MIT"
-authors = [{ name = "kiarina", email = "kiarinadawa@gmail.com" }]
-keywords = [
-    "agent",
-    "api",
-    "apple-silicon",
-    "fastapi",
-    "local-inference",
-    "mlx",
-]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Environment :: MacOS X",
-    "Framework :: FastAPI",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: MacOS",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
-dependencies = [
-    # --- web ---
-    # FastAPI 0.137 keeps included routers lazy; build_openapi currently filters
-    # app.routes directly and needs flattened APIRoute entries.
-    "fastapi<0.137",
-    "uvicorn[standard]",
-    "click",
-    "questionary",
-    "pydantic>=2",
-    "pyyaml",
-    "python-multipart", # multipart/form-data (file uploads)
-    # --- shared ---
-    # LTX-2 installs mlx-video after uv sync. Its librosa dependency pulls numba,
-    # whose current Python 3.12 wheels do not support numpy 2.5 yet.
-    "numpy<2.5",
-    "platformdirs",
-    "pillow",
-    "psutil", # process RSS measurement (framework-agnostic fallback)
-    "httpx", # web search capability: async HTTP client for the SearXNG backend
-    "kiarina-utils-common>=2.2.0",
-    # --- embedding capability (mlx-embeddings) ---
-    "mlx-embeddings>=0.1.0",
-    # --- sound-effect capability (mlx-audiocraft / AudioGen) ---
-    "mlx-audiocraft>=0.1.0",
-    "soundfile>=0.13.1",
-    # --- video capability (mlx-video / LTX-2 distilled) ---
-    # GitHub-only upstream is installed by `kiapi activate --family ltx2`
-    # as a PythonPackageResource to keep PyPI metadata free of direct URLs.
-    # --- chat capability (mlx-vlm) ---
-    # mlx-vlm 0.6.3 supports BOTH model_types we use in one install:
-    #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6-27B).
-    # 0.6.3's get_rope_index rewrite let us drop the Omni prefill_step_size
-    # workaround (verified end-to-end); remaining workarounds tracked in docs/mlx-vlm.md.
-    "mlx-vlm==0.6.3",
-    # transformers' Qwen processors need torch/torchvision (video/image) and
-    # torchaudio; mlx-vlm itself does not pull them in.
-    "torch",
-    "torchvision",
-    "torchaudio",
-    "mflux>=0.18.0",
-    "pydantic-settings-manager>=3.7.0",
-]
+[tool.uv.workspace]
+members = ["packages/*"]
 
-[project.optional-dependencies]
-relay-gcp = [
-    "google-cloud-storage>=3.7.0",
-    "kiarina-lib-google>=2.2.1",
-]
-
-[project.scripts]
-kiapi = "kiapi.cli.cli:main"
-
-[project.urls]
-Homepage = "https://github.com/kiarina/kiapi"
-Repository = "https://github.com/kiarina/kiapi"
-Documentation = "https://kiarina.github.io/kiapi/"
-Changelog = "https://github.com/kiarina/kiapi/blob/main/CHANGELOG.md"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["kiapi"]
-artifacts = ["kiapi/capabilities/web/resources/searxng/settings.yml"]
-
-[tool.hatch.build.targets.sdist]
-exclude = [
-    "/.github",
-    "/.mise",
-    "/.python-version",
-    "/.vscode",
-    "/AGENTS.md",
-    "/CLAUDE.md",
-    "/Makefile",
-    "/config",
-    "/dist",
-    "/public",
-    "/scripts",
-    "/searxng",
-    "/uv.lock",
-]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.uv.sources]
+kiapi = { workspace = true }
+kiapi-relay = { workspace = true }
+kiapi-proxy = { workspace = true }
 
 [tool.uv]
+# The development lockfile resolves on Apple Silicon (kiapi pulls MLX wheels).
+# This only constrains the local uv.lock; the cross-platform packages
+# (kiapi-relay, kiapi-proxy) publish their own platform-agnostic metadata.
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 
 [dependency-groups]
@@ -172,4 +68,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["kiapi"]
+known-first-party = ["kiapi", "kiapi_relay", "kiapi_proxy"]
