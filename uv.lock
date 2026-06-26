@@ -691,7 +691,7 @@ requires-dist = [
     { name = "platformdirs" },
     { name = "psutil" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "pydantic-settings-manager", specifier = ">=3.6.0" },
+    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "questionary" },
@@ -1315,15 +1315,15 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings-manager"
-version = "3.6.0"
+version = "3.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/7a/0cbaad3713954d686bbd50c3ce50b0115ca9dba9317aa36157158ec534fb/pydantic_settings_manager-3.6.0.tar.gz", hash = "sha256:feeec43b4af3dc372811f664d8eba4c958dd806761ff5bfb37774a3aa7dc44f6", size = 80290, upload-time = "2026-06-22T07:11:46.48Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/97/4df36baf1a09f1d23a14c20bcd6224651a06063882274ba17a2f790c3ea5/pydantic_settings_manager-3.7.0.tar.gz", hash = "sha256:02d01080948f642483f1548d18e740e03565e004c57923a9e15d0abd6d4b519f", size = 81472, upload-time = "2026-06-26T00:18:01.316Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/ea/cd15bd30b09a6141f7aea05b938f41d7c2bc7acf16c1b6efc87ec8100b1a/pydantic_settings_manager-3.6.0-py3-none-any.whl", hash = "sha256:a8ec9121451cb76ddb783bf4c2231a88bc236a04a94959ded7fceff2c033208c", size = 21494, upload-time = "2026-06-22T07:11:45.218Z" },
+    { url = "https://files.pythonhosted.org/packages/42/1f/4236643ad99075b630bfa71b82806f716483a19090430d3b67c20e3031be/pydantic_settings_manager-3.7.0-py3-none-any.whl", hash = "sha256:147d98c56db0b61b29fbd00efc60c98e78fc4e2f5058a4278f05b3abe0d920ee", size = 22354, upload-time = "2026-06-26T00:18:00.335Z" },
 ]
 
 [[package]]

@@ -31,7 +31,7 @@ def load_user_settings(path: Path | None = None) -> None:
     user_configs = _normalize_user_configs(data, settings_path)
 
     try:
-        load_user_configs(user_configs)
+        load_user_configs(user_configs, missing_module_policy="warn")
     except (ImportError, AttributeError, TypeError, ValueError) as exc:
         raise UserConfigError(f"Failed to load {settings_path}: {exc}") from exc
 

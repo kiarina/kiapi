@@ -30,6 +30,14 @@ def test_load_user_settings_ignores_missing_file(tmp_path: Path) -> None:
     assert api_settings_manager.user_config == {}
 
 
+def test_load_user_settings_warns_for_missing_modules(tmp_path: Path) -> None:
+    path = tmp_path / "settings.yaml"
+    path.write_text("kiapi.missing:\n  value: nope\n", encoding="utf-8")
+
+    with pytest.warns(UserWarning, match="kiapi.missing"):
+        load_user_settings(path)
+
+
 def test_load_user_settings_rejects_non_mapping_yaml(tmp_path: Path) -> None:
     path = tmp_path / "settings.yaml"
     path.write_text("- nope\n", encoding="utf-8")
