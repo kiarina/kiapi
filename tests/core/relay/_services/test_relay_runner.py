@@ -21,9 +21,6 @@ class _Relay:
         queue: asyncio.Queue[RelayDelivery] = asyncio.Queue()
         yield await queue.get()
 
-    async def close(self) -> None:
-        pass
-
 
 def _app() -> FastAPI:
     app = FastAPI()

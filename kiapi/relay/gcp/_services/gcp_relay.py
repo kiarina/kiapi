@@ -53,60 +53,54 @@ class GCPRelay:
             credentials=self._credentials,
         )
         self._bucket = self._storage_client.bucket(settings.bucket)
-        self._http = httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=30.0, read=None, write=30.0, pool=30.0)
-        )
         self._queue: asyncio.Queue[GCPRelayNotification] = asyncio.Queue()
         self._scheduled: set[str] = set()
-        self._listener_task: asyncio.Task[None] | None = None
-        self._closed = False
+        self._http: httpx.AsyncClient
 
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         if self.settings.manage_bucket_lifecycle:
             await asyncio.to_thread(self._ensure_bucket_lifecycle)
-        if self._listener_task is None:
-            self._listener_task = asyncio.create_task(
-                self._listen_forever(),
-                name="kiapi-relay-gcp-listener",
-            )
+        self._http = httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=30.0, read=None, write=30.0, pool=30.0)
+        )
+        listener = asyncio.create_task(
+            self._listen_forever(),
+            name="kiapi-relay-gcp-listener",
+        )
+        try:
+            while True:
+                notification = await self._queue.get()
+                try:
+                    recovered = await asyncio.to_thread(
+                        self._read_response_metadata,
+                        notification.session_id,
+                    )
+                    if recovered is not None:
+                        await self._finish_success(notification, recovered)
+                        continue
 
-        while not self._closed:
-            notification = await self._queue.get()
-            try:
-                recovered = await asyncio.to_thread(
-                    self._read_response_metadata,
-                    notification.session_id,
-                )
-                if recovered is not None:
-                    await self._finish_success(notification, recovered)
+                    request = await asyncio.to_thread(
+                        self._read_request,
+                        notification.session_id,
+                    )
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    await self.fail(
+                        notification,
+                        RelayError(
+                            code="invalid_relay_request",
+                            message=str(exc) or exc.__class__.__name__,
+                            retryable=False,
+                        ),
+                    )
                     continue
 
-                request = await asyncio.to_thread(
-                    self._read_request,
-                    notification.session_id,
-                )
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                await self.fail(
-                    notification,
-                    RelayError(
-                        code="invalid_relay_request",
-                        message=str(exc) or exc.__class__.__name__,
-                        retryable=False,
-                    ),
-                )
-                continue
-
-            yield GCPRelayDelivery(self, notification, request)
-
-    async def close(self) -> None:
-        self._closed = True
-        if self._listener_task is not None:
-            self._listener_task.cancel()
-            await asyncio.gather(self._listener_task, return_exceptions=True)
-            self._listener_task = None
-        await self._http.aclose()
+                yield GCPRelayDelivery(self, notification, request)
+        finally:
+            listener.cancel()
+            await asyncio.gather(listener, return_exceptions=True)
+            await self._http.aclose()
 
     async def mark_running(self, notification: GCPRelayNotification) -> None:
         await self._put_response(
@@ -184,7 +178,7 @@ class GCPRelay:
             self._scheduled.discard(notification.session_id)
 
     async def _listen_forever(self) -> None:
-        while not self._closed:
+        while True:
             try:
                 await self._listen_once()
             except asyncio.CancelledError:

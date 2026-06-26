@@ -47,7 +47,6 @@ class RelayRunner:
             self._task = asyncio.create_task(self._run(), name="kiapi-relay")
 
     async def stop(self) -> None:
-        await self._relay.close()
         if self._task is not None:
             self._task.cancel()
             await asyncio.gather(self._task, return_exceptions=True)

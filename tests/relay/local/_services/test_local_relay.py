@@ -116,7 +116,6 @@ async def test_watch_recovers_completed_response_without_dispatch(
 
     task = asyncio.create_task(consume())
     await asyncio.sleep(0.05)
-    await relay.close()
     task.cancel()
     await asyncio.gather(task, return_exceptions=True)
 

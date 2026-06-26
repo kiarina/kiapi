@@ -27,47 +27,40 @@ class LocalRelay:
         self.settings = settings
         self._queue: asyncio.Queue[LocalRelayNotification] = asyncio.Queue()
         self._scheduled: set[str] = set()
-        self._listener_task: asyncio.Task[None] | None = None
-        self._closed = False
 
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         self._ensure_directories()
-        if self._listener_task is None:
-            self._listener_task = asyncio.create_task(
-                self._listen_forever(),
-                name="kiapi-relay-local-listener",
-            )
+        listener = asyncio.create_task(
+            self._listen_forever(),
+            name="kiapi-relay-local-listener",
+        )
+        try:
+            while True:
+                notification = await self._queue.get()
+                try:
+                    recovered = self._read_response_metadata(notification.session_id)
+                    if recovered is not None:
+                        await self._finish_success(notification, recovered)
+                        continue
 
-        while not self._closed:
-            notification = await self._queue.get()
-            try:
-                recovered = self._read_response_metadata(notification.session_id)
-                if recovered is not None:
-                    await self._finish_success(notification, recovered)
+                    request = self._read_request(notification.session_id)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    await self.fail(
+                        notification,
+                        RelayError(
+                            code="invalid_relay_request",
+                            message=str(exc) or exc.__class__.__name__,
+                            retryable=False,
+                        ),
+                    )
                     continue
 
-                request = self._read_request(notification.session_id)
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                await self.fail(
-                    notification,
-                    RelayError(
-                        code="invalid_relay_request",
-                        message=str(exc) or exc.__class__.__name__,
-                        retryable=False,
-                    ),
-                )
-                continue
-
-            yield LocalRelayDelivery(self, notification, request)
-
-    async def close(self) -> None:
-        self._closed = True
-        if self._listener_task is not None:
-            self._listener_task.cancel()
-            await asyncio.gather(self._listener_task, return_exceptions=True)
-            self._listener_task = None
+                yield LocalRelayDelivery(self, notification, request)
+        finally:
+            listener.cancel()
+            await asyncio.gather(listener, return_exceptions=True)
 
     async def mark_running(self, notification: LocalRelayNotification) -> None:
         self._write_response_notification(
@@ -138,7 +131,7 @@ class LocalRelay:
             self._scheduled.discard(notification.session_id)
 
     async def _listen_forever(self) -> None:
-        while not self._closed:
+        while True:
             try:
                 await self._scan_requests()
             except asyncio.CancelledError:
