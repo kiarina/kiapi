@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
-#MISE description="Bump version in pyproject.toml"
+#MISE description="Bump version in a package's pyproject.toml"
+#USAGE arg "<package>" help="Workspace package (e.g. 'kiapi', 'kiapi-relay', 'kiapi-proxy')"
 #USAGE arg "<version>" help="New version (e.g. '1.0.0', '1.0.0-alpha.1')"
 
 set -euo pipefail
 
+package="$usage_package"
 new_version="$usage_version"
+
+pyproject="packages/$package/pyproject.toml"
+
+if [ ! -f "$pyproject" ]; then
+    echo "Unknown package: $package ($pyproject not found)"
+    exit 1
+fi
 
 if ! [[ "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
     echo "Invalid version format: $new_version"
@@ -12,12 +21,12 @@ if ! [[ "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
     exit 1
 fi
 
-echo "Updating version to $new_version..."
+echo "Updating $package version to $new_version..."
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
+    sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject"
 else
-    sed -i "s/^version = \".*\"/version = \"$new_version\"/" pyproject.toml
+    sed -i "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject"
 fi
 
-echo "Version updated in pyproject.toml."
+echo "Version updated in $pyproject."

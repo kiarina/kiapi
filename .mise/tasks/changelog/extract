@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
-#MISE description="Extract changelog section for a specific version"
+#MISE description="Extract a package changelog section for a specific version"
+#USAGE arg "<package>" help="Workspace package (e.g. 'kiapi', 'kiapi-relay', 'kiapi-proxy')"
 #USAGE arg "<version>" help="Version to extract (e.g. '1.0.0')"
 #USAGE flag "-o --output <file>" help="Output file path (default: stdout)"
 
 set -euo pipefail
 
+package="$usage_package"
 version="$usage_version"
 output_file="${usage_output:-}"
+
+changelog_file="packages/$package/CHANGELOG.md"
+
+if [ ! -f "$changelog_file" ]; then
+    echo "$changelog_file not found" >&2
+    exit 1
+fi
 
 changelog_content=$(awk -v version="$version" '
     /^## \[/ {
@@ -20,7 +29,7 @@ changelog_content=$(awk -v version="$version" '
     }
     found && /^## / { exit }
     found { print }
-' CHANGELOG.md)
+' "$changelog_file")
 
 if [ -z "$changelog_content" ]; then
     echo "No changelog entry found for version $version" >&2

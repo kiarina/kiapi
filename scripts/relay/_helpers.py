@@ -14,7 +14,7 @@ from typing import Any
 
 import httpx
 
-from kiapi.core.relay import (
+from kiapi_relay import (
     Relay,
     RelayFileBody,
     RelayJsonBody,

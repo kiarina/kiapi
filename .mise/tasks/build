@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
-#MISE description="Build Python package distributions"
+#MISE description="Build Python package distributions (one workspace package, or all)"
+#USAGE arg "[package]" help="Workspace package to build (kiapi | kiapi-relay | kiapi-proxy). Omit to build all."
 
 set -euo pipefail
 
-echo "Building package..."
+package="${usage_package:-}"
 
 mise run clean
-uv build --out-dir dist
 
-echo "Package built successfully."
-echo "Built package is in dist/."
+if [ -n "$package" ]; then
+    if [ ! -f "packages/$package/pyproject.toml" ]; then
+        echo "Unknown package: $package (packages/$package/pyproject.toml not found)"
+        exit 1
+    fi
+    echo "Building $package..."
+    uv build --package "$package" --out-dir dist
+else
+    echo "Building all workspace packages..."
+    uv build --all-packages --out-dir dist
+fi
+
+echo "Package(s) built successfully."
+echo "Built artifacts are in dist/."

@@ -1,5 +1,14 @@
 .DEFAULT_GOAL := default
 .PHONY: build bump-version clean config default publish publish-test
+
+# Lint/format targets: every package's src/ and tests/ plus repo scripts.
+# wildcard keeps this correct as packages are added or removed.
+SOURCES := $(wildcard packages/*/src) $(wildcard packages/*/tests) scripts
+# Workspace package directories (packages/kiapi, packages/kiapi-relay, ...).
+# mypy and pytest run once per package: each package has its own top-level
+# `tests` package, so a single combined invocation would collide.
+PACKAGE_DIRS := $(wildcard packages/*)
+
 default: format lint config pages
 #--------------------------------------------------
 init:
@@ -16,16 +25,22 @@ upgrade:
 	uv run kiapi activate --repo mlx-video-ltx2
 #--------------------------------------------------
 format:
-	uv run ruff format kiapi tests scripts
-	uv run ruff check --fix kiapi tests scripts
+	uv run ruff format $(SOURCES)
+	uv run ruff check --fix $(SOURCES)
 format-unsafe:
-	uv run ruff format kiapi tests scripts
-	uv run ruff check --fix --unsafe-fixes kiapi tests scripts
+	uv run ruff format $(SOURCES)
+	uv run ruff check --fix --unsafe-fixes $(SOURCES)
 lint:
-	uv run ruff check kiapi tests scripts
-	uv run mypy kiapi tests scripts
+	uv run ruff check $(SOURCES)
+	@set -e; for d in $(PACKAGE_DIRS); do \
+		echo "==> mypy $$d"; \
+		uv run mypy $$d/src $$(test -d $$d/tests && echo $$d/tests || true); \
+	done
+	uv run mypy scripts
 test:
-	uv run pytest tests/
+	@set -e; for d in $(PACKAGE_DIRS); do \
+		if [ -d $$d/tests ]; then echo "==> pytest $$d/tests"; uv run pytest $$d/tests; fi; \
+	done
 #--------------------------------------------------
 dev:
 	uv run kiapi run --host 127.0.0.1 --port 8000 --debug
@@ -84,16 +99,21 @@ config:
 pages:
 	uv run python scripts/build_pages.py
 #--------------------------------------------------
+# Release targets are package-scoped. Pass PKG=<package> (and VERSION for bump).
+# Examples:
+#   make bump-version PKG=kiapi VERSION=0.2.1
+#   make build PKG=kiapi-relay
+#   make publish PKG=kiapi-proxy
 bump-version:
-	mise run bump-version
+	mise run bump-version $(PKG) $(VERSION)
 clean:
 	mise run clean
 build:
-	mise run build
+	mise run build $(PKG)
 publish-test:
-	mise run publish --test
+	mise run publish $(PKG) --test
 publish:
-	mise run publish
+	mise run publish $(PKG)
 #--------------------------------------------------
 install:
 	uv run kiapi service install

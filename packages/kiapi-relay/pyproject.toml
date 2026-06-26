@@ -1,0 +1,58 @@
+[project]
+name = "kiapi-relay"
+version = "0.1.0"
+description = "Shared relay transport for kiapi: request/response schemas, the relay protocol, and a client to reach a kiapi instance over a relay (local filesystem or GCP)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "kiarina", email = "kiarinadawa@gmail.com" }]
+keywords = [
+    "agent",
+    "api",
+    "kiapi",
+    "relay",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+dependencies = [
+    "fastapi",       # in-process ASGI dispatch in RelayRunner
+    "httpx",         # relay request client
+    "pydantic>=2",
+    "pydantic-settings",
+    "pydantic-settings-manager>=3.7.0",
+    "kiarina-utils-common>=2.2.0",
+]
+
+[project.optional-dependencies]
+gcp = [
+    "google-cloud-storage>=3.7.0",
+    "kiarina-lib-google>=2.2.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/kiarina/kiapi"
+Repository = "https://github.com/kiarina/kiapi"
+Changelog = "https://github.com/kiarina/kiapi/blob/main/packages/kiapi-relay/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kiapi_relay"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/tests",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
