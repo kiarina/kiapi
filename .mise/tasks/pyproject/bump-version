@@ -1,32 +1,81 @@
 #!/usr/bin/env bash
-#MISE description="Bump version in a package's pyproject.toml"
-#USAGE arg "<package>" help="Workspace package (e.g. 'kiapi', 'kiapi-relay', 'kiapi-proxy')"
-#USAGE arg "<version>" help="New version (e.g. '1.0.0', '1.0.0-alpha.1')"
+#MISE description="Bump the root VERSION and the pyproject.toml of every changed package"
+#USAGE arg "<version>" help="New version (e.g. '0.3.0', '1.0.0-alpha.1')"
 
 set -euo pipefail
 
-package="$usage_package"
 new_version="$usage_version"
 
-pyproject="packages/$package/pyproject.toml"
-
-if [ ! -f "$pyproject" ]; then
-    echo "Unknown package: $package ($pyproject not found)"
-    exit 1
-fi
-
 if ! [[ "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
-    echo "Invalid version format: $new_version"
-    echo "Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 1.0.0, 1.0.0-alpha.1)"
+    echo "❌ Invalid version format: $new_version"
+    echo "   Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 0.3.0, 1.0.0-alpha.1)"
     exit 1
 fi
 
-echo "Updating $package version to $new_version..."
+echo "🔄 Updating version to $new_version..."
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject"
-else
-    sed -i "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject"
+update_project_version() {
+    local pyproject_file="$1"
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject_file"
+    else
+        sed -i "s/^version = \".*\"/version = \"$new_version\"/" "$pyproject_file"
+    fi
+}
+
+has_unreleased_changes() {
+    local changelog_file="$1"
+
+    [ -f "$changelog_file" ] || return 1
+
+    awk '
+        /^## \[Unreleased\]/ { in_unreleased = 1; next }
+        in_unreleased && /^## \[/ { exit }
+        in_unreleased && NF && $0 !~ /^### / { found = 1 }
+        END { exit found ? 0 : 1 }
+    ' "$changelog_file"
+}
+
+changed_packages_file="$(mktemp)"
+trap 'rm -f "$changed_packages_file"' EXIT
+
+while IFS= read -r package; do
+    if has_unreleased_changes "packages/$package/CHANGELOG.md"; then
+        echo "$package" >> "$changed_packages_file"
+    fi
+done < <(mise run package:list)
+
+if ! has_unreleased_changes "CHANGELOG.md"; then
+    echo "❌ root CHANGELOG.md must contain unreleased changes" >&2
+    exit 1
 fi
 
-echo "Version updated in $pyproject."
+if [ ! -s "$changed_packages_file" ]; then
+    echo "❌ No package has unreleased changes" >&2
+    exit 1
+fi
+
+echo "📝 Updating root VERSION..."
+echo "$new_version" > VERSION
+
+echo ""
+echo "📦 Updating changed package versions..."
+while IFS= read -r package; do
+    update_project_version "packages/$package/pyproject.toml"
+    echo "  ✅ $package"
+done < "$changed_packages_file"
+
+echo ""
+echo "🔒 Updating uv.lock..."
+uv lock
+
+echo ""
+echo "📊 Summary:"
+echo "  🎯 Target version: $new_version"
+changed_package_count="$(wc -l < "$changed_packages_file" | tr -d ' ')"
+echo "  ✅ Changed packages: $changed_package_count"
+sed 's/^/     - /' "$changed_packages_file"
+
+echo ""
+echo "✅ Version update completed!"

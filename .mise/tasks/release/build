@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#MISE description="Build the packages selected for a release"
+#USAGE arg "<version>" help="Release version (e.g. '0.3.0')"
+
+set -euo pipefail
+
+version="$usage_version"
+
+mise run clean
+
+while IFS= read -r package; do
+    echo "🏗️  Building $package $version..."
+    uv build --package "$package" --out-dir dist
+done < <(mise run package:list --release "$version")
+
+if ! find dist -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print -quit | grep -q .; then
+    echo "❌ No release artifacts were built" >&2
+    exit 1
+fi
+
+echo "✅ Release artifacts built in dist/"

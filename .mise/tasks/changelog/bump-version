@@ -1,122 +1,135 @@
 #!/usr/bin/env bash
-#MISE description="Move a package CHANGELOG.md Unreleased notes into a bumped version entry"
-#USAGE arg "<package>" help="Workspace package (e.g. 'kiapi', 'kiapi-relay', 'kiapi-proxy')"
-#USAGE arg "<version>" help="Version to add (e.g. '0.2.0')"
+#MISE description="Move the root and selected package CHANGELOG.md Unreleased notes into a bumped version entry"
+#USAGE arg "<version>" help="Version to add (e.g. '0.3.0')"
 
 set -euo pipefail
 
-package="$usage_package"
 version="$usage_version"
 
 if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
-    echo "Invalid version format: $version"
-    echo "Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 0.2.0, 1.0.0-alpha.1)"
-    exit 1
-fi
-
-changelog_file="packages/$package/CHANGELOG.md"
-
-if [ ! -f "$changelog_file" ]; then
-    echo "$changelog_file not found"
-    exit 1
-fi
-
-if grep -q "^## \[$version\]" "$changelog_file"; then
-    echo "Version $version already exists in $changelog_file"
-    exit 0
-fi
-
-if ! grep -q "^## \[Unreleased\]" "$changelog_file"; then
-    echo "No Unreleased section found in $changelog_file"
+    echo "❌ Invalid version format: $version"
+    echo "   Expected format: X.Y.Z or X.Y.Z-suffix (e.g. 0.3.0, 1.0.0-alpha.1)"
     exit 1
 fi
 
 current_date=$(date +%Y-%m-%d)
-temp_file=$(mktemp)
 
-awk -v version="$version" -v date="$current_date" '
-BEGIN {
-    in_unreleased = 0
-    unreleased_count = 0
-    found_unreleased = 0
-    processed = 0
+has_unreleased_changes() {
+    local changelog_file="$1"
+
+    [ -f "$changelog_file" ] || return 1
+
+    awk '
+        /^## \[Unreleased\]/ { in_unreleased = 1; next }
+        in_unreleased && /^## \[/ { exit }
+        in_unreleased && NF && $0 !~ /^### / { found = 1 }
+        END { exit found ? 0 : 1 }
+    ' "$changelog_file"
 }
 
-/^## \[Unreleased\]/ {
-    found_unreleased = 1
-    in_unreleased = 1
-    next
-}
+update_changelog() {
+    local changelog_file="$1"
+    local display_name="$2"
 
-/^## \[/ && in_unreleased {
-    in_unreleased = 0
-    processed = 1
+    if [ ! -f "$changelog_file" ]; then
+        echo "  ❌ $display_name (CHANGELOG.md not found)"
+        return 1
+    fi
 
-    print "## [Unreleased]"
-    print ""
+    if grep -q "^## \[$version\]" "$changelog_file"; then
+        echo "  ⏭️  $display_name (version $version already exists)"
+        return 0
+    fi
 
-    has_content = 0
-    for (i = 0; i < unreleased_count; i++) {
-        if (unreleased_lines[i] !~ /^[[:space:]]*$/) {
-            has_content = 1
-            break
-        }
+    if ! grep -q "^## \[Unreleased\]" "$changelog_file"; then
+        echo "  ❌ $display_name (no Unreleased section found)"
+        return 1
+    fi
+
+    local temp_file
+    temp_file=$(mktemp)
+
+    awk -v version="$version" -v date="$current_date" '
+    BEGIN {
+        in_unreleased = 0
+        unreleased_count = 0
+        found_unreleased = 0
+        processed = 0
     }
 
-    print "## [" version "] - " date
-    if (has_content) {
-        for (i = 0; i < unreleased_count; i++) {
-            print unreleased_lines[i]
-        }
-    } else {
-        print ""
-        print "### Changed"
-        print ""
-        print "- No changes"
-        print ""
+    /^## \[Unreleased\]/ {
+        found_unreleased = 1
+        in_unreleased = 1
+        next
     }
 
-    print
-    next
-}
+    /^## \[/ && in_unreleased {
+        in_unreleased = 0
+        processed = 1
 
-in_unreleased {
-    unreleased_lines[unreleased_count++] = $0
-    next
-}
-
-END {
-    if (found_unreleased && !processed) {
         print "## [Unreleased]"
         print ""
 
-        has_content = 0
+        print "## [" version "] - " date
         for (i = 0; i < unreleased_count; i++) {
-            if (unreleased_lines[i] !~ /^[[:space:]]*$/) {
-                has_content = 1
-                break
-            }
+            print unreleased_lines[i]
         }
 
-        print "## [" version "] - " date
-        if (has_content) {
+        print
+        next
+    }
+
+    in_unreleased {
+        unreleased_lines[unreleased_count++] = $0
+        next
+    }
+
+    END {
+        if (found_unreleased && !processed) {
+            print "## [Unreleased]"
+            print ""
+
+            print "## [" version "] - " date
             for (i = 0; i < unreleased_count; i++) {
                 print unreleased_lines[i]
             }
-        } else {
-            print ""
-            print "### Changed"
-            print ""
-            print "- No changes"
         }
     }
+
+    !in_unreleased && !/^## \[Unreleased\]/ {
+        print
+    }
+    ' "$changelog_file" > "$temp_file"
+
+    mv "$temp_file" "$changelog_file"
+    echo "  ✅ $display_name"
 }
 
-!in_unreleased && !/^## \[Unreleased\]/ {
-    print
-}
-' "$changelog_file" > "$temp_file"
+release_packages=()
+while IFS= read -r package; do
+    release_packages+=("$package")
+done < <(mise run package:list --release "$version")
 
-mv "$temp_file" "$changelog_file"
+echo "🔍 Validating selected CHANGELOG.md files..."
+if ! has_unreleased_changes "CHANGELOG.md"; then
+    echo "❌ root Unreleased section has no changes" >&2
+    exit 1
+fi
 
-echo "$changelog_file updated for $version ($current_date)."
+for package in "${release_packages[@]}"; do
+    changelog_file="packages/$package/CHANGELOG.md"
+    if ! has_unreleased_changes "$changelog_file"; then
+        echo "❌ $package Unreleased section has no changes" >&2
+        exit 1
+    fi
+done
+
+echo ""
+echo "📄 Updating selected CHANGELOG.md files for version $version ($current_date)..."
+update_changelog "CHANGELOG.md" "root"
+for package in "${release_packages[@]}"; do
+    update_changelog "packages/$package/CHANGELOG.md" "$package"
+done
+
+echo ""
+echo "✅ CHANGELOG update completed!"

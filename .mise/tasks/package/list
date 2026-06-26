@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#MISE description="List workspace packages"
+#USAGE flag "--release <version>" help="List packages selected for a release"
+
+set -euo pipefail
+
+release_version="${usage_release:-}"
+
+if [ -n "$release_version" ] && ! [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+    echo "❌ Invalid version format: $release_version" >&2
+    exit 1
+fi
+
+get_project_version() {
+    awk -F'"' '/^version = "/ { print $2; exit }' "$1"
+}
+
+has_unreleased_changes() {
+    local changelog_file="$1"
+
+    [ -f "$changelog_file" ] || return 1
+
+    awk '
+        /^## \[Unreleased\]/ { in_unreleased = 1; next }
+        in_unreleased && /^## \[/ { exit }
+        in_unreleased && NF && $0 !~ /^### / { found = 1 }
+        END { exit found ? 0 : 1 }
+    ' "$changelog_file"
+}
+
+if [ -n "$release_version" ]; then
+    root_version="$(cat VERSION)"
+    if [ "$root_version" != "$release_version" ]; then
+        echo "❌ Root version $root_version does not match release version $release_version" >&2
+        exit 1
+    fi
+fi
+
+for package_dir in packages/*/; do
+    if [ ! -f "$package_dir/pyproject.toml" ]; then
+        continue
+    fi
+
+    package_name="$(basename "$package_dir")"
+
+    if [ -n "$release_version" ]; then
+        package_version="$(get_project_version "$package_dir/pyproject.toml")"
+        if [ "$package_version" != "$release_version" ]; then
+            if has_unreleased_changes "$package_dir/CHANGELOG.md"; then
+                echo "❌ $package_name has unreleased changes but version $package_version does not match $release_version" >&2
+                exit 1
+            fi
+            continue
+        fi
+    fi
+
+    echo "$package_name"
+done
