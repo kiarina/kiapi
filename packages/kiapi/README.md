@@ -240,8 +240,8 @@ Use a dedicated bucket and narrowly scoped RTDB/GCS permissions. Google
 credentials are configured through
 [`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
 
-See [GCP Relay setup](kiapi/relay/gcp/README.md) for resource creation, IAM,
-authentication, configuration, and verification steps.
+See [GCP Relay setup](../kiapi-relay/src/kiapi_relay/gcp/README.md) for resource
+creation, IAM, authentication, configuration, and verification steps.
 
 For local relay verification without GCP, use `local`. It uses the same
 in-process dispatch path but stores notifications and payloads under a local
