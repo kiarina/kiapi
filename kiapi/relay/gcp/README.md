@@ -383,6 +383,29 @@ Example:
 rejected. If `KIAPI_AUTH_TOKEN` is configured, include the corresponding
 `Authorization: Bearer ...` header.
 
+For multipart endpoints such as `POST /v1/files`, use `multipart` instead of
+`body`:
+
+```json
+{
+  "method": "POST",
+  "path": "/v1/files",
+  "headers": {
+    "accept": "application/json"
+  },
+  "multipart": {
+    "files": [
+      {
+        "field": "file",
+        "filename": "input.png",
+        "content_type": "image/png",
+        "content_base64": "BASE64_ENCODED_BYTES"
+      }
+    ]
+  }
+}
+```
+
 ### RTDB Notification
 
 After `request.json` has been uploaded, write:

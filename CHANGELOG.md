@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Added an optional plugin-based remote job relay with Firebase Realtime Database notifications, GCS request/response payloads, in-process ASGI dispatch, committed-response recovery, and atomic terminal delivery.
 - Added a filesystem-backed LocalRelay for local relay verification without GCP services.
+- Added relay verification scripts for LocalRelay, GCPRelay, and end-to-end LocalRelay capability checks.
 
 ### Changed
 
@@ -19,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Added the OAuth scopes required by the Firebase Realtime Database REST API to GCP relay credentials.
+- Added relay support for multipart file uploads such as `POST /v1/files`.
 
 ## [0.1.0] - 2026-06-23
 

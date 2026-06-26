@@ -1,13 +1,16 @@
 import asyncio
+import base64
 from collections.abc import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import Response, StreamingResponse
 
 from kiapi.core.relay import (
     RelayDelivery,
     RelayFileBody,
     RelayJsonBody,
+    RelayMultipartBody,
+    RelayMultipartFile,
     RelayRequest,
     RelayRunner,
 )
@@ -40,6 +43,14 @@ def _app() -> FastAPI:
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(body(), media_type="text/event-stream")
+
+    @app.post("/upload")
+    async def upload_endpoint(file: UploadFile = File()) -> dict[str, str | int | None]:
+        return {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "content": (await file.read()).decode(),
+        }
 
     return app
 
@@ -76,4 +87,37 @@ async def test_dispatch_collects_event_stream_as_json_array() -> None:
     response, _ = await runner._dispatch(RelayRequest(method="GET", path="/stream"))
 
     assert response.body == RelayJsonBody(value=[{"value": 1}, "[DONE]"])
+    await runner.stop()
+
+
+async def test_dispatch_sends_multipart_file_upload() -> None:
+    runner = RelayRunner(_Relay(), _app())
+
+    response, path = await runner._dispatch(
+        RelayRequest(
+            method="POST",
+            path="/upload",
+            headers={"content-type": "multipart/form-data"},
+            multipart=RelayMultipartBody(
+                files=[
+                    RelayMultipartFile(
+                        field="file",
+                        filename="hello.txt",
+                        content_type="text/plain",
+                        content_base64=base64.b64encode(b"hello").decode("ascii"),
+                    )
+                ],
+            ),
+        )
+    )
+
+    assert response.status == 200
+    assert response.body == RelayJsonBody(
+        value={
+            "filename": "hello.txt",
+            "content_type": "text/plain",
+            "content": "hello",
+        }
+    )
+    assert path is None
     await runner.stop()

@@ -376,6 +376,28 @@ GCP initialization に失敗した場合、設定済み relay を無視して動
 `KIAPI_AUTH_TOKEN` を設定している場合は、対応する `Authorization: Bearer ...` header を
 含めてください。
 
+`POST /v1/files` のような multipart endpoint では、`body` ではなく `multipart` を使います。
+
+```json
+{
+  "method": "POST",
+  "path": "/v1/files",
+  "headers": {
+    "accept": "application/json"
+  },
+  "multipart": {
+    "files": [
+      {
+        "field": "file",
+        "filename": "input.png",
+        "content_type": "image/png",
+        "content_base64": "BASE64_ENCODED_BYTES"
+      }
+    ]
+  }
+}
+```
+
 ### RTDB Notification
 
 `request.json` の upload 後、次の path に書き込みます。

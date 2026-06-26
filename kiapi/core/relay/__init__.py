@@ -1,6 +1,8 @@
 from ._instances.relay_registry import relay_registry
 from ._schemas.relay_file_body import RelayFileBody
 from ._schemas.relay_json_body import RelayJsonBody
+from ._schemas.relay_multipart_body import RelayMultipartBody
+from ._schemas.relay_multipart_file import RelayMultipartFile
 from ._services.relay_runner import RelayRunner
 from ._settings import RelaySettings, settings_manager
 from ._types.relay import Relay
@@ -19,6 +21,8 @@ __all__ = [
     "RelayFileBody",
     "RelayJsonBody",
     "RelayMethod",
+    "RelayMultipartBody",
+    "RelayMultipartFile",
     "RelayName",
     "RelayRequest",
     "RelayResponse",

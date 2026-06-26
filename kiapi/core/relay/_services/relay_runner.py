@@ -87,17 +87,28 @@ class RelayRunner:
     async def _dispatch(
         self, request: RelayRequest
     ) -> tuple[RelayResponse, Path | None]:
-        headers = {
-            key: value
-            for key, value in request.headers.items()
-            if key.lower() not in _HOP_BY_HOP_HEADERS
-        }
-        response = await self._client.request(
-            request.method,
-            request.path,
-            headers=headers,
-            json=request.body,
-        )
+        headers = _relay_headers(request)
+        if request.multipart is None:
+            response = await self._client.request(
+                request.method,
+                request.path,
+                headers=headers,
+                json=request.body,
+            )
+        else:
+            response = await self._client.request(
+                request.method,
+                request.path,
+                headers=headers,
+                data=request.multipart.fields,
+                files=[
+                    (
+                        file.field,
+                        (file.filename, file.content(), file.content_type),
+                    )
+                    for file in request.multipart.files
+                ],
+            )
         content = await response.aread()
         content_type = response.headers.get("content-type", "").split(";", 1)[0]
         response_headers = {
@@ -135,6 +146,17 @@ class RelayRunner:
             ),
             file_path,
         )
+
+
+def _relay_headers(request: RelayRequest) -> dict[str, str]:
+    excluded = set(_HOP_BY_HOP_HEADERS)
+    if request.multipart is not None:
+        excluded.add("content-type")
+    return {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower() not in excluded
+    }
 
 
 def _parse_event_stream(content: bytes) -> list[Any]:

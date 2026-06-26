@@ -70,6 +70,13 @@ verify-ltx2:
 # web
 verify-web:
 	uv run python scripts/verify_web.py
+# relay
+verify-relay:
+	uv run python scripts/relay/verify.py
+verify-relay-local:
+	uv run python scripts/relay/verify_local.py
+verify-relay-gcp:
+	uv run python scripts/relay/verify_gcp.py
 #--------------------------------------------------
 config:
 	mkdir -p config
