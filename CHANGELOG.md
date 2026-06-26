@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Added an optional plugin-based remote job relay with Firebase Realtime Database notifications, GCS request/response payloads, in-process ASGI dispatch, committed-response recovery, and atomic terminal delivery.
+- Added a filesystem-backed LocalRelay for local relay verification without GCP services.
 
 ### Changed
 

@@ -152,8 +152,9 @@ healthcheck, and passes the local backend URL to the capability handler.
 
 The relay is an optional background subsystem enabled by
 `KIAPI_RELAY_DEFAULT` or `kiapi run --relay ...`. `core/relay` defines the
-stable `Relay` / `RelayDelivery` protocols and plugin registry.
-`relay/gcp` implements the GCP transport.
+stable `Relay` / `RelayDelivery` protocols and plugin registry. `relay/gcp`
+implements the GCP transport, and `relay/local` implements a filesystem-backed
+transport for local verification.
 
 ```text
 requester
@@ -185,6 +186,12 @@ recovers its content type and size, republishes the terminal RTDB notification,
 and skips API dispatch. This provides at-least-once notification handling
 without intentionally repeating completed work. Duplicate kiapi processes can
 still execute concurrently, but only one can create the GCS commit marker.
+
+LocalRelay mirrors the GCP layout below a local root directory. It polls
+`{root}/{prefix}/nodes/{node_id}/requests/*.json`, reads requests from
+`sessions/{session_id}/request.json`, writes `response.body` before
+`response.json`, and removes the request notification when the terminal status
+is written.
 
 ## Models
 

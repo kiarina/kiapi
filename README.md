@@ -243,6 +243,24 @@ credentials are configured through
 See [GCP Relay setup](kiapi/relay/gcp/README.md) for resource creation, IAM,
 authentication, configuration, and verification steps.
 
+For local relay verification without GCP, use `local`. It uses the same
+in-process dispatch path but stores notifications and payloads under a local
+directory:
+
+```sh
+export KIAPI_RELAY_LOCAL_NODE_ID="studio-1"
+export KIAPI_RELAY_LOCAL_ROOT="/tmp/kiapi/relay"
+export KIAPI_RELAY_LOCAL_PREFIX="private/kiapi"
+
+kiapi run --relay local
+```
+
+The requester writes `{root}/{prefix}/sessions/{session_id}/request.json`, then
+writes `{root}/{prefix}/nodes/{node_id}/requests/{session_id}.json` with
+`{"session_id":"...","source_node_id":"..."}`. The relay writes bridge status
+to `{root}/{prefix}/nodes/{source_node_id}/responses/{session_id}.json` and
+stores the committed response in the session directory.
+
 ## Architecture
 
 > [!NOTE]

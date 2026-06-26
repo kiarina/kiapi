@@ -24,6 +24,7 @@ class RelaySettings(BaseSettings):
     presets: dict[RelayName, ImportPath] = Field(
         default_factory=lambda: {
             "gcp": "kiapi.relay.gcp:create_gcp_relay",
+            "local": "kiapi.relay.local:create_local_relay",
         },
         title="Relay presets",
         description="Built-in relay factories keyed by relay name.",

@@ -122,6 +122,7 @@ kiapi.core.relay:
   #   Built-in relay factories keyed by relay name.
   # presets:
   #   gcp: "kiapi.relay.gcp:create_gcp_relay"
+  #   local: "kiapi.relay.local:create_local_relay"
   #--------------------------------------------------
   # Custom relays: dict[RelayName, str]
   #   Custom relay factories keyed by relay name.
@@ -161,6 +162,26 @@ kiapi.relay.gcp:
   # RTDB reconnect delay seconds: float
   #   Delay before reconnecting the RTDB SSE watch after an error.
   # reconnect_delay_s: 1.0
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+kiapi.relay.local:
+  # Relay node ID: str
+  #   Unique local relay node ID for this kiapi instance.
+  # node_id: local
+  #--------------------------------------------------
+  # Local relay root: Path
+  #   Directory used for local relay request and response payloads.
+  # root:
+  #   /tmp/kiapi/relay
+  #--------------------------------------------------
+  # Local relay prefix: str
+  #   Shared prefix used below the local relay root.
+  # prefix: kiapi
+  #--------------------------------------------------
+  # Local relay poll interval seconds: float
+  #   Delay between local request directory scans.
+  # poll_interval_s: 0.2
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------

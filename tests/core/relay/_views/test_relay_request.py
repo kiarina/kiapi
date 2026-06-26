@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from kiapi.core.relay import RelayRequest
+from kiapi.core.relay import RelayRequest, RelaySettings
 
 
 def test_relay_request_accepts_local_absolute_path() -> None:
@@ -17,3 +17,7 @@ def test_relay_request_accepts_local_absolute_path() -> None:
 def test_relay_request_rejects_non_local_path(path: str) -> None:
     with pytest.raises(ValidationError):
         RelayRequest(method="POST", path=path)
+
+
+def test_relay_settings_include_local_preset() -> None:
+    assert RelaySettings().presets["local"] == "kiapi.relay.local:create_local_relay"

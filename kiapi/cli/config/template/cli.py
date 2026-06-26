@@ -12,6 +12,7 @@ _SETTINGS_IMPORT_PATHS = [
     "kiapi.core.net",
     "kiapi.core.relay",
     "kiapi.relay.gcp",
+    "kiapi.relay.local",
     "kiarina.lib.google",
     "kiapi.capabilities.chat",
     "kiapi.capabilities.embedding",
