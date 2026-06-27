@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Setup development environment (install tools, sync dependencies, and download test assets)"
+
+set -euo pipefail
+
+echo "🔧 Installing mise tools..."
+mise install
+
+echo "📦 Syncing workspace dependencies..."
+uv sync --all-packages --all-extras --all-groups
+
+echo "📥 Downloading test assets..."
+mise run test-assets:download
+
+echo "✅ Development environment setup complete!"

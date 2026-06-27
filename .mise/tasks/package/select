@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#MISE description="Select a package with fzf"
+
+set -euo pipefail
+
+if ! command -v fzf >/dev/null 2>&1; then
+    echo "❌ fzf is required to select a package interactively." >&2
+    exit 1
+fi
+
+package="$(mise run package:list | fzf --prompt="Package> " --height=40% --border)"
+
+if [ -z "$package" ] || [[ "$package" == *$'\n'* ]]; then
+    echo "❌ Select exactly one package." >&2
+    exit 1
+fi
+
+echo "$package"

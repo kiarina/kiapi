@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# mise description: Download and extract shared test assets
+#MISE description="Download and extract shared test assets"
 # For detailed documentation, see: https://github.com/kiarina/test-assets
-# Usage: mise run download [--output-dir <dir>] <release-version> <project-name> <assets-version>
-# Example: mise run download v2025.09 kiarina-python v1.0.0
+# Usage: mise run test-assets:download [--output-dir <dir>] <release-version> <project-name> <assets-version>
+# Example: mise run test-assets:download v2026.06 kiapi v1.0.0
 
 set -e
 
@@ -35,8 +35,8 @@ if [ "$#" -ge 2 ]; then PROJECT_NAME=$2; fi
 if [ "$#" -ge 3 ]; then ASSETS_VERSION=$3; fi
 
 if [ -z "$RELEASE_VERSION" ] || [ -z "$PROJECT_NAME" ] || [ -z "$ASSETS_VERSION" ]; then
-    echo "Usage: mise run download [--output-dir <dir>] <release-version> <project-name> <assets-version>"
-    echo "Example: mise run download v2025.09 kiarina-python v1.0.0"
+    echo "Usage: mise run test-assets:download [--output-dir <dir>] <release-version> <project-name> <assets-version>"
+    echo "Example: mise run test-assets:download v2026.06 kiapi v1.0.0"
     echo ""
     echo "Alternatively, you can edit the variables at the top of this script to run without arguments."
     exit 1

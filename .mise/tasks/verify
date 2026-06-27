@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-#MISE description="Run all E2E verification scripts sequentially. Stops on the first error."
-# Usage: mise run verify
+#MISE description="Run E2E verification scripts (all, or a single [capability])"
+#USAGE arg "[capability]" help="Capability name, relay, relay-local, or relay-gcp"
+#USAGE flag "--fast" help="Run the light test selection"
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 BASE_URL="${KIAPI_BASE_URL:-http://127.0.0.1:8000}"
+capability="${usage_capability:-}"
+fast="${usage_fast:-false}"
 
 echo "Checking if kiapi server is running at $BASE_URL ..."
 if ! curl -sf "$BASE_URL/health" >/dev/null; then
@@ -17,15 +20,39 @@ fi
 
 echo "Server is running. Starting verification scripts..."
 
-# Find all verification scripts and sort them alphabetically
-scripts=(scripts/verify_*.py)
+if [ -z "$capability" ]; then
+  scripts=(scripts/capabilities/verify_*.py)
+elif [ "$capability" = "relay" ]; then
+  scripts=(scripts/relay/verify.py)
+elif [ "$capability" = "relay-local" ]; then
+  scripts=(scripts/relay/verify_local.py)
+elif [ "$capability" = "relay-gcp" ]; then
+  scripts=(scripts/relay/verify_gcp.py)
+else
+  scripts=("scripts/capabilities/verify_${capability}.py")
+fi
+
+for script in "${scripts[@]}"; do
+  if [ ! -f "$script" ]; then
+    echo "Error: verification script not found: $script" >&2
+    exit 1
+  fi
+done
+
+verify_args=()
+[ "$fast" = "true" ] && verify_args+=(--fast)
 
 for script in "${scripts[@]}"; do
   echo
   echo "========================================================================"
   echo "Running $script ..."
   echo "========================================================================"
-  uv run python "$script" "$@"
+  case "$capability" in
+    ernie) KIAPI_VERIFY_ERNIE_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
+    flux2) KIAPI_VERIFY_FLUX2_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
+    zimage) KIAPI_VERIFY_ZIMAGE_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
+    *) uv run python "$script" "${verify_args[@]}" ;;
+  esac
 done
 
 echo

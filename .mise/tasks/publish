@@ -1,34 +1,30 @@
 #!/usr/bin/env bash
-#MISE description="Publish built distributions in dist/ to PyPI"
-#USAGE arg "[package]" help="Package name for the index check URL / links (kiapi | kiapi-relay | kiapi-proxy)"
+#MISE description="Publish packages to PyPI (all, or a single [package])"
+#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
 #USAGE flag "-t --test" help="Publish to TestPyPI instead of PyPI"
 
 set -euo pipefail
 
+target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
 test_pypi="${usage_test:-false}"
-package="${usage_package:-}"
 
+if [ "$target" = "all" ]; then
+    while IFS= read -r package; do
+        args=("$package")
+        [ "$test_pypi" = "true" ] && args+=(--test)
+        mise run publish "${args[@]}"
+    done < <(mise run package:list)
+    exit 0
+fi
+
+if [ ! -f "packages/$target/pyproject.toml" ]; then
+    echo "❌ Package not found: $target" >&2
+    exit 1
+fi
+
+cd "packages/$target"
 if [ "$test_pypi" = "true" ]; then
-    echo "Publishing to TestPyPI..."
-    if [ -n "$package" ]; then
-        uv publish \
-            --publish-url https://test.pypi.org/legacy/ \
-            --check-url "https://test.pypi.org/simple/$package/" \
-            dist/*
-        echo "Package published to TestPyPI."
-        echo "https://test.pypi.org/project/$package/"
-    else
-        uv publish --publish-url https://test.pypi.org/legacy/ dist/*
-        echo "Packages published to TestPyPI."
-    fi
+    uv publish --repository testpypi
 else
-    echo "Publishing to PyPI..."
-    if [ -n "$package" ]; then
-        uv publish --check-url "https://pypi.org/simple/$package/" dist/*
-        echo "Package published to PyPI."
-        echo "https://pypi.org/project/$package/"
-    else
-        uv publish dist/*
-        echo "Packages published to PyPI."
-    fi
+    uv publish
 fi

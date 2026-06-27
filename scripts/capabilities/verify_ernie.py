@@ -8,7 +8,7 @@ KIAPI_VERIFY_ERNIE_TRAIN=1 to run it.
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 KIAPI_MEMORY_LIMIT_GB=110 uv run kiapi
-    uv run python scripts/verify_ernie.py
+    uv run python scripts/capabilities/verify_ernie.py
 
 Env:
     KIAPI_BASE_URL             server base URL (default http://127.0.0.1:8000)

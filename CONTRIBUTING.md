@@ -23,7 +23,7 @@ Keep GPU-heavy model loading and inference out of `tests/`.
 make test
 ```
 
-GPU feature and regression checks live in `scripts/verify_*.py` and require a
+GPU feature and regression checks live in `scripts/capabilities/verify_*.py` and require a
 running kiapi server plus the relevant activated models.
 
 ```sh

@@ -8,7 +8,7 @@ on the text model, text/image/both on the VL model, plus the error paths
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 KIAPI_MEMORY_LIMIT_GB=110 uv run kiapi
-    uv run python scripts/verify_embedding.py
+    uv run python scripts/capabilities/verify_embedding.py
 
 Env:
     KIAPI_BASE_URL   server base URL (default http://127.0.0.1:8000)

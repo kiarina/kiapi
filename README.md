@@ -21,8 +21,8 @@ package that does not pull in the heavy MLX dependencies.
 ## Development
 
 ```bash
-# Install all workspace packages and dev tooling
-uv sync --all-groups --all-extras
+# Install tools, workspace dependencies, and test assets
+make init
 
 # Format, lint, generate config template and API docs
 make
@@ -30,6 +30,10 @@ make
 # Run unit tests across all packages
 make test
 ```
+
+The Makefile is a thin wrapper around mise tasks. Use `mise run <task> --help`
+for package selection and task-specific options, such as
+`mise run test kiapi-relay` or `mise run format --unsafe`.
 
 The whole workspace shares a single version, tracked in the root `VERSION`
 file. The root `CHANGELOG.md` records project-wide notes; each package keeps its
@@ -42,7 +46,7 @@ detects every package that has unreleased changelog entries and bumps only those
 to the new version; packages without changes keep their current version.
 
 ```bash
-make bump-version VERSION=0.3.0
+mise run release:bump-version 0.3.0
 # review the diff, then:
 git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock
 git commit -m "chore(release): prepare v0.3.0"

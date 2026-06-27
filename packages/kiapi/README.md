@@ -334,7 +334,7 @@ PyPI publishing.
 
 ```sh
 # Update the version and release entry in CHANGELOG.md
-make bump-version
+mise run release:bump-version <version>
 
 # Or pass the version explicitly
 mise run release:bump-version 0.2.0

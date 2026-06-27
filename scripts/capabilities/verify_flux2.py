@@ -1,24 +1,27 @@
-"""End-to-end verification for kiapi's image (qwen) capability.
+"""End-to-end verification for kiapi's image (flux2) capability.
 
-Exercises txt2img, img2img, natural-language edit, raw image responses, async
+Exercises txt2img, img2img, multi-reference edit, raw image responses, async
 polling, artifact download, validation errors, and help/models discovery.
+LoRA training is available but skipped by default because Flux2 training is
+heavy; set KIAPI_VERIFY_FLUX2_TRAIN=1 to run it.
 
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 KIAPI_MEMORY_LIMIT_GB=110 uv run kiapi
-    uv run python scripts/verify_qwen.py
+    uv run python scripts/capabilities/verify_flux2.py
 
 Env:
-    KIAPI_BASE_URL      server base URL (default http://127.0.0.1:8000)
-    KIAPI_QWEN_WIDTH    verification image width (default 512)
-    KIAPI_QWEN_HEIGHT   verification image height (default 512)
+    KIAPI_BASE_URL              server base URL (default http://127.0.0.1:8000)
+    KIAPI_FLUX2_MODEL           model for generate/edit (default klein-9b)
+    KIAPI_FLUX2_TRAIN_MODEL     base model for train (default klein-base-4b)
+    KIAPI_VERIFY_FLUX2_TRAIN    set 1 to run LoRA training (default 0)
 """
 
-import io
+import io  # noqa: I001
 import os
-import shutil
 import sys
 import time
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -26,13 +29,14 @@ import httpx
 from PIL import Image
 
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
-WIDTH = int(os.environ.get("KIAPI_QWEN_WIDTH", "512"))
-HEIGHT = int(os.environ.get("KIAPI_QWEN_HEIGHT", "512"))
-GEN_URL = f"{BASE_URL}/v1/image/qwen/generate"
-EDIT_URL = f"{BASE_URL}/v1/image/qwen/edit"
+MODEL = os.environ.get("KIAPI_FLUX2_MODEL", "klein-9b")
+TRAIN_MODEL = os.environ.get("KIAPI_FLUX2_TRAIN_MODEL", "klein-base-4b")
+GEN_URL = f"{BASE_URL}/v1/image/flux2/generate"
+EDIT_URL = f"{BASE_URL}/v1/image/flux2/edit"
+TRAIN_URL = f"{BASE_URL}/v1/image/flux2/train"
 
 
-def _poll(client: httpx.Client, job_id: str, timeout: float = 1800.0) -> Any:
+def _poll(client: httpx.Client, job_id: str, timeout: float = 900.0) -> Any:
     deadline = time.time() + timeout
     last = None
     while time.time() < deadline:
@@ -88,16 +92,29 @@ def _upload_png(client: httpx.Client, name: str, color: tuple[int, int, int]) ->
     return r.json()["file_id"]  # type: ignore
 
 
+def _make_text_dataset_zip() -> bytes:
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i, color in enumerate([(200, 80, 120), (90, 140, 200)]):
+            zf.writestr(f"sample_{i:02d}.png", _png_bytes(color))
+            zf.writestr(
+                f"sample_{i:02d}.txt", "kiapi flux2 test swatch, flat solid color\n"
+            )
+    return buf.getvalue()
+
+
 def main() -> None:
-    verify_dir = Path(".verify/qwen")
+    verify_dir = Path(".verify/flux2")
     if verify_dir.exists():
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)
     saved_files: dict[str, list[Path]] = {}
 
-    results: list[tuple[str, bool]] = []
-    print(f"{'=' * 70}\n## kiapi qwen verify  ({BASE_URL})\n{'=' * 70}")
-    with httpx.Client(timeout=2400.0, headers={"Accept": "application/json"}) as client:
+    results = []
+    print(f"{'=' * 70}\n## kiapi flux2 verify  ({BASE_URL})\n{'=' * 70}")
+    with httpx.Client(timeout=1800.0, headers={"Accept": "application/json"}) as client:
 
         def _save(fid: Any, filename: str) -> Path | None:
             if not fid:
@@ -115,11 +132,10 @@ def main() -> None:
             GEN_URL,
             json=_params(
                 mode="sync",
-                model="image",
+                model=MODEL,
                 prompt="a clean cafe storefront, a wooden sign clearly reads CAFE",
-                negative_prompt="blurry, low quality, distorted text",
-                width=WIDTH,
-                height=HEIGHT,
+                width=512,
+                height=512,
                 seed=1,
             ),
         )
@@ -129,13 +145,13 @@ def main() -> None:
             and body.get("status") == "succeeded"
             and body.get("artifacts")
         )
+        fid_sync = body.get("artifacts", [None])[0] if ok else None
         print(
             f"[1] {'✓' if ok else '✗'} ({time.time() - t0:5.1f}s) txt2img sync -> succeeded + artifact"
         )
         results.append(("1", bool(ok)))
-        if ok:
-            fid1 = body.get("artifacts", [None])[0]
-            if p := _save(fid1, f"1_sync_{fid1}.png"):
+        if fid_sync:
+            if p := _save(fid_sync, f"1_sync_{fid_sync}.png"):
                 saved_files.setdefault("1", []).append(p)
         if "--fast" in sys.argv:
             print("\n[FAST MODE] Exiting early.")
@@ -147,11 +163,11 @@ def main() -> None:
             headers={"Accept": "*/*"},
             json=_params(
                 mode="sync",
-                model="image",
-                prompt="a tiny watercolor robot",
+                model=MODEL,
+                prompt="a small ceramic cup",
                 width=256,
                 height=256,
-                seed=2,
+                seed=1,
             ),
         )
         raw_ok = (
@@ -170,19 +186,19 @@ def main() -> None:
             saved_files.setdefault("1b", []).append(path)
 
         # 2. img2img sync via Files API reference
-        init_id = _upload_png(client, "qwen-init.png", (180, 120, 210))
+        init_id = _upload_png(client, "flux2-init.png", (180, 120, 210))
         t0 = time.time()
         r = client.post(
             GEN_URL,
             json=_params(
                 mode="sync",
-                model="image",
+                model=MODEL,
                 prompt="turn this swatch into a polished abstract illustration",
                 init_image_file_id=init_id,
                 image_strength=0.45,
-                width=WIDTH,
-                height=HEIGHT,
-                seed=3,
+                width=512,
+                height=512,
+                seed=2,
             ),
         )
         body = r.json() if r.status_code == 200 else {}
@@ -201,19 +217,19 @@ def main() -> None:
                 saved_files.setdefault("2", []).append(p)
 
         # 3. edit sync with two reference image IDs
-        ref1 = _upload_png(client, "qwen-ref1.png", (230, 80, 120))
-        ref2 = _upload_png(client, "qwen-ref2.png", (80, 170, 220))
+        ref1 = _upload_png(client, "flux2-ref1.png", (230, 80, 120))
+        ref2 = _upload_png(client, "flux2-ref2.png", (80, 170, 220))
         t0 = time.time()
         r = client.post(
             EDIT_URL,
             json=_params(
                 mode="sync",
-                model="edit-2509",
+                model=MODEL,
                 prompt="combine the pink and blue references into a cheerful geometric poster",
                 image_file_ids=[ref1, ref2],
-                width=WIDTH,
-                height=HEIGHT,
-                seed=4,
+                width=512,
+                height=512,
+                seed=3,
             ),
         )
         body = r.json() if r.status_code == 200 else {}
@@ -237,11 +253,11 @@ def main() -> None:
             GEN_URL,
             json=_params(
                 mode="async",
-                model="image",
+                model=MODEL,
                 prompt="clouds over a quiet lake, painterly",
                 width=256,
                 height=256,
-                seed=5,
+                seed=4,
             ),
         )
         ok4 = sub.status_code == 202 and "job_id" in sub.json()
@@ -264,7 +280,7 @@ def main() -> None:
 
         # 5. bad size -> 422
         r = client.post(
-            GEN_URL, json=_params(model="image", prompt="x", width=513, height=512)
+            GEN_URL, json=_params(model=MODEL, prompt="x", width=513, height=512)
         )
         ok5 = r.status_code == 422
         print(
@@ -272,13 +288,10 @@ def main() -> None:
         )
         results.append(("5", ok5))
 
-        # 6. wrong model for endpoint -> 400
-        bad_gen = client.post(GEN_URL, json=_params(model="edit-2509", prompt="x"))
-        bad_edit = client.post(
-            EDIT_URL, json=_params(model="image", prompt="x", image_file_ids=[ref1])
-        )
-        ok6 = bad_gen.status_code == 400 and bad_edit.status_code == 400
-        print(f"[6] {'✓' if ok6 else '✗'} wrong endpoint model -> 400")
+        # 6. unknown model -> 400
+        r = client.post(GEN_URL, json=_params(model="nope", prompt="x"))
+        ok6 = r.status_code == 400
+        print(f"[6] {'✓' if ok6 else '✗'} unknown model -> 400 (got {r.status_code})")
         results.append(("6", ok6))
 
         # 7. unknown file IDs -> 400
@@ -286,7 +299,7 @@ def main() -> None:
             GEN_URL,
             json=_params(
                 mode="sync",
-                model="image",
+                model=MODEL,
                 prompt="x",
                 init_image_file_id="file_does_not_exist",
                 width=256,
@@ -297,7 +310,7 @@ def main() -> None:
             EDIT_URL,
             json=_params(
                 mode="sync",
-                model="edit-2509",
+                model=MODEL,
                 prompt="x",
                 image_file_ids=["file_does_not_exist"],
                 width=256,
@@ -308,19 +321,117 @@ def main() -> None:
         print(f"[7] {'✓' if ok7 else '✗'} unknown init/edit image file_id -> 400")
         results.append(("7", ok7))
 
-        # 8. discovery: models + help list qwen
-        m = client.get(f"{BASE_URL}/v1/image/qwen/models").json()
-        has_models = any(x["family"] == "qwen" and x["domain"] == "image" for x in m)
-        h = client.get(f"{BASE_URL}/v1/image/qwen/openapi.json")
+        # 8. discovery: models + help list flux2
+        m = client.get(f"{BASE_URL}/v1/image/flux2/models").json()
+        has_models = any(x["family"] == "flux2" and x["domain"] == "image" for x in m)
+        h = client.get(f"{BASE_URL}/v1/image/flux2/openapi.json")
         ok8 = (
             has_models
             and h.status_code == 200
-            and h.json().get("x-kiapi-capability") == "qwen"
+            and h.json().get("x-kiapi-capability") == "flux2"
         )
         print(
-            f"[8] {'✓' if ok8 else '✗'} discovery: /v1/image/qwen/models + /v1/image/qwen/openapi.json"
+            f"[8] {'✓' if ok8 else '✗'} discovery: /v1/image/flux2/models + /v1/image/flux2/openapi.json"
         )
         results.append(("8", bool(ok8)))
+
+        # 9. output format selection
+        magics = {
+            "jpeg": (b"\xff\xd8\xff", "image/jpeg"),
+            "webp": (b"RIFF", "image/webp"),
+        }
+        ok9 = True
+        for fmt, (magic, ctype) in magics.items():
+            r = client.post(
+                GEN_URL,
+                json=_params(
+                    mode="sync",
+                    model=MODEL,
+                    prompt="a tiny cup",
+                    width=256,
+                    height=256,
+                    seed=5,
+                    format=fmt,
+                    quality=80,
+                ),
+            )
+            out_fid = (
+                r.json().get("artifacts", [None])[0] if r.status_code == 200 else None
+            )
+            good = False
+            if out_fid:
+                d = client.get(f"{BASE_URL}/v1/files/{out_fid}/download")
+                good = (
+                    d.content[:4].startswith(magic)
+                    and d.headers.get("content-type") == ctype
+                )
+                if good:
+                    ext = "jpg" if fmt == "jpeg" else fmt
+                    path = verify_dir / f"9_format_{fmt}_{out_fid}.{ext}"
+                    path.write_bytes(d.content)
+                    saved_files.setdefault("9", []).append(path)
+            ok9 = ok9 and good
+        print(
+            f"[9] {'✓' if ok9 else '✗'} output format jpeg/webp -> correct magic + content-type"
+        )
+        results.append(("9", bool(ok9)))
+
+        # 10. train validation + optional slow training path
+        r = client.post(
+            TRAIN_URL,
+            json={
+                "model": TRAIN_MODEL,
+                "dataset": {"type": "file_id", "file_id": "file_nope"},
+            },
+        )
+        ok10 = r.status_code == 400
+        print(
+            f"[10] {'✓' if ok10 else '✗'} train unknown dataset_file_id -> 400 (got {r.status_code})"
+        )
+        results.append(("10", ok10))
+
+        if os.environ.get("KIAPI_VERIFY_FLUX2_TRAIN", "0") == "1":
+            zip_bytes = _make_text_dataset_zip()
+            up = client.post(
+                f"{BASE_URL}/v1/files",
+                files={
+                    "file": ("flux2_ds.zip", io.BytesIO(zip_bytes), "application/zip")
+                },
+            )
+            ds_fid = up.json().get("file_id") if up.status_code == 200 else None
+            t0 = time.time()
+            sub = client.post(
+                TRAIN_URL,
+                json={
+                    "model": TRAIN_MODEL,
+                    "dataset": {"type": "file_id", "file_id": ds_fid},
+                    "training_mode": "text",
+                    "num_epochs": 1,
+                    "lora_rank": 8,
+                    "max_resolution": 256,
+                },
+            )
+            ok11 = sub.status_code == 202 and "job_id" in sub.json()
+            adapter_fid = None
+            if ok11:
+                job = _poll(client, sub.json()["job_id"], timeout=1800.0)
+                ok11 = job["status"] == "succeeded" and bool(job["artifacts"])
+                adapter_fid = job["result"].get("adapter_file_id") if ok11 else None
+            print(
+                f"[11] {'✓' if ok11 else '✗'} ({time.time() - t0:5.1f}s) train async -> adapter ({adapter_fid})"
+            )
+            results.append(("11", bool(ok11)))
+            if adapter_fid:
+                if p := _save(adapter_fid, f"11_adapter_{adapter_fid}.zip"):
+                    saved_files.setdefault("11", []).append(p)
+        else:
+            print(
+                "[11] - skipped Flux2 LoRA training (set KIAPI_VERIFY_FLUX2_TRAIN=1 to run)"
+            )
+
+        # Keep a reference to the first artifact so linters do not complain when
+        # this script is adapted for manual inspection.
+        _ = fid_sync
 
     print(f"\n{'=' * 70}\n## SUMMARY\n{'=' * 70}")
     passed = sum(1 for _, ok in results if ok)

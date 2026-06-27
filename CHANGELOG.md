@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Moved development and CI operations from Make recipes into package-aware mise tasks, including the new setup task and namespaced test-assets download task.
 - Manage the repository version in a single root `VERSION` file and release the whole workspace under one shared version. The release pipeline now detects packages with unreleased changelog entries, bumps and publishes only those, and is triggered by a single `v<version>` tag instead of per-package `<package>-v<version>` tags.
 - **kiapi**: Simplified the `Relay` protocol to a single `watch` method and moved listener tasks and the HTTP client into the `watch` lifecycle, removing the explicit `close` method.
 - **kiapi**: Reworked the relay verification scripts to issue requests through `Relay.request` via the relay registry factories, removing the duplicated transport client in `scripts/relay/_client.py`.
