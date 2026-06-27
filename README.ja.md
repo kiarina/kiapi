@@ -35,29 +35,29 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 | Domain | Family | Resource | Kind | Upstream license | Notes |
 |---|---|---|---|---|---|
-| chat | chat | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | model weights | Apache-2.0 | MLX 変換版 Qwen3 Omni model。 |
+| chat | [chat](packages/kiapi/src/kiapi/capabilities/chat/README.ja.md) | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | model weights | Apache-2.0 | MLX 変換版 Qwen3 Omni model。 |
 |  |  | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | model weights | Apache-2.0 | MLX 変換版 Qwen3.6 model。 |
-| embedding | embedding | [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | model weights | Apache-2.0 | Text embedding model。 |
+| embedding | [embedding](packages/kiapi/src/kiapi/capabilities/embedding/README.ja.md) | [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | model weights | Apache-2.0 | Text embedding model。 |
 |  |  | [mlx-community/Qwen3-VL-Embedding-2B-mxfp8](https://huggingface.co/mlx-community/Qwen3-VL-Embedding-2B-mxfp8) | model weights | Apache-2.0 | Text + image embedding model。 |
-| image | zimage | [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | model weights | Tongyi Qianwen License | Quantized MLX-compatible Z-Image Turbo。元の Z-Image Turbo license を継承します。 |
+| image | [zimage](packages/kiapi/src/kiapi/capabilities/zimage/README.ja.md) | [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | model weights | Tongyi Qianwen License | Quantized MLX-compatible Z-Image Turbo。元の Z-Image Turbo license を継承します。 |
 |  |  | [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | model weights | Apache-2.0 | Base Z-Image model。 |
-|  | flux2 | [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) | model weights | FLUX Non-Commercial License | upstream gated model。商用利用前に必ず条件を確認してください。 |
+|  | [flux2](packages/kiapi/src/kiapi/capabilities/flux2/README.ja.md) | [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) | model weights | FLUX Non-Commercial License | upstream gated model。商用利用前に必ず条件を確認してください。 |
 |  |  | [black-forest-labs/FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) | model weights | Apache-2.0 | Open-weight FLUX.2 Klein Base 4B variant。 |
 |  |  | [black-forest-labs/FLUX.2-klein-base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) | model weights | FLUX Non-Commercial License | upstream gated model。商用利用前に必ず条件を確認してください。 |
-|  | qwen | [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | model weights | Apache-2.0 | Text-to-image model。 |
+|  | [qwen](packages/kiapi/src/kiapi/capabilities/qwen/README.ja.md) | [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | model weights | Apache-2.0 | Text-to-image model。 |
 |  |  | [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | model weights | Apache-2.0 | Image editing model。 |
-|  | ideogram4 | [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | model weights | Ideogram Non-Commercial Model Agreement | upstream gated model。hosted-service や商用利用の条件を確認してください。 |
-|  | ernie | [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | model weights | Apache-2.0 | Turbo ERNIE-Image variant。 |
+|  | [ideogram4](packages/kiapi/src/kiapi/capabilities/ideogram4/README.ja.md) | [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | model weights | Ideogram Non-Commercial Model Agreement | upstream gated model。hosted-service や商用利用の条件を確認してください。 |
+|  | [ernie](packages/kiapi/src/kiapi/capabilities/ernie/README.ja.md) | [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | model weights | Apache-2.0 | Turbo ERNIE-Image variant。 |
 |  |  | [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) | model weights | Apache-2.0 | Base ERNIE-Image variant。 |
-|  | seedvr2 | [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | model weights | Apache-2.0 | SeedVR2 3B / 7B upscaling checkpoints。 |
-|  | depthpro | [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) / [depth_pro.pt](https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt) | code + model file | Apple custom license | GitHub metadata は `NOASSERTION`。再配布や商用利用前に Apple の license text を確認してください。 |
-| audio | acestep | [ace-step/ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5) | Python package | MIT | ACE-Step 専用 venv にインストールされます。 |
+|  | [seedvr2](packages/kiapi/src/kiapi/capabilities/seedvr2/README.ja.md) | [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | model weights | Apache-2.0 | SeedVR2 3B / 7B upscaling checkpoints。 |
+|  | [depthpro](packages/kiapi/src/kiapi/capabilities/depthpro/README.ja.md) | [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) / [depth_pro.pt](https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt) | code + model file | Apple custom license | GitHub metadata は `NOASSERTION`。再配布や商用利用前に Apple の license text を確認してください。 |
+| audio | [acestep](packages/kiapi/src/kiapi/capabilities/acestep/README.ja.md) | [ace-step/ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5) | Python package | MIT | ACE-Step 専用 venv にインストールされます。 |
 |  |  | [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | shared checkpoints | MIT | ACE-Step 1.5 の共有 checkpoint resource。 |
 |  |  | [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | model weights | MIT | `xl-base` が使う追加 checkpoint。 |
-| audio | audiogen | [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | model weights | CC-BY-NC-4.0 | Non-commercial license。 |
-| video | ltx2 | [Blaizzy/mlx-video](https://github.com/Blaizzy/mlx-video) | Python package | MIT | LTX-2 inference 用に pinned Git commit からインストールされます。 |
+| audio | [audiogen](packages/kiapi/src/kiapi/capabilities/audiogen/README.ja.md) | [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | model weights | CC-BY-NC-4.0 | Non-commercial license。 |
+| video | [ltx2](packages/kiapi/src/kiapi/capabilities/ltx2/README.ja.md) | [Blaizzy/mlx-video](https://github.com/Blaizzy/mlx-video) | Python package | MIT | LTX-2 inference 用に pinned Git commit からインストールされます。 |
 |  |  | [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | model weights | Not declared upstream | model card に license metadata がないため、利用前に権利関係を確認してください。 |
-| web | web | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend。network service では AGPL の義務が重要になる場合があります。 |
+| web | [web](packages/kiapi/src/kiapi/capabilities/web/README.ja.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend。network service では AGPL の義務が重要になる場合があります。 |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend。 |
 
 ## Design
