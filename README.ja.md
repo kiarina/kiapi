@@ -85,7 +85,7 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 | Package | 説明 | 動作環境 |
 | --- | --- | --- |
-| [kiapi](packages/kiapi/README.ja.md) | Apple Silicon (MLX) 上の LLM エージェント向け統合ローカル推論 API サーバー。<br>kiapi の管理・起動用の kiapi コマンドを提供します。 | Apple Silicon (macOS) |
+| [kiapi](packages/kiapi/README.ja.md) | Apple Silicon と MLX を活用し、生成 AI 機能を提供するローカル API サーバー。<br>kiapi の管理・起動用の kiapi コマンドを提供します。 | Apple Silicon (macOS) |
 | [kiapi-relay](packages/kiapi-relay/README.ja.md) | relay 機能を実装したライブラリ。<br>kiapi, kiapi-proxy の双方から利用されます。 | 全プラットフォーム |
 | [kiapi-proxy](packages/kiapi-proxy/README.ja.md) | kiapi へのリクエストを relay 機能で中継する Proxy サーバー。<br>OS に依存せず、スペックの低いマシンでも動作します。 | Linux / Windows / macOS |
 
