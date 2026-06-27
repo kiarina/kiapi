@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "path": "packages/kiapi"
+    },
+    {
+      "path": "packages/kiapi-relay"
+    },
+    {
+      "path": "packages/kiapi-proxy"
+    },
+    {
+      "path": ".",
+      "name": "root"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:root}/.venv/bin/python",
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.egg-info": true,
+      "**/.mypy_cache": true,
+      "**/.pytest_cache": true,
+      "**/.ruff_cache": true,
+      "**/.coverage": true,
+      "**/coverage.xml": true
+    },
+    "files.associations": {
+      ".mise/tasks/*": "shellscript",
+      ".mise/tasks/**/*": "shellscript",
+      "format": "shellscript",
+      "list": "shellscript",
+      "version": "shellscript"
+    }
+  }
+}
