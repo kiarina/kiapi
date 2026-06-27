@@ -14,6 +14,7 @@ from .._schemas.relay_json_body import RelayJsonBody
 from .._types.relay import Relay
 from .._types.relay_delivery import RelayDelivery
 from .._views.relay_error import RelayError
+from .._views.relay_health import RelayHealth
 from .._views.relay_request import RelayRequest
 from .._views.relay_response import RelayResponse
 
@@ -45,6 +46,12 @@ class RelayRunner:
     def start(self) -> None:
         if self._task is None:
             self._task = asyncio.create_task(self._run(), name="kiapi-relay")
+
+    def status(self) -> RelayHealth:
+        task = self._task
+        running = task is not None and not task.done()
+        failed = task is not None and task.done() and not task.cancelled()
+        return RelayHealth(name=self._relay.name, running=running, failed=failed)
 
     async def stop(self) -> None:
         if self._task is not None:

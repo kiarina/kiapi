@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from kiapi_relay import (
+    BaseRelay,
     RelayDelivery,
     RelayError,
     RelayFileBody,
@@ -26,8 +27,10 @@ from .local_relay_delivery import LocalRelayDelivery
 logger = logging.getLogger(__name__)
 
 
-class LocalRelay:
+class LocalRelay(BaseRelay):
     def __init__(self, settings: LocalRelaySettings) -> None:
+        super().__init__()
+
         self.settings = settings
         self._queue: asyncio.Queue[LocalRelayNotification] = asyncio.Queue()
         self._scheduled: set[str] = set()
