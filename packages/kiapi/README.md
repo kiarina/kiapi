@@ -9,77 +9,7 @@
 
 ## Summary
 
-kiapi is an **API server** for providing the following capabilities to
-**LLM agents** on a **Mac Studio M4 Max 128GB**.
-
-- **Chat:**
-  - OpenAI Chat Completions API compatible
-  - text + image + audio + video input support
-  - tool call + tool choice (auto, any, specific) + parallel tool calls + streaming support
-- **Embedding:**
-  - text + image input support
-- **Image generation:**
-  - text2image, image2image, image editing, and LoRA training support
-- **Music and sound-effect generation:**
-  - text2audio, cover, repaint, and extract support
-- **Video generation:**
-  - text2video, image2video, and audio2video support
-- **Web:**
-  - search + fetch support
-
-To provide every capability stably from a single PC, kiapi has these properties.
-
-- GPU work is queued and executed **one job at a time**
-- Application **memory is managed** to avoid overcommit failures
-
-kiapi is also designed so LLM agents can understand and operate its capabilities.
-
-- The API server can **explain how to use itself** to an LLM
-- Asynchronous task **progress can be observed**
-- Generation tasks can run in both **sync / async** modes
-
-> [!IMPORTANT]
->
-> kiapi itself is MIT-licensed OSS, but the packages and models it provides have
-> various licenses. Before use, check the dependency packages and models on each
-> capability page and confirm the license of the model you use.
-
-## Model and Dependency Licenses
-
-The table below summarizes the upstream licenses for the default models and
-runtime resources that kiapi can activate. It is a convenience checklist, not
-legal advice. License labels and gating status can change upstream, so always
-check the linked source before commercial use, redistribution, or offering a
-hosted service.
-
-Review date: 2026-06-23.
-
-| Domain | Family | Resource | Kind | Upstream license | Notes |
-|---|---|---|---|---|---|
-| chat | chat | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | model weights | Apache-2.0 | MLX-converted Qwen3 Omni model. |
-| chat | chat | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | model weights | Apache-2.0 | MLX-converted Qwen3.6 model. |
-| embedding | embedding | [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | model weights | Apache-2.0 | Text embedding model. |
-| embedding | embedding | [mlx-community/Qwen3-VL-Embedding-2B-mxfp8](https://huggingface.co/mlx-community/Qwen3-VL-Embedding-2B-mxfp8) | model weights | Apache-2.0 | Text + image embedding model. |
-| image | zimage | [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | model weights | Tongyi Qianwen License | Quantized MLX-compatible Z-Image Turbo; inherits the original Z-Image Turbo license. |
-| image | zimage | [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | model weights | Apache-2.0 | Base Z-Image model. |
-| image | flux2 | [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) | model weights | FLUX Non-Commercial License | Gated upstream model. Confirm terms before any commercial use. |
-| image | flux2 | [black-forest-labs/FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) | model weights | Apache-2.0 | Open-weight FLUX.2 Klein Base 4B variant. |
-| image | flux2 | [black-forest-labs/FLUX.2-klein-base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) | model weights | FLUX Non-Commercial License | Gated upstream model. Confirm terms before any commercial use. |
-| image | qwen | [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | model weights | Apache-2.0 | Text-to-image model. |
-| image | qwen | [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | model weights | Apache-2.0 | Image editing model. |
-| image | ideogram4 | [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | model weights | Ideogram Non-Commercial Model Agreement | Gated upstream model. Confirm hosted-service and commercial-use terms. |
-| image | ernie | [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | model weights | Apache-2.0 | Turbo ERNIE-Image variant. |
-| image | ernie | [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) | model weights | Apache-2.0 | Base ERNIE-Image variant. |
-| image | seedvr2 | [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | model weights | Apache-2.0 | SeedVR2 3B and 7B upscaling checkpoints. |
-| image | depthpro | [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) / [depth_pro.pt](https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt) | code + model file | Apple custom license | GitHub reports `NOASSERTION`; review Apple's license text before redistribution or commercial use. |
-| audio | acestep | [ace-step/ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5) | Python package | MIT | Installed into the ACE-Step dedicated venv. |
-| audio | acestep | [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | shared checkpoints | MIT | Shared ACE-Step 1.5 checkpoint resources. |
-| audio | acestep | [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | model weights | MIT | Extra XL base checkpoint used by `xl-base`. |
-| audio | audiogen | [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | model weights | CC-BY-NC-4.0 | Non-commercial license. |
-| video | ltx2 | [Blaizzy/mlx-video](https://github.com/Blaizzy/mlx-video) | Python package | MIT | Installed from a pinned Git commit for LTX-2 inference. |
-| video | ltx2 | [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | model weights | Not declared upstream | The model card has no license metadata; verify rights before use. |
-| web | web | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend. AGPL obligations can matter for network services. |
-| web | web | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend. |
+kiapi is a unified local inference API server for LLM agents on Apple Silicon (MLX).
 
 ## API
 
@@ -110,12 +40,7 @@ Review date: 2026-06-23.
 |  |  | `GET /v1/{domain}/{family}/openapi.json` | Return detailed input/output specs, usage, tips, and examples for each family. |
 |  | health | `GET /health` | Return server status, warmup status, queue length, and memory usage. |
 
-## API Docs
-
-- [kiapi API Docs](https://kiarina.github.io/kiapi/)
-  - [OpenAPI JSON](https://kiarina.github.io/kiapi/openapi.json)
-  - [Swagger UI](https://kiarina.github.io/kiapi/docs.html)
-  - [ReDoc](https://kiarina.github.io/kiapi/redoc.html)
+See: [kiapi API Docs](https://kiarina.github.io/kiapi/)
 
 ## Requirements
 
@@ -261,13 +186,6 @@ writes `{root}/{prefix}/nodes/{node_id}/requests/{session_id}.json` with
 to `{root}/{prefix}/nodes/{source_node_id}/responses/{session_id}.json` and
 stores the committed response in the session directory.
 
-## Architecture
-
-> [!NOTE]
->
-> For kiapi architecture details, see
-> [ARCHITECTURE.md](../../ARCHITECTURE.md).
-
 ## Local Storage
 
 kiapi mainly writes to these local paths at runtime.
@@ -282,14 +200,6 @@ kiapi mainly writes to these local paths at runtime.
 Other model weights and library caches are managed by Hugging Face, mflux,
 Docker, or each library/tool. kiapi generally does not move them into its own
 storage location.
-
-## Project Status
-
-kiapi is OSS developed mainly for personal use. The API, supported models, and
-setup steps may change in the future.
-
-Issues and Pull Requests are welcome, but this is a personal project and support
-is best-effort.
 
 ## Security
 
