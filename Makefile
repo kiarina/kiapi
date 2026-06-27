@@ -108,7 +108,7 @@ pages:
 #   make build PKG=kiapi-relay
 #   make publish PKG=kiapi-proxy
 bump-version:
-	mise run bump-version $(VERSION)
+	mise run release:bump-version $(VERSION)
 clean:
 	mise run clean
 build:
