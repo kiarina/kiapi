@@ -263,7 +263,8 @@ committed response を session directory に保存します。
 
 > [!NOTE]
 >
-> kiapi のアーキテクチャの詳細は [ARCHITECTURE.ja.md](./ARCHITECTURE.ja.md) を参照してください。
+> kiapi のアーキテクチャの詳細は
+> [ARCHITECTURE.ja.md](../../ARCHITECTURE.ja.md) を参照してください。
 
 ## Local Storage
 
