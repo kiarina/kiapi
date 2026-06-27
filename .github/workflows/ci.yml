@@ -31,17 +31,5 @@ jobs:
           cache: true
           install: false
 
-      - name: Setup tools via mise
-        run: mise install
-
-      - name: Install dependencies
-        run: mise exec -- uv sync --all-extras --all-groups
-
-      - name: Run tests
-        run: mise exec -- make test
-
-      - name: Run format, lint, and docs generation
-        run: mise exec -- make
-
-      - name: Build package
-        run: mise exec -- make build
+      - name: Run CI pipeline
+        run: mise run ci

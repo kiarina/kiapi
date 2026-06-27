@@ -6,11 +6,12 @@ set -euo pipefail
 
 version="$usage_version"
 
-mise run clean
+rm -rf dist
+mkdir -p dist
 
 while IFS= read -r package; do
     echo "🏗️  Building $package $version..."
-    uv build --package "$package" --out-dir dist
+    uv build "packages/$package" --out-dir dist
 done < <(mise run package:list --release "$version")
 
 if ! find dist -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print -quit | grep -q .; then

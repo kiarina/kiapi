@@ -329,7 +329,7 @@ changelog 更新、tag push を起点にした GitHub Release / PyPI publish で
 
 ```sh
 # version と CHANGELOG.md のリリース項目を更新
-make bump-version
+mise run release:bump-version <version>
 
 # version を明示する場合
 mise run release:bump-version 0.2.0

@@ -45,7 +45,7 @@ jobs:
         run: mise exec -- uv sync --all-extras --all-groups
 
       - name: Run release checks
-        run: mise run ci
+        run: mise run ci --no-setup
 
       - name: Build the selected packages
         run: mise run release:build "${{ steps.parse.outputs.version }}"

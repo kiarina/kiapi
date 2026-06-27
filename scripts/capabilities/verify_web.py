@@ -10,7 +10,7 @@ kiapi starts SearXNG and Crawl4AI as resident subprocess models on demand.
 Usage:
     # start the server:
     #   KIAPI_PORT=8000 uv run kiapi
-    uv run python scripts/verify_web.py
+    uv run python scripts/capabilities/verify_web.py
 
 Env:
     KIAPI_BASE_URL   server base URL (default http://127.0.0.1:8000)

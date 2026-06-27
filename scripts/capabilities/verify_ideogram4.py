@@ -4,7 +4,7 @@ The model is gated and heavy. Start the server first and make sure Hugging Face
 access to ideogram-ai/ideogram-4-fp8 is approved.
 
 Usage:
-    KIAPI_BASE_URL=http://127.0.0.1:8000 uv run python scripts/verify_ideogram4.py
+    KIAPI_BASE_URL=http://127.0.0.1:8000 uv run python scripts/capabilities/verify_ideogram4.py
 """
 
 import os

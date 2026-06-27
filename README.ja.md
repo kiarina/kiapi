@@ -21,8 +21,8 @@
 ## Development
 
 ```bash
-# 全ワークスペースパッケージと開発ツールをインストール
-uv sync --all-groups --all-extras
+# ツール、ワークスペース依存関係、テストアセットをセットアップ
+make init
 
 # format / lint / 設定テンプレート・API ドキュメント生成
 make
@@ -30,6 +30,10 @@ make
 # 全パッケージのユニットテストを実行
 make test
 ```
+
+Makefile は mise task の薄いラッパーです。package の選択や task 固有のオプションは
+`mise run <task> --help` で確認できます。たとえば `mise run test kiapi-relay` や
+`mise run format --unsafe` を使用します。
 
 ワークスペース全体で単一のバージョンを共有し、ルートの `VERSION` ファイルで管理します。
 ルートの `CHANGELOG.md` にプロジェクト全体の変更を記録し、各パッケージも個別の
@@ -42,7 +46,7 @@ make test
 それらだけを新バージョンへ bump します（変更のないパッケージは据え置きです）。
 
 ```bash
-make bump-version VERSION=0.3.0
+mise run release:bump-version 0.3.0
 # 差分を確認してから:
 git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock
 git commit -m "chore(release): prepare v0.3.0"

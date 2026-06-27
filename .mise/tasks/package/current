@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Print the current package target (\"all\" at repository root)"
+
+set -euo pipefail
+
+echo "all"

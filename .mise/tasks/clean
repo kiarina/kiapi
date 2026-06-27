@@ -1,18 +1,35 @@
 #!/usr/bin/env bash
-#MISE description="Clean build artifacts and cache files"
+#MISE description="Clean build/cache artifacts (all, or a single [package])"
+#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
 
 set -euo pipefail
 
-echo "Cleaning artifacts..."
+target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
 
-rm -rf dist/ build/ *.egg-info/
+if [ "$target" = "all" ]; then
+    while IFS= read -r package; do
+        mise run clean "$package"
+    done < <(mise run package:list)
+    rm -rf dist build .mypy_cache .pytest_cache .ruff_cache
+    rm -f .coverage .coverage.* coverage.xml
+    find scripts -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find scripts -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null || true
+    exit 0
+fi
 
-find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-find . -type f -name "*.pyc" -delete 2>/dev/null || true
-find . -type f -name "*.pyo" -delete 2>/dev/null || true
-find . -type f -name "*.pyd" -delete 2>/dev/null || true
+if [ ! -f "packages/$target/pyproject.toml" ]; then
+    echo "❌ Package not found: $target" >&2
+    exit 1
+fi
 
-rm -f .coverage coverage.xml
-rm -rf .ruff_cache/ .mypy_cache/ .pytest_cache/
-
-echo "Clean completed."
+echo "🧹 Cleaning artifacts for $target..."
+package_dir="packages/$target"
+rm -rf \
+    "$package_dir/build" \
+    "$package_dir/dist" \
+    "$package_dir/.mypy_cache" \
+    "$package_dir/.pytest_cache" \
+    "$package_dir/.ruff_cache"
+find "$package_dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find "$package_dir" -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null || true
+find "$package_dir" -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true

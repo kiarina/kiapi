@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Print the current package name"
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+basename "$(dirname "$(dirname "$(dirname "$script_dir")")")"

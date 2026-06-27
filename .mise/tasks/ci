@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-#MISE description="Run release-quality checks"
+#MISE description="Run CI checks (setup, lint, test, generated artifacts, and build)"
+#USAGE flag "--no-setup" help="Skip setup when the environment is already prepared"
 
 set -euo pipefail
 
-echo "Running unit tests..."
-make test
+no_setup="${usage_no_setup:-false}"
 
-echo "Running format, lint, config generation, and API docs generation..."
-make
+if [ "$no_setup" = "false" ]; then
+    mise run setup
+fi
 
-echo "Building package..."
+mise run lint
+mise run test
+make config
+make pages
 mise run build
-
-echo "CI checks passed."

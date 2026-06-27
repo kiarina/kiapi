@@ -7,7 +7,7 @@ Ported in spirit from test-mflux's Z-Image checks.
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 KIAPI_MEMORY_LIMIT_GB=110 uv run kiapi
-    uv run python scripts/verify_zimage.py
+    uv run python scripts/capabilities/verify_zimage.py
 
 Env:
     KIAPI_BASE_URL   server base URL (default http://127.0.0.1:8000)

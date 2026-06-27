@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
-#MISE description="Build Python package distributions (one workspace package, or all)"
-#USAGE arg "[package]" help="Workspace package to build (kiapi | kiapi-relay | kiapi-proxy). Omit to build all."
+#MISE description="Build packages (all, or a single [package])"
+#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
 
 set -euo pipefail
 
-package="${usage_package:-}"
+target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
 
-mise run clean
-
-if [ -n "$package" ]; then
-    if [ ! -f "packages/$package/pyproject.toml" ]; then
-        echo "Unknown package: $package (packages/$package/pyproject.toml not found)"
-        exit 1
-    fi
-    echo "Building $package..."
-    uv build --package "$package" --out-dir dist
-else
-    echo "Building all workspace packages..."
-    uv build --all-packages --out-dir dist
+if [ "$target" = "all" ]; then
+    while IFS= read -r package; do
+        mise run build "$package"
+    done < <(mise run package:list)
+    exit 0
 fi
 
-echo "Package(s) built successfully."
-echo "Built artifacts are in dist/."
+if [ ! -f "packages/$target/pyproject.toml" ]; then
+    echo "❌ Package not found: $target" >&2
+    exit 1
+fi
+
+echo "🏗️  Building $target..."
+uv build "packages/$target"
+echo "✅ $target built successfully in packages/$target/dist/"

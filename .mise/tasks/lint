@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#MISE description="Lint and type check (all, or a single [package])"
+#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
+
+set -euo pipefail
+
+target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
+
+lint_paths() {
+    local paths=("$@")
+    local status=0
+    uv run --group lint ruff check "${paths[@]}" || status=1
+    uv run --group lint ruff format --check "${paths[@]}" || status=1
+    uv run --group lint mypy "${paths[@]}" || status=1
+    return "$status"
+}
+
+if [ "$target" = "all" ]; then
+    status=0
+    while IFS= read -r package; do
+        mise run lint "$package" || status=1
+    done < <(mise run package:list)
+    lint_paths scripts || status=1
+    exit "$status"
+fi
+
+if [ ! -f "packages/$target/pyproject.toml" ]; then
+    echo "❌ Package not found: $target" >&2
+    exit 1
+fi
+
+paths=()
+[ -d "packages/$target/src" ] && paths+=("packages/$target/src")
+[ -d "packages/$target/tests" ] && paths+=("packages/$target/tests")
+[ "${#paths[@]}" -eq 0 ] || lint_paths "${paths[@]}"

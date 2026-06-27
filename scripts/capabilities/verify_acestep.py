@@ -7,7 +7,7 @@ async modes and the error paths, against a running kiapi server. Uses the
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 KIAPI_MEMORY_LIMIT_GB=110 uv run kiapi
-    uv run python scripts/verify_music.py
+    uv run python scripts/capabilities/verify_acestep.py
 
 Env:
     KIAPI_BASE_URL   server base URL (default http://127.0.0.1:8000)
