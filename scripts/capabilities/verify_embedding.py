@@ -25,7 +25,7 @@ import httpx
 
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 URL = f"{BASE_URL}/v1/embedding"
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 IMAGE_PATH = os.environ.get(
     "KIAPI_IMAGE", os.path.join(HERE, "tests", "assets", "miineko.png")
 )

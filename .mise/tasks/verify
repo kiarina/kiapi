@@ -39,8 +39,11 @@ for script in "${scripts[@]}"; do
   fi
 done
 
-verify_args=()
-[ "$fast" = "true" ] && verify_args+=(--fast)
+if [ "$fast" = "true" ]; then
+  set -- --fast
+else
+  set --
+fi
 
 for script in "${scripts[@]}"; do
   echo
@@ -48,10 +51,10 @@ for script in "${scripts[@]}"; do
   echo "Running $script ..."
   echo "========================================================================"
   case "$capability" in
-    ernie) KIAPI_VERIFY_ERNIE_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
-    flux2) KIAPI_VERIFY_FLUX2_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
-    zimage) KIAPI_VERIFY_ZIMAGE_TRAIN=1 uv run python "$script" "${verify_args[@]}" ;;
-    *) uv run python "$script" "${verify_args[@]}" ;;
+    ernie) KIAPI_VERIFY_ERNIE_TRAIN=1 uv run python "$script" "$@" ;;
+    flux2) KIAPI_VERIFY_FLUX2_TRAIN=1 uv run python "$script" "$@" ;;
+    zimage) KIAPI_VERIFY_ZIMAGE_TRAIN=1 uv run python "$script" "$@" ;;
+    *) uv run python "$script" "$@" ;;
   esac
 done
 
