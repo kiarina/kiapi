@@ -88,7 +88,7 @@ This project publishes the following three packages.
 
 | Package | Description | Runs on |
 | --- | --- | --- |
-| [kiapi](packages/kiapi/README.md) | Unified local inference API server for LLM agents on Apple Silicon (MLX).<br>Provides the `kiapi` command for managing and starting kiapi. | Apple Silicon (macOS) |
+| [kiapi](packages/kiapi/README.md) | Local API server that uses Apple Silicon and MLX to provide generative AI capabilities.<br>Provides the `kiapi` command for managing and starting kiapi. | Apple Silicon (macOS) |
 | [kiapi-relay](packages/kiapi-relay/README.md) | Library that implements the relay functionality.<br>Used by both kiapi and kiapi-proxy. | Any platform |
 | [kiapi-proxy](packages/kiapi-proxy/README.md) | Proxy server that relays requests to kiapi.<br>Runs on low-spec machines regardless of OS. | Linux / Windows / macOS |
 
