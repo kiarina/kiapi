@@ -278,6 +278,7 @@ def main() -> None:
         description="Verify chat streaming behavior when tools are present."
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--fast", action="store_true")
     parser.add_argument(
         "case",
         nargs="*",
@@ -302,6 +303,8 @@ def main() -> None:
 
     selected_models = DEFAULT_MODELS if len(sys.argv) == 1 else (args.model,)
     selected_cases = args.case or list(cases)
+    if args.fast:
+        selected_cases = selected_cases[:1]
     for model in selected_models:
         for case in selected_cases:
             cases[case](model)

@@ -12,7 +12,9 @@ URL = f"{BASE_URL}/v1/chat/completions"
 ASSETS = os.environ.get(
     "KIAPI_ASSETS_DIR",
     os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "assets"
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "tests",
+        "assets",
     ),
 )
 STREAM_MODES = [False, True]
