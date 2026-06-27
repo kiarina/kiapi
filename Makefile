@@ -5,7 +5,7 @@
 .PHONY: verify-acestep verify-audiogen verify-ltx2 verify-web
 .PHONY: verify-relay verify-relay-local verify-relay-gcp
 .DEFAULT_GOAL := check
-
+#--------------------------------------------------
 init:
 	mise run setup
 list:
@@ -17,7 +17,7 @@ upgrade:
 	uv sync --upgrade --all-packages --all-extras --all-groups
 clean:
 	mise run clean
-
+#--------------------------------------------------
 format:
 	mise run format
 lint:
@@ -26,12 +26,13 @@ test:
 	mise run test
 build:
 	mise run build
-
+#--------------------------------------------------
 config:
 	mkdir -p config
 	uv run kiapi config template > config/settings.full-template.yaml
 pages:
 	uv run python scripts/build_pages.py
+#--------------------------------------------------
 check:
 	mise run format
 	mise run lint
@@ -39,11 +40,12 @@ check:
 	make pages
 ci:
 	mise run ci
-
+#--------------------------------------------------
 dev:
 	uv run kiapi run --host 127.0.0.1 --port 8000 --debug
 staging:
 	uv run kiapi run --host 0.0.0.0 --port 8500 --debug
+#--------------------------------------------------
 verify:
 	mise run verify
 verify-fast:
