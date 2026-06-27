@@ -35,6 +35,10 @@
 Google 認証が必要な機能を実装する場合、下記を把握してください。
 - https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google
 
+## ドキュメント作成時の注意点
+
+- シンプルで、わかりやすく、簡潔に書きます。
+
 ## README の運用
 
 - 常に `README.md` と `README.ja.md` の両方を作成します。
