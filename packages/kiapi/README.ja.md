@@ -9,7 +9,7 @@
 
 ## Summary
 
-kiapi は、Apple Silicon (MLX) 上の LLM エージェント向け統合ローカル推論 API サーバーです。
+kiapi は、Apple Silicon と MLX を活用し、LLM エージェントに生成 AI 機能を提供するローカル API サーバーです。
 
 ## API
 
