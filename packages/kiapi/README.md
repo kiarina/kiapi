@@ -265,7 +265,8 @@ stores the committed response in the session directory.
 
 > [!NOTE]
 >
-> For kiapi architecture details, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+> For kiapi architecture details, see
+> [ARCHITECTURE.md](../../ARCHITECTURE.md).
 
 ## Local Storage
 
