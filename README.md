@@ -97,6 +97,85 @@ This project publishes the following three packages.
 
 See each package README linked above for usage instructions.
 
+## Quick Start
+
+### Use the kiapi server from an LLM agent
+
+```sh
+# Install kiapi itself
+python3.12 -m pip install --upgrade kiapi  # If you cannot use uv
+uv tool install --python 3.12 kiapi  # If you can use uv
+
+# Change the default host, port, or memory budget if needed
+kiapi config init
+kiapi config edit
+
+# Check the current setup state
+kiapi status
+
+# Explicitly set up model weights, Docker images, and dedicated venvs
+kiapi activate  # Choose targets from the interactive list
+kiapi activate --all  # Set up everything (just under 600GB)
+kiapi activate --family acestep  # Set up only the specified family
+
+# Verify the setup
+kiapi check  # Choose targets from the interactive list
+kiapi check --all  # Verify everything
+
+# Start the API server
+kiapi run  # Starts on 127.0.0.1:8000
+kiapi run --host 0.0.0.0 --port 8500  # Start on a specific host and port
+
+# Example integration with an agent
+codex e "
+Please inspect http://localhost:8000/openapi.json.
+Use the music generation API to create a 20-second BGM track at ~/Downloads/bgm.wav
+with the theme 'a person walking in the rain'.
+"
+
+# Inspect the generated file
+open ~/Downloads/bgm.wav
+```
+
+### Access kiapi inside a closed network by using kiapi proxy
+
+
+### Run as a background service
+```sh
+# kiapi
+kiapi service install    # Register
+kiapi service start      # Start
+kiapi service status     # Check status and the tail of logs
+kiapi service stop       # Stop
+kiapi service uninstall  # Remove
+```
+
+## Development
+
+```sh
+make init     # Install dependencies, download test data, and create venv environments
+make update   # Sync dependencies
+make upgrade  # Upgrade dependencies
+
+# ... implement
+
+make       # Format, type-check, and regenerate dynamic documentation
+make test  # Unit tests
+make dev   # Start the development server with auto-reload
+
+# GPU-backed functional and regression tests
+make verify       # Run everything
+make verify-fast  # Run only the light tests for every capability
+make verify-one   # Run only one capability
+```
+
+## Release
+
+Releases to PyPI are automated by GitHub Actions workflows.
+
+> [!NOTE]
+> See [docs/runbooks/release/](docs/runbooks/release/README.md) for the detailed release procedure.
+
 ## Project Status
 
 > [!NOTE]
