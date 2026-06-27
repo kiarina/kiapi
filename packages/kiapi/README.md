@@ -9,7 +9,7 @@
 
 ## Summary
 
-kiapi is a unified local inference API server for LLM agents on Apple Silicon (MLX).
+kiapi is a local API server that uses Apple Silicon and MLX to provide generative AI capabilities for LLM agents.
 
 ## API
 
