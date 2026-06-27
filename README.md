@@ -76,11 +76,14 @@ Always review the upstream license to confirm the terms and whether commercial u
 **Provide secure external access to kiapi inside a closed network:**
 
 - **Relay:**
-  - A shared transport abstraction for reaching kiapi
-  - An implementation using Firebase Realtime Database and Google Cloud Storage
+  - Provide a pluggable shared transport for reaching the kiapi server (watch / request)
+  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
 - **Proxy server:**
   - A proxy server that forwards HTTP requests to kiapi over the relay and returns the results
   - The proxy is lightweight and runs on any OS
+
+> [!NOTE]
+> See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Packages
 
@@ -93,11 +96,6 @@ This project publishes the following three packages.
 | [kiapi-proxy](packages/kiapi-proxy/README.md) | Proxy server that relays requests to kiapi.<br>Runs on low-spec machines regardless of OS. | Linux / Windows / macOS |
 
 See each package README linked above for usage instructions.
-
-## Architecture
-
-> [!NOTE]
-> See [ARCHITECTURE.md](ARCHITECTURE.md) for architecture details.
 
 ## Project Status
 
