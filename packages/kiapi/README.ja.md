@@ -332,7 +332,7 @@ changelog 更新、tag push を起点にした GitHub Release / PyPI publish で
 make bump-version
 
 # version を明示する場合
-mise run bump-version 0.2.0
+mise run release:bump-version 0.2.0
 
 # ローカル確認
 make test

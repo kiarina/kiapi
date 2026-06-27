@@ -337,7 +337,7 @@ PyPI publishing.
 make bump-version
 
 # Or pass the version explicitly
-mise run bump-version 0.2.0
+mise run release:bump-version 0.2.0
 
 # Local verification
 make test
