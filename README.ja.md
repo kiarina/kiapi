@@ -94,6 +94,84 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 利用方法は、上記のリンクから各パッケージの README を参照してください。
 
+## Quick Start
+
+### kiapi サーバーを LLM エージェントから使う
+
+```sh
+# kiapi 本体のインストール
+python3.12 -m pip install --upgrade kiapi  # uv を使えない場合
+uv tool install --python 3.12 kiapi  # uv を使える場合
+
+# デフォルトのホスト・ポートやメモリ予算を変更（必要な場合）
+kiapi config init
+kiapi config edit
+
+# セットアップ状態の確認
+kiapi status
+
+# モデル重み、Docker image、専用 venv の明示的なセットアップ
+kiapi activate  # 表示されるリストから対象を選択してセットアップする場合
+kiapi activate --all  # 全てをセットアップする場合 (600GB 弱)
+kiapi activate --family acestep  # 指定した family だけをセットアップする場合
+
+# 動作確認
+kiapi check  # 表示されるリストから対象を選択して動作確認する場合
+kiapi check --all  # 全てを動作確認する場合
+
+# API サーバーの起動
+kiapi run  # 127.0.0.1:8000 で起動
+kiapi run --host 0.0.0.0 --port 8500  # ポートを指定して起動する場合
+
+# エージェントとの連携例
+codex e "
+http://localhost:8000/openapi.json を把握してください。
+音楽生成 API を使って、~/Downloads/bgm.wav に、「雨の中を歩く人」というテーマの 20 秒の BGM を生成してください。
+"
+
+# 生成されたファイルを確認
+open ~/Downloads/bgm.wav
+```
+
+### kiapi proxy を使って閉鎖環境内の kiapi にアクセスする
+
+
+### background サービスとして起動する
+```sh
+# kiapi
+kiapi service install    # 登録
+kiapi service start      # 起動
+kiapi service status     # 状態とログ末尾の確認
+kiapi service stop       # 停止
+kiapi service uninstall  # 削除
+```
+
+## Development
+
+```sh
+make init     # 依存のインストール・テストデータのダウンロード・venv 環境の作成
+make update   # 依存の同期
+make upgrade  # 依存のアップグレード
+
+# ... 実装
+
+make       # フォーマット・型チェック・動的ドキュメントの再生成
+make test  # unit test
+make dev   # 開発サーバーを起動 (auto-reload 対応)
+
+# GPU を使った機能テスト・回帰テスト
+make verify       # 全て実行
+make verify-fast  # 全てのcapabilityを、軽いテストだけ実行
+make verify-one   # 1つのcapabilityだけ実行
+```
+
+## Release
+
+PyPI へのリリースは、GitHub Actions の workflow によって自動化されています。
+
+> [!NOTE]
+> リリース手順の詳細は [docs/runbooks/release/](docs/runbooks/release/README.ja.md) を参照してください。
+
 ## Project Status
 
 > [!NOTE]
