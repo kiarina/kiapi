@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from kiapi.core.memory import MemoryStats
+from kiapi_relay import RelayHealth
 
 
 class HealthResponse(BaseModel):
@@ -23,4 +24,11 @@ class HealthResponse(BaseModel):
     memory: MemoryStats = Field(
         ...,
         description="Resident model memory budget and loaded model snapshot.",
+    )
+    relay: RelayHealth | None = Field(
+        default=None,
+        description=(
+            "Status of the relay started with the API server. "
+            "Null when no relay is configured."
+        ),
     )

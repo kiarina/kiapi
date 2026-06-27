@@ -18,7 +18,13 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from _helpers import assert_json, consume_body, relay_request, run_checks
+from _helpers import (
+    assert_json,
+    consume_body,
+    ensure_relay_ready,
+    relay_request,
+    run_checks,
+)
 
 from kiapi_relay import RelayFileBody, RelayRequest, RelayRequestError
 from kiapi_relay.gcp import create_gcp_relay
@@ -27,6 +33,10 @@ from kiapi_relay.gcp import create_gcp_relay
 async def main() -> int:
     fast = "--fast" in sys.argv
     client = create_gcp_relay()
+
+    if not await ensure_relay_ready(client, "gcp"):
+        await client.aclose()
+        return 0
 
     async def health() -> str:
         result = await relay_request(client, "GET", "/health", timeout_s=60.0)

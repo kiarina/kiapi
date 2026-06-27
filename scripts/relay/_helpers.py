@@ -58,6 +58,28 @@ async def relay_request(
     )
 
 
+async def ensure_relay_ready(
+    client: Relay,
+    expect_name: str,
+    *,
+    timeout_s: float = 15.0,
+) -> bool:
+    try:
+        result = await relay_request(client, "GET", "/health", timeout_s=timeout_s)
+    except TimeoutError:
+        print(f"[SKIP] no server is watching the {expect_name} relay")
+        return False
+
+    relay = assert_json(result).get("relay")
+    if relay is None:
+        print(f"[SKIP] server is not running the {expect_name} relay")
+        return False
+    if relay.get("name") != expect_name or not relay.get("running"):
+        print(f"[SKIP] server relay is not a running {expect_name} relay: {relay}")
+        return False
+    return True
+
+
 def assert_json(result: RelayResponse) -> Any:
     if not isinstance(result.body, RelayJsonBody):
         raise AssertionError(f"expected JSON body, got {type(result.body).__name__}")

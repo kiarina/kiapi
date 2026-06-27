@@ -1,7 +1,21 @@
-from kiarina.utils.component_registry import ComponentRegistry
+from typing import Any
+
+from kiarina.utils.component_registry import ComponentFactory, ComponentRegistry
 
 from .._settings import settings_manager
 from .._types.relay import Relay
+
+
+def _factory_wrapper(
+    factory: ComponentFactory[Relay],
+    component_name: str,
+    *args: Any,
+    **kwargs: Any,
+) -> Relay:
+    instance = factory(*args, **kwargs)
+    instance.name = component_name
+    return instance
+
 
 relay_registry = ComponentRegistry[Relay](
     expected_type=Relay,  # type: ignore[type-abstract]
@@ -9,4 +23,5 @@ relay_registry = ComponentRegistry[Relay](
     get_default=lambda: settings_manager.get_settings().default,
     get_presets=lambda: settings_manager.get_settings().presets,
     get_customs=lambda: settings_manager.get_settings().customs,
+    factory_wrapper=_factory_wrapper,
 )

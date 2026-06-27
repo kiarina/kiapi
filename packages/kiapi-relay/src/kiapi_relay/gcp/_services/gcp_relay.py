@@ -14,6 +14,7 @@ from kiarina.lib.google import Credentials, get_credentials
 from kiarina.lib.google import settings_manager as google_settings_manager
 
 from kiapi_relay import (
+    BaseRelay,
     RelayDelivery,
     RelayError,
     RelayFileBody,
@@ -38,8 +39,10 @@ _GCP_SCOPES = [
 ]
 
 
-class GCPRelay:
+class GCPRelay(BaseRelay):
     def __init__(self, settings: GCPRelaySettings) -> None:
+        super().__init__()
+
         self.settings = settings
         google_settings = google_settings_manager.get_settings(
             settings.google_settings_key
@@ -51,7 +54,7 @@ class GCPRelay:
         self._credentials: Credentials = with_scopes_if_required(
             credentials,
             _GCP_SCOPES,
-        )
+        )  # pyright: ignore[reportAttributeAccessIssue]
         self._storage_client = storage.Client(
             project=google_settings.project_id,
             credentials=self._credentials,

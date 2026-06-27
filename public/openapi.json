@@ -9,7 +9,7 @@
     "/health": {
       "get": {
         "summary": "Health",
-        "description": "Inspect server readiness, queue depth, and resident model memory.\n\nUse this endpoint to see whether warmup has finished, how many jobs are\nqueued behind the single-flight worker, and which resident models currently\ncount against the global memory budget.",
+        "description": "Inspect server readiness, queue depth, resident model memory, and relay.\n\nUse this endpoint to see whether warmup has finished, how many jobs are\nqueued behind the single-flight worker, which resident models currently\ncount against the global memory budget, and whether the relay started with\nthe server is running.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -513,6 +513,17 @@
           "memory": {
             "$ref": "#/components/schemas/MemoryStats",
             "description": "Resident model memory budget and loaded model snapshot."
+          },
+          "relay": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RelayHealth"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Status of the relay started with the API server. Null when no relay is configured."
           }
         },
         "type": "object",
@@ -785,6 +796,43 @@
         ],
         "title": "MemoryStats",
         "description": "Resident model memory budget snapshot, served by ``/health``."
+      },
+      "RelayHealth": {
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/RelayName",
+            "description": "Name of the relay started with the API server.",
+            "examples": [
+              "gcp"
+            ]
+          },
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "description": "Whether the relay watch loop is currently running.",
+            "examples": [
+              true
+            ]
+          },
+          "failed": {
+            "type": "boolean",
+            "title": "Failed",
+            "description": "Whether the relay watch loop stopped after raising an error.",
+            "examples": [
+              false
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "running",
+          "failed"
+        ],
+        "title": "RelayHealth"
+      },
+      "RelayName": {
+        "type": "string"
       },
       "ResidentModelStats": {
         "properties": {

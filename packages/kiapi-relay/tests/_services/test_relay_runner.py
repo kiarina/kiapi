@@ -18,6 +18,8 @@ from kiapi_relay import (
 
 
 class _Relay:
+    name = "test"
+
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         queue: asyncio.Queue[RelayDelivery] = asyncio.Queue()
         yield await queue.get()
@@ -59,6 +61,50 @@ def _app() -> FastAPI:
         }
 
     return app
+
+
+class _CrashingRelay(_Relay):
+    async def watch(self) -> AsyncIterator[RelayDelivery]:
+        queue: asyncio.Queue[RelayDelivery] = asyncio.Queue()
+        for _ in range(0):
+            yield await queue.get()
+        raise RuntimeError("boom")
+
+
+def test_status_reports_not_running_before_start() -> None:
+    runner = RelayRunner(_Relay(), _app())
+
+    status = runner.status()
+
+    assert status.name == "test"
+    assert status.running is False
+    assert status.failed is False
+
+
+async def test_status_reports_running_while_watching() -> None:
+    # _Relay.watch blocks forever on an empty queue, mirroring an idle relay.
+    runner = RelayRunner(_Relay(), _app())
+    runner.start()
+    await asyncio.sleep(0)
+
+    status = runner.status()
+
+    assert status.running is True
+    assert status.failed is False
+    await runner.stop()
+
+
+async def test_status_reports_failed_when_watch_loop_stops() -> None:
+    runner = RelayRunner(_CrashingRelay(), _app())
+    runner.start()
+    assert runner._task is not None
+    await asyncio.gather(runner._task, return_exceptions=True)
+
+    status = runner.status()
+
+    assert status.running is False
+    assert status.failed is True
+    await runner.stop()
 
 
 async def test_dispatch_collects_json_response() -> None:
