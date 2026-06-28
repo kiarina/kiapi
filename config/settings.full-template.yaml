@@ -137,7 +137,7 @@ kiapi_relay.impl.gcp:
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-2937d88e
+  # source_node_id: node-a17814fc
   #--------------------------------------------------
   # Firebase Realtime Database URL: str
   #   Database root URL, for example https://project.firebaseio.com.
@@ -180,7 +180,7 @@ kiapi_relay.impl.local:
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-69927dd8
+  # source_node_id: node-7db075a7
   #--------------------------------------------------
   # Local relay root: Path
   #   Directory used for local relay request and response payloads.

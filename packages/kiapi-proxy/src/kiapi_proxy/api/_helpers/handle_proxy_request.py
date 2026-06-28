@@ -5,8 +5,8 @@ from starlette.responses import JSONResponse, Response
 
 from kiapi_relay import Relay, RelayRequestError
 
-from .._helpers.build_proxy_response import build_proxy_response
-from .._helpers.build_relay_request import build_relay_request
+from .._operations.build_proxy_response import build_proxy_response
+from .._operations.build_relay_request import build_relay_request
 
 logger = logging.getLogger(__name__)
 
