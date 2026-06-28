@@ -87,7 +87,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 
 ## Packages
 
-This project publishes the following three packages.
+This project publishes the following three packages on PyPI.
 
 | Package | Description | Runs on |
 | --- | --- | --- |

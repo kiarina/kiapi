@@ -84,7 +84,7 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 ## Packages
 
-このプロジェクトでは、下記の 3 つのパッケージを公開しています。
+このプロジェクトでは、下記の 3 つのパッケージを PyPI に公開しています。
 
 | Package | 説明 | 動作環境 |
 | --- | --- | --- |
