@@ -121,8 +121,8 @@ kiapi_relay:
   # Relay presets: dict[RelayName, str]
   #   Built-in relay factories keyed by relay name.
   # presets:
-  #   gcp: "kiapi_relay.gcp:create_gcp_relay"
-  #   local: "kiapi_relay.local:create_local_relay"
+  #   gcp: "kiapi_relay.impl.gcp:create_gcp_relay"
+  #   local: "kiapi_relay.impl.local:create_local_relay"
   #--------------------------------------------------
   # Custom relays: dict[RelayName, str]
   #   Custom relay factories keyed by relay name.
@@ -130,14 +130,14 @@ kiapi_relay:
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
-kiapi_relay.gcp:
+kiapi_relay.impl.gcp:
   # Relay node ID: str
   #   Unique RTDB node ID for this kiapi instance.
   node_id:
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-4ff4b2d1
+  # source_node_id: node-2937d88e
   #--------------------------------------------------
   # Firebase Realtime Database URL: str
   #   Database root URL, for example https://project.firebaseio.com.
@@ -173,14 +173,14 @@ kiapi_relay.gcp:
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
-kiapi_relay.local:
+kiapi_relay.impl.local:
   # Relay node ID: str
   #   Unique local relay node ID for this kiapi instance.
   # node_id: local
   #--------------------------------------------------
   # Relay source node ID: str
   #   Identifies this client when issuing relay requests.
-  # source_node_id: node-493e2265
+  # source_node_id: node-69927dd8
   #--------------------------------------------------
   # Local relay root: Path
   #   Directory used for local relay request and response payloads.

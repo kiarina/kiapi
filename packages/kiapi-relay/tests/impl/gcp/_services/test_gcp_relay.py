@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from kiapi_relay import RelayFileBody, RelayJsonBody, RelayResponse
-from kiapi_relay.gcp import GCPRelay, GCPRelaySettings
-from kiapi_relay.gcp._services.gcp_relay import _GCP_SCOPES
+from kiapi_relay.impl.gcp import GCPRelay, GCPRelaySettings
+from kiapi_relay.impl.gcp._services.gcp_relay import _GCP_SCOPES
 
 
 class _Blob:

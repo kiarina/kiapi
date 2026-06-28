@@ -82,7 +82,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 
 - **Relay:**
   - Provide a pluggable shared transport for reaching the kiapi server (watch / request)
-  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
+  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
 - **Proxy server:**
   - A proxy server that forwards HTTP requests to kiapi over the relay and returns the results
   - The proxy is lightweight and runs on any OS

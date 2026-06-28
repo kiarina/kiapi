@@ -27,7 +27,7 @@ from _helpers import (
 )
 
 from kiapi_relay import RelayFileBody, RelayRequest, RelayRequestError
-from kiapi_relay.gcp import create_gcp_relay
+from kiapi_relay.impl.gcp import create_gcp_relay
 
 
 async def main() -> int:

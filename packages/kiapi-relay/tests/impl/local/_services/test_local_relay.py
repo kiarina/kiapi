@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 
 from kiapi_relay import RelayFileBody, RelayJsonBody, RelayRequest, RelayResponse
-from kiapi_relay.local import LocalRelay, LocalRelaySettings
-from kiapi_relay.local._schemas.local_relay_notification import LocalRelayNotification
+from kiapi_relay.impl.local import LocalRelay, LocalRelaySettings
+from kiapi_relay.impl.local._schemas.local_relay_notification import (
+    LocalRelayNotification,
+)
 
 
 def _relay(tmp_path: Path) -> LocalRelay:

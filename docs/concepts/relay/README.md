@@ -10,8 +10,8 @@ kiapi instance that may not be directly reachable.
 `kiapi-relay` defines the stable `Relay` and `RelayDelivery` protocols, request
 client, schemas, and plugin registry. It provides:
 
-- `kiapi_relay.local`, a filesystem-backed transport for local verification.
-- `kiapi_relay.gcp`, a GCS and Realtime Database transport.
+- `kiapi_relay.impl.local`, a filesystem-backed transport for local verification.
+- `kiapi_relay.impl.gcp`, a GCS and Realtime Database transport.
 
 `kiapi` hosts the relay runner. `kiapi-proxy` uses the same request client to
 expose a conventional HTTP boundary without depending on kiapi or MLX.

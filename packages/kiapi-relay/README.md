@@ -25,8 +25,8 @@ pip install "kiapi-relay[gcp]"
 
 | Module | Description | Extra |
 | --- | --- | --- |
-| `kiapi_relay.local` | Filesystem-backed relay for local development and verification. | — |
-| `kiapi_relay.gcp` | GCP relay (GCS payloads + Firebase Realtime Database notifications). | `gcp` |
+| `kiapi_relay.impl.local` | Filesystem-backed relay for local development and verification. | — |
+| `kiapi_relay.impl.gcp` | GCP relay (GCS payloads + Firebase Realtime Database notifications). | `gcp` |
 
 ## Usage
 

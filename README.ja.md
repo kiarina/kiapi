@@ -79,7 +79,7 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 **閉鎖環境内の kiapi に、外部から安全にアクセスできる:**
 - **relay 機能:**
   - kiapi サーバーに到達するための、プラガブルな共有トランスポートを提供する (watch / request)
-  - [gcp](packages/kiapi-relay/src/kiapi_relay/gcp/README.ja.md) 実装（Firebase Realtime Database + Google Cloud Storage）を提供
+  - [gcp](packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.ja.md) 実装（Firebase Realtime Database + Google Cloud Storage）を提供
 - **proxy サーバー:**
   - HTTP リクエストを relay 経由で kiapi に転送し、結果を返す Proxy サーバ
   - proxy は軽量で OS を問わず動作します

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from kiapi_relay.gcp import GCPRelaySettings
+from kiapi_relay.impl.gcp import GCPRelaySettings
 
 
 def test_settings_normalize_paths() -> None:

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from kiapi_relay.local import LocalRelaySettings
+from kiapi_relay.impl.local import LocalRelaySettings
 
 
 def test_settings_normalize_prefix() -> None:
