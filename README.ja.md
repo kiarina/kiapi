@@ -60,6 +60,11 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 | web | [web](packages/kiapi/src/kiapi/capabilities/web/README.ja.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend。network service では AGPL の義務が重要になる場合があります。 |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend。 |
 
+> [!NOTE]
+> 全てのリソースを同時に使用する場合、合計で 600GB 弱のディスク容量が必要です。
+> また、Max で 50GB 弱のメモリを消費します。
+> 各リソースのサイズ・消費メモリは、上記の family ごのリンク先を参照してください。
+
 ## Design
 
 **全ての機能を安定して供給できる:**
@@ -74,7 +79,7 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 **閉鎖環境内の kiapi に、外部から安全にアクセスできる:**
 - **relay 機能:**
   - kiapi サーバーに到達するための、プラガブルな共有トランスポートを提供する (watch / request)
-  - [gcp](packages/kiapi-relay/src/kiapi_relay/gcp/README.ja.md) 実装（Firebase Realtime Database + Google Cloud Storage）を提供
+  - [gcp](packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.ja.md) 実装（Firebase Realtime Database + Google Cloud Storage）を提供
 - **proxy サーバー:**
   - HTTP リクエストを relay 経由で kiapi に転送し、結果を返す Proxy サーバ
   - proxy は軽量で OS を問わず動作します
@@ -96,31 +101,35 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 ## Quick Start
 
-### kiapi サーバーを LLM エージェントから使う
+### kiapi
 
+**kiapi のセットアップ:**
 ```sh
-# kiapi 本体のインストール
+# kiapi インストール
 python3.12 -m pip install --upgrade kiapi  # uv を使えない場合
-uv tool install --python 3.12 kiapi  # uv を使える場合
+uv tool install --python 3.12 kiapi        # uv を使える場合
 
 # デフォルトのホスト・ポートやメモリ予算を変更（必要な場合）
-kiapi config init
-kiapi config edit
+kiapi config init  # 設定ファイルを作成
+kiapi config edit  # 設定ファイルをエディタで編集
 
 # セットアップ状態の確認
 kiapi status
 
-# モデル重み、Docker image、専用 venv の明示的なセットアップ
-kiapi activate  # 表示されるリストから対象を選択してセットアップする場合
-kiapi activate --all  # 全てをセットアップする場合 (600GB 弱)
+# モデル重み、Docker image、専用 venv 環境の準備
+kiapi activate                   # リストから選択してセットアップする場合
+kiapi activate --all             # 全てをセットアップする場合 (600GB 弱)
 kiapi activate --family acestep  # 指定した family だけをセットアップする場合
 
 # 動作確認
-kiapi check  # 表示されるリストから対象を選択して動作確認する場合
+kiapi check        # リストから選択して動作確認する場合
 kiapi check --all  # 全てを動作確認する場合
+```
 
-# API サーバーの起動
-kiapi run  # 127.0.0.1:8000 で起動
+**LLM エージェントから使う:**
+```sh
+# kiapi サーバーを起動
+kiapi run                             # 設定ファイルに基づいて起動 (default: 127.0.0.1:8000)
 kiapi run --host 0.0.0.0 --port 8500  # ポートを指定して起動する場合
 
 # エージェントとの連携例
@@ -133,10 +142,7 @@ http://localhost:8000/openapi.json を把握してください。
 open ~/Downloads/bgm.wav
 ```
 
-### kiapi proxy を使って閉鎖環境内の kiapi にアクセスする
-
-
-### background サービスとして起動する
+**background サービスとして起動する:**
 ```sh
 # kiapi
 kiapi service install    # 登録
@@ -144,6 +150,17 @@ kiapi service start      # 起動
 kiapi service status     # 状態とログ末尾の確認
 kiapi service stop       # 停止
 kiapi service uninstall  # 削除
+```
+
+### kiapi[relay-gcp] + kiapi-proxy
+
+**kiapi のセットアップ:**
+```sh
+# GCP relay 機能を追加インストール
+python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # uv を使えない場合
+uv tool install --python 3.12 'kiapi[relay-gcp]'        # uv を使える場合
+
+kiapi run --relay gcp  # GCP relay 機能を有効にして起動
 ```
 
 ## Development

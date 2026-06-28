@@ -35,11 +35,11 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | MIT | Not required | 19 GB | `xl-base` (default). 32 steps / `guidance_scale=7.0`, highest quality. Approximately 25 seconds with 30 seconds of audio (M4 Max). |
-| [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | MIT | Not required | 9.4 GB | In addition to `turbo` (8 steps, ignoring `guidance_scale`) DiT, 5Hz LM, VAE, and Qwen3-Embedding-0.6B are included. Focusing on speed, 15 seconds is about 4 seconds (M4 Max). |
-| [Qwen/Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) | Apache-2.0 | Not required | 1.1 GB | Text encoder. Included with ACE-Step/Ace-Step1.5. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | MIT | Not required | 19 GB | ~33 GB | `xl-base` (default). 32 steps / `guidance_scale=7.0`, highest quality. Approximately 25 seconds with 30 seconds of audio (M4 Max). |
+| [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | MIT | Not required | 9.4 GB | ~16 GB | In addition to `turbo` (8 steps, ignoring `guidance_scale`) DiT, 5Hz LM, VAE, and Qwen3-Embedding-0.6B are included. Focusing on speed, 15 seconds is about 4 seconds (M4 Max). |
+| [Qwen/Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) | Apache-2.0 | Not required | 1.1 GB | — (bundled) | Text encoder. Included with ACE-Step/Ace-Step1.5. |
 
 ## Notes
 

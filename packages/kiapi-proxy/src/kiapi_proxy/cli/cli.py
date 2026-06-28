@@ -3,7 +3,7 @@ import uvicorn
 
 from kiapi_relay import settings_manager as relay_settings_manager
 
-from .._settings import settings_manager
+from ..api import settings_manager
 
 
 @click.group()
@@ -41,7 +41,7 @@ def run(
 
     settings = settings_manager.get_settings()
 
-    from ..app import app
+    from ..api.app import app
 
     uvicorn.run(
         app,

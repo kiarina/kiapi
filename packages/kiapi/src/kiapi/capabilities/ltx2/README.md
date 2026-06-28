@@ -50,9 +50,9 @@ Inferred mode:
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE) (derived from [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) Compliant with repo itself (no model card / LICENSE) | HF gated. However, use and distribution require license agreement | 101 GB | `distilled` (default). Two-stage distilled pipeline. No CFG, about 11 steps inside. A transient model that loads/releases on every call. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE) (derived from [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) Compliant with repo itself (no model card / LICENSE) | HF gated. However, use and distribution require license agreement | 101 GB | ~40 GB (transient) | `distilled` (default). Two-stage distilled pipeline. No CFG, about 11 steps inside. A transient model that loads/releases on every call. |
 
 Key defaults and limits:
 

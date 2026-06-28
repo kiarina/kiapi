@@ -14,6 +14,11 @@ make
 `make` formats the code, runs lint/type checks, regenerates the full config
 template, and rebuilds the API documentation under `public/`.
 
+`make init`/`make update` sync dependencies with `--inexact`, so out-of-band
+installs (e.g. `kiapi activate --family ltx2`'s mlx-video) are preserved. Run
+`make sync` for an exact reconcile that prunes them; re-run `kiapi activate`
+afterward to restore them.
+
 ## Tests
 
 Unit tests live under `tests/` and should mirror the `kiapi/` package structure.

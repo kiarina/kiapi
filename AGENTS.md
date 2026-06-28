@@ -75,7 +75,7 @@ packages/kiapi/src/kiapi/capabilities/{family}/
 に配置します。
 
 ```text
-packages/kiapi-relay/src/kiapi_relay/{relay_name}/
+packages/kiapi-relay/src/kiapi_relay/impl/{relay_name}/
   README.md
   README.ja.md
 ```

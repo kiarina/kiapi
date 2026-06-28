@@ -60,6 +60,11 @@ Always review the upstream license to confirm the terms and whether commercial u
 | web | [web](packages/kiapi/src/kiapi/capabilities/web/README.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend. AGPL obligations can matter for network services. |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend. |
 
+> [!NOTE]
+> Using all resources at once requires a little under 600GB of disk space in total.
+> It also consumes a little under 50GB of memory at peak.
+> For the size and memory consumption of each resource, see the per-family links above.
+
 ## Design
 
 **Reliably provide every capability:**
@@ -77,7 +82,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 
 - **Relay:**
   - Provide a pluggable shared transport for reaching the kiapi server (watch / request)
-  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
+  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
 - **Proxy server:**
   - A proxy server that forwards HTTP requests to kiapi over the relay and returns the results
   - The proxy is lightweight and runs on any OS
@@ -99,31 +104,35 @@ See each package README linked above for usage instructions.
 
 ## Quick Start
 
-### Use the kiapi server from an LLM agent
+### kiapi
 
+**Set up kiapi:**
 ```sh
-# Install kiapi itself
+# Install kiapi
 python3.12 -m pip install --upgrade kiapi  # If you cannot use uv
-uv tool install --python 3.12 kiapi  # If you can use uv
+uv tool install --python 3.12 kiapi        # If you can use uv
 
 # Change the default host, port, or memory budget if needed
-kiapi config init
-kiapi config edit
+kiapi config init  # Create the configuration file
+kiapi config edit  # Edit the configuration file in an editor
 
 # Check the current setup state
 kiapi status
 
-# Explicitly set up model weights, Docker images, and dedicated venvs
-kiapi activate  # Choose targets from the interactive list
-kiapi activate --all  # Set up everything (just under 600GB)
+# Prepare model weights, Docker images, and dedicated venv environments
+kiapi activate                   # Choose targets from the interactive list
+kiapi activate --all             # Set up everything (just under 600GB)
 kiapi activate --family acestep  # Set up only the specified family
 
 # Verify the setup
-kiapi check  # Choose targets from the interactive list
+kiapi check        # Choose targets from the interactive list
 kiapi check --all  # Verify everything
+```
 
-# Start the API server
-kiapi run  # Starts on 127.0.0.1:8000
+**Use from an LLM agent:**
+```sh
+# Start the kiapi server
+kiapi run                             # Start based on the configuration file (default: 127.0.0.1:8000)
 kiapi run --host 0.0.0.0 --port 8500  # Start on a specific host and port
 
 # Example integration with an agent
@@ -137,10 +146,7 @@ with the theme 'a person walking in the rain'.
 open ~/Downloads/bgm.wav
 ```
 
-### Access kiapi inside a closed network by using kiapi proxy
-
-
-### Run as a background service
+**Run as a background service:**
 ```sh
 # kiapi
 kiapi service install    # Register
@@ -148,6 +154,17 @@ kiapi service start      # Start
 kiapi service status     # Check status and the tail of logs
 kiapi service stop       # Stop
 kiapi service uninstall  # Remove
+```
+
+### kiapi[relay-gcp] + kiapi-proxy
+
+**Set up kiapi:**
+```sh
+# Install the GCP relay feature as an extra
+python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # If you cannot use uv
+uv tool install --python 3.12 'kiapi[relay-gcp]'        # If you can use uv
+
+kiapi run --relay gcp  # Start with the GCP relay feature enabled
 ```
 
 ## Development

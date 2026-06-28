@@ -32,9 +32,9 @@ kiapi only exposes txt2img and saves the generated results as Files API artifact
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | Ideogram license (non-commercial) | Required | 27.5 GB | `fp8` (default). Hugging Face's gated repo. Default is `1024x1024`, `preset: V4_DEFAULT_20`, `quantize: null`. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | Ideogram license (non-commercial) | Required | 27.5 GB | ~30 GB | `fp8` (default). Hugging Face's gated repo. Default is `1024x1024`, `preset: V4_DEFAULT_20`, `quantize: null`. |
 
 ## Notes
 

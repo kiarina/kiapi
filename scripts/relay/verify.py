@@ -35,7 +35,7 @@ from _helpers import (
 )
 
 from kiapi_relay import Relay
-from kiapi_relay.local import create_local_relay
+from kiapi_relay.impl.local import create_local_relay
 
 HERE = Path(__file__).resolve().parents[2]
 ASSETS = Path(os.environ.get("KIAPI_ASSETS_DIR", HERE / "tests" / "assets"))

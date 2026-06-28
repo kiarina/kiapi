@@ -60,4 +60,6 @@ def test_relay_request_rejects_mixed_json_and_multipart_body() -> None:
 
 
 def test_relay_settings_include_local_preset() -> None:
-    assert RelaySettings().presets["local"] == "kiapi_relay.local:create_local_relay"
+    assert (
+        RelaySettings().presets["local"] == "kiapi_relay.impl.local:create_local_relay"
+    )

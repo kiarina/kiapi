@@ -50,9 +50,9 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE)（派生元 [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) に準拠。repo 自体は model card / LICENSE 未記載） | HF gated なし。ただし使用・配布によりライセンス同意 | 101 GB | `distilled`（デフォルト）。2 段 distilled パイプライン。CFG なし、内部約 11 ステップ。呼び出しごとにロード/解放する transient モデル。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE)（派生元 [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) に準拠。repo 自体は model card / LICENSE 未記載） | HF gated なし。ただし使用・配布によりライセンス同意 | 101 GB | ~40 GB（transient） | `distilled`（デフォルト）。2 段 distilled パイプライン。CFG なし、内部約 11 ステップ。呼び出しごとにロード/解放する transient モデル。 |
 
 主な既定値と上限:
 

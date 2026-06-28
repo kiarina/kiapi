@@ -35,10 +35,10 @@ Qwen Image は多言語プロンプトと画像内テキストに強いモデル
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | Apache-2.0 | 不要 | 58 GB | `image`（デフォルト）。`generate` で使用。txt2img / img2img。既定は `steps: 30`、`guidance: 4.0`、`quantize: 8`。 |
-| [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | Apache-2.0 | 不要 | 58 GB | `edit-2509`。`edit` で使用。単一/複数参照画像の編集。既定は `steps: 30`、`guidance: 2.5`、`quantize: 8`。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | Apache-2.0 | 不要 | 58 GB | ~30 GB | `image`（デフォルト）。`generate` で使用。txt2img / img2img。既定は `steps: 30`、`guidance: 4.0`、`quantize: 8`。 |
+| [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | Apache-2.0 | 不要 | 58 GB | ~30 GB | `edit-2509`。`edit` で使用。単一/複数参照画像の編集。既定は `steps: 30`、`guidance: 2.5`、`quantize: 8`。 |
 
 `POST /v1/image/qwen/generate` は `image` のみ、`POST /v1/image/qwen/edit` は
 `edit-2509` のみを受け付けます。エンドポイントごとのデフォルトは router 側で補われる

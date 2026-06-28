@@ -42,10 +42,10 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | 不要 | 21.8 GB | `qwen3-omni`（デフォルト）。text + image + audio + video、tool-call prefill=JSON。Talker（音声*出力*）は非公開で出力は text/tool-calls のみ。audio 入力は 1 リクエスト最大 **1 つ**（音声付き video の demux 音声も含む）。 |
-| [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | 不要 | 16.1 GB | `qwen3.6-27b`。text + image のみ、tool-call prefill=Hermes/XML。reasoning はデフォルト OFF。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | 不要 | 21.8 GB | ~24 GB | `qwen3-omni`（デフォルト）。text + image + audio + video、tool-call prefill=JSON。Talker（音声*出力*）は非公開で出力は text/tool-calls のみ。audio 入力は 1 リクエスト最大 **1 つ**（音声付き video の demux 音声も含む）。 |
+| [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | 不要 | 16.1 GB | ~19 GB | `qwen3.6-27b`。text + image のみ、tool-call prefill=Hermes/XML。reasoning はデフォルト OFF。 |
 
 - 選択したモデルが対応しないモダリティの part を送ると **HTTP 400**。
 

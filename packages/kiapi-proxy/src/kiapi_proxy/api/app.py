@@ -6,7 +6,7 @@ from starlette.responses import Response
 
 from kiapi_relay import relay_registry
 
-from ._services.proxy_handler import handle_proxy_request
+from ._helpers.handle_proxy_request import handle_proxy_request
 from ._settings import settings_manager
 
 _RELAY_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]

@@ -33,10 +33,10 @@ Z-Image は比較的軽量に扱える画像生成モデルです。
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | Tongyi Qianwen License | 不要 | 5.5 GB | `turbo`（デフォルト）。蒸留・少ステップ向け。既定は `steps: 9`、`guidance: null`、`quantize: null`。 |
-| [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | Apache-2.0 | 不要 | 19 GB | `base`。非 distilled のモデル。既定は `steps: 28`、`guidance: 4.0`、`quantize: 8`。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | Tongyi Qianwen License | 不要 | 5.5 GB | ~14 GB | `turbo`（デフォルト）。蒸留・少ステップ向け。既定は `steps: 9`、`guidance: null`、`quantize: null`。 |
+| [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | Apache-2.0 | 不要 | 19 GB | ~28 GB | `base`。非 distilled のモデル。既定は `steps: 28`、`guidance: 4.0`、`quantize: 8`。 |
 
 kiapi の登録値では、`turbo` は重み約 `6.0 GiB` / 実行時ヘッドルーム約 `8.0 GiB`、
 `base` は重み約 `12.0 GiB` / 実行時ヘッドルーム約 `16.0 GiB` を見込んでいます。

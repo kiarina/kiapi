@@ -26,9 +26,9 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | CC-BY-NC-4.0 | Not required | 3.6 GB | **Non-Commercial License**. 16 kHz monaural, approximately 0.5x speed (approximately 10 seconds calculation for a 5 second clip). |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | CC-BY-NC-4.0 | Not required | 3.6 GB | ~9 GB | **Non-Commercial License**. 16 kHz monaural, approximately 0.5x speed (approximately 10 seconds calculation for a 5 second clip). |
 
 ## Quickstart
 

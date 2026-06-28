@@ -32,10 +32,10 @@ SeedVR2 はプロンプト駆動の画像生成ではなく、入力画像を元
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | 不要 | 7.3 GB | `3b`（デフォルト）。軽量 variant。既定は `resolution: "2x"`、`softness: 0.0`、`quantize: 8`。 |
-| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | 不要 | 17 GB | `7b`。高容量 variant。`3b` より重く、kiapi の登録値では重み約 `7.0 GiB`、実行時ヘッドルーム約 `4.0 GiB` を見込む。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | 不要 | 7.3 GB | ~4 GB | `3b`（デフォルト）。軽量 variant。既定は `resolution: "2x"`、`softness: 0.0`、`quantize: 8`。 |
+| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | 不要 | 17 GB | ~11 GB | `7b`。高容量 variant。`3b` より重く、kiapi の登録値では重み約 `7.0 GiB`、実行時ヘッドルーム約 `4.0 GiB` を見込む。 |
 
 モデル重みは `KIAPI_SEEDVR2_MODEL_REPO` で差し替えできます。
 既定は `numz/SeedVR2_comfyUI` です。

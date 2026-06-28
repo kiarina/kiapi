@@ -29,9 +29,9 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [apple/DepthPro](https://huggingface.co/apple/DepthPro) | Apple Depth Pro License | Not required | 1.8 GB | `base` (default). Estimating relative depth from a single image. Default is `quantize: 8`. A model may be downloaded the first time you use it. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [apple/DepthPro](https://huggingface.co/apple/DepthPro) | Apple Depth Pro License | Not required | 1.8 GB | ~4 GB | `base` (default). Estimating relative depth from a single image. Default is `quantize: 8`. A model may be downloaded the first time you use it. |
 
 ## Notes
 

@@ -42,10 +42,10 @@ It supports the following functions.
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | `qwen3-omni` (default). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
-| [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (default). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
+| [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~19 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 
 - **HTTP 400** when sending a part of a modality that is not supported by the selected model.
 

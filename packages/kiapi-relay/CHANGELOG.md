@@ -15,5 +15,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   inspected.
 - Initial release of `kiapi-relay`, extracted from `kiapi`. Provides the relay
   protocol, request/response schemas, the in-process `RelayRunner`, and the relay
-  request client, plus the local filesystem (`kiapi_relay.local`) and GCP
-  (`kiapi_relay.gcp`, available via the `gcp` extra) relay backends.
+  request client, plus the local filesystem (`kiapi_relay.impl.local`) and GCP
+  (`kiapi_relay.impl.gcp`, available via the `gcp` extra) relay backends.

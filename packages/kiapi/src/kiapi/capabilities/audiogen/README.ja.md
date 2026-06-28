@@ -26,9 +26,9 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | CC-BY-NC-4.0 | 不要 | 3.6 GB | **非商用ライセンス**。16 kHz モノラル、約 0.5 倍速（5 秒のクリップで約 10 秒の計算）。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | CC-BY-NC-4.0 | 不要 | 3.6 GB | ~9 GB | **非商用ライセンス**。16 kHz モノラル、約 0.5 倍速（5 秒のクリップで約 10 秒の計算）。 |
 
 ## Quickstart
 

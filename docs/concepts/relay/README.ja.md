@@ -10,8 +10,8 @@ relay は、直接到達できない場合がある kiapi instance に HTTP requ
 `kiapi-relay` は安定した `Relay`、`RelayDelivery` protocol、request client、schema、
 plugin registry を定義します。次の transport を提供します。
 
-- `kiapi_relay.local`: local verification 用の filesystem-backed transport
-- `kiapi_relay.gcp`: GCS と Realtime Database を使う transport
+- `kiapi_relay.impl.local`: local verification 用の filesystem-backed transport
+- `kiapi_relay.impl.gcp`: GCS と Realtime Database を使う transport
 
 `kiapi` が relay runner を host します。`kiapi-proxy` は同じ request client を使い、
 kiapi や MLX に依存せず conventional HTTP boundary を公開します。

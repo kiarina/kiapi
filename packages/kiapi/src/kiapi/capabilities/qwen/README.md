@@ -35,10 +35,10 @@ Qwen Image is a strong model for multilingual prompts and text in images.
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | Apache-2.0 | Not required | 58 GB | `image` (default). Used with `generate`. txt2img/img2img. Defaults are `steps: 30`, `guidance: 4.0`, `quantize: 8`. |
-| [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | Apache-2.0 | Not required | 58 GB | `edit-2509`. Used with `edit`. Single/multiple reference image editing. Defaults are `steps: 30`, `guidance: 2.5`, `quantize: 8`. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | Apache-2.0 | Not required | 58 GB | ~30 GB | `image` (default). Used with `generate`. txt2img/img2img. Defaults are `steps: 30`, `guidance: 4.0`, `quantize: 8`. |
+| [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | Apache-2.0 | Not required | 58 GB | ~30 GB | `edit-2509`. Used with `edit`. Single/multiple reference image editing. Defaults are `steps: 30`, `guidance: 2.5`, `quantize: 8`. |
 
 `POST /v1/image/qwen/generate` is only `image`, `POST /v1/image/qwen/edit` is
 Only `edit-2509` is accepted. Defaults for each endpoint are compensated on the router side

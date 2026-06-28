@@ -31,10 +31,10 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | Apache-2.0 | 不要 | 7.82 GB | `qwen3-embedding-8b`（デフォルト）。text 専用、4096 次元。alias: `text`, `qwen3-embedding`, `qwen3_embedding`。 |
-| [mlx-community/Qwen3-VL-Embedding-2B-mxfp8](https://huggingface.co/mlx-community/Qwen3-VL-Embedding-2B-mxfp8) | Apache-2.0 | 不要 | 2.59 GB | `qwen3-vl-embedding-2b`。text + image、2048 次元。alias: `vl`, `qwen3-vl-embedding`, `qwen3_vl_embedding`。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | Apache-2.0 | 不要 | 7.82 GB | ~9 GB | `qwen3-embedding-8b`（デフォルト）。text 専用、4096 次元。alias: `text`, `qwen3-embedding`, `qwen3_embedding`。 |
+| [mlx-community/Qwen3-VL-Embedding-2B-mxfp8](https://huggingface.co/mlx-community/Qwen3-VL-Embedding-2B-mxfp8) | Apache-2.0 | 不要 | 2.59 GB | ~4 GB | `qwen3-vl-embedding-2b`。text + image、2048 次元。alias: `vl`, `qwen3-vl-embedding`, `qwen3_vl_embedding`。 |
 
 - 選択したモデルが対応しないモダリティを送ると **HTTP 400**。
   例: `qwen3-embedding-8b` に `image` を送るとエラー。
