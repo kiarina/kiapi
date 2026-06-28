@@ -60,6 +60,11 @@ Always review the upstream license to confirm the terms and whether commercial u
 | web | [web](packages/kiapi/src/kiapi/capabilities/web/README.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend. AGPL obligations can matter for network services. |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend. |
 
+> [!NOTE]
+> Using all resources at once requires a little under 600GB of disk space in total.
+> It also consumes a little under 50GB of memory at peak.
+> For the size and memory consumption of each resource, see the per-family links above.
+
 ## Design
 
 **Reliably provide every capability:**

@@ -60,6 +60,11 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 | web | [web](packages/kiapi/src/kiapi/capabilities/web/README.ja.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend。network service では AGPL の義務が重要になる場合があります。 |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend。 |
 
+> [!NOTE]
+> 全てのリソースを同時に使用する場合、合計で 600GB 弱のディスク容量が必要です。
+> また、Max で 50GB 弱のメモリを消費します。
+> 各リソースのサイズ・消費メモリは、上記の family ごのリンク先を参照してください。
+
 ## Design
 
 **全ての機能を安定して供給できる:**
