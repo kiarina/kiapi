@@ -1,4 +1,4 @@
-.PHONY: init list update upgrade format lint check test build clean ci config pages
+.PHONY: init list sync update upgrade format lint check test build clean ci config pages
 .PHONY: dev staging verify verify-fast verify-one
 .PHONY: verify-chat verify-embedding verify-depthpro verify-ernie verify-flux2
 .PHONY: verify-ideogram4 verify-qwen verify-seedvr2 verify-zimage
@@ -10,11 +10,13 @@ init:
 	mise run setup
 list:
 	uv pip list
-update:
+sync:
 	uv sync --all-packages --all-extras --all-groups
+update:
+	uv sync --inexact --all-packages --all-extras --all-groups
 	uv pip list --outdated
 upgrade:
-	uv sync --upgrade --all-packages --all-extras --all-groups
+	uv sync --inexact --upgrade --all-packages --all-extras --all-groups
 clean:
 	mise run clean
 #--------------------------------------------------

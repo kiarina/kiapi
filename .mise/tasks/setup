@@ -7,7 +7,9 @@ echo "🔧 Installing mise tools..."
 mise install
 
 echo "📦 Syncing workspace dependencies..."
-uv sync --all-packages --all-extras --all-groups
+# --inexact: keep out-of-band installs (e.g. `kiapi activate --family ltx2`'s
+# mlx-video) that aren't in uv.lock. Use `make sync` for an exact reconcile.
+uv sync --inexact --all-packages --all-extras --all-groups
 
 echo "📥 Downloading test assets..."
 mise run test-assets:download
