@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#MISE description="Delete all encrypted test settings under the configured GCS prefix"
+#USAGE long_about "Delete all encrypted test settings under the configured GCS prefix.\n\nSee https://github.com/kiarina/test-settings for details."
+#USAGE flag "--dry-run" help="Show remote files that would be deleted without deleting"
+
+set -euo pipefail
+
+dry_run="${usage_dry_run:-false}"
+
+if ! command -v gcloud >/dev/null 2>&1; then
+    echo "❌ Required command not found: gcloud" >&2
+    exit 1
+fi
+
+gcs_uri="$(mise run test-settings:resolve_gcs_uri)"
+
+staging_dir="$(mktemp -d)"
+trap 'rm -rf "$staging_dir"' EXIT
+
+object_list="$staging_dir/objects"
+if ! gcloud storage ls "$gcs_uri/**" >"$object_list" 2>/dev/null; then
+    echo "ℹ️  No objects found below $gcs_uri. Nothing to delete."
+    exit 0
+fi
+
+remote_uris=()
+while IFS= read -r remote_uri; do
+    [ -n "$remote_uri" ] || continue
+
+    case "$remote_uri" in
+        "$gcs_uri"/*) ;;
+        *)
+            echo "❌ Unexpected object outside the configured prefix: $remote_uri" >&2
+            exit 1
+            ;;
+    esac
+
+    remote_uris+=("$remote_uri")
+done <"$object_list"
+
+if [ "${#remote_uris[@]}" -eq 0 ]; then
+    echo "ℹ️  No objects found below $gcs_uri. Nothing to delete."
+    exit 0
+fi
+
+echo "🗑️  Test settings selected for deletion:"
+for remote_uri in "${remote_uris[@]}"; do
+    echo "   $remote_uri"
+done
+
+if [ "$dry_run" = "true" ]; then
+    echo "✅ Dry run completed. No objects were deleted."
+    exit 0
+fi
+
+gcloud storage rm "${remote_uris[@]}"
+
+echo "✅ Deleted ${#remote_uris[@]} object(s) below $gcs_uri."

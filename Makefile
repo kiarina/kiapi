@@ -18,6 +18,11 @@ upgrade:
 clean:
 	mise run clean
 #--------------------------------------------------
+test-settings-upload:
+	mise run test-settings:upload .env test_settings.yaml
+test-settings-download:
+	mise run test-settings:download
+#--------------------------------------------------
 format:
 	mise run format
 lint:

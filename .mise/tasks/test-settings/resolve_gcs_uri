@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#MISE description="Print the GCS URI prefix derived for this repository's test settings"
+#USAGE long_about "Print the GCS URI prefix derived for this repository's test settings.\n\nSee https://github.com/kiarina/test-settings for details."
+
+set -euo pipefail
+
+bucket_name="${TEST_SETTINGS_BUCKET_NAME:-}"
+if [ -z "$bucket_name" ] && [ -n "${TEST_SETTINGS_PROJECT_ID:-}" ]; then
+    bucket_name="${TEST_SETTINGS_PROJECT_ID}-test-settings"
+fi
+if [ -z "$bucket_name" ]; then
+    echo "❌ Set TEST_SETTINGS_BUCKET_NAME or TEST_SETTINGS_PROJECT_ID to derive the storage path." >&2
+    exit 1
+fi
+
+if ! remote_url="$(git remote get-url origin 2>/dev/null)"; then
+    echo "❌ Could not resolve the 'origin' Git remote to derive the storage path." >&2
+    exit 1
+fi
+
+owner_repo="${remote_url%.git}"
+case "$owner_repo" in
+    git@github.com:*)       owner_repo="${owner_repo#git@github.com:}" ;;
+    ssh://git@github.com/*) owner_repo="${owner_repo#ssh://git@github.com/}" ;;
+    https://github.com/*)   owner_repo="${owner_repo#https://github.com/}" ;;
+    http://github.com/*)    owner_repo="${owner_repo#http://github.com/}" ;;
+    *)
+        echo "❌ The 'origin' remote is not a github.com repository: $remote_url" >&2
+        exit 1
+        ;;
+esac
+
+if [[ ! "$owner_repo" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+    echo "❌ Could not parse owner/repo from the 'origin' remote: $remote_url" >&2
+    exit 1
+fi
+
+echo "gs://${bucket_name%/}/${owner_repo}"
