@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+#MISE description="Download and decrypt test settings from Google Cloud Storage"
+#USAGE long_about "Download and decrypt test settings from Google Cloud Storage.\n\nSee https://github.com/kiarina/test-settings for details."
+#USAGE flag "--force" help="Replace existing local test settings"
+#USAGE flag "--dry-run" help="Show remote files and local destinations without downloading"
+
+set -euo pipefail
+
+force="${usage_force:-false}"
+dry_run="${usage_dry_run:-false}"
+
+if ! command -v gcloud >/dev/null 2>&1; then
+    echo "❌ Required command not found: gcloud" >&2
+    exit 1
+fi
+
+gcs_uri="$(mise run test-settings:resolve_gcs_uri)"
+
+if [ "$dry_run" = "false" ]; then
+    if ! command -v age >/dev/null 2>&1; then
+        echo "❌ Required command not found: age" >&2
+        exit 1
+    fi
+
+    key_file="${TEST_SETTINGS_AGE_KEYS_PATH:-$HOME/.config/test-settings/age/keys.txt}"
+    if [ ! -f "$key_file" ]; then
+        echo "❌ age key not found: $key_file" >&2
+        echo "   Run 'mise run age:init' or 'mise run secret-manager:download' first." >&2
+        exit 1
+    fi
+fi
+
+repository_root="$(git rev-parse --show-toplevel)"
+cd "$repository_root"
+
+staging_dir="$(mktemp -d)"
+temporary_paths=()
+cleanup() {
+    rm -rf "$staging_dir"
+    if [ "${#temporary_paths[@]}" -gt 0 ]; then
+        rm -f "${temporary_paths[@]}"
+    fi
+}
+trap cleanup EXIT
+
+object_list="$staging_dir/objects"
+if ! gcloud storage ls "$gcs_uri/**" >"$object_list"; then
+    echo "❌ Failed to list test settings below $gcs_uri." >&2
+    exit 1
+fi
+
+remote_uris=()
+relative_paths=()
+while IFS= read -r remote_uri; do
+    [ -n "$remote_uri" ] || continue
+
+    case "$remote_uri" in
+        "$gcs_uri"/*) encrypted_relative_path="${remote_uri#"$gcs_uri"/}" ;;
+        *)
+            echo "❌ Unexpected object outside the configured prefix: $remote_uri" >&2
+            exit 1
+            ;;
+    esac
+
+    case "/$encrypted_relative_path/" in
+        *'/../'*|*'/./'*|*'//'*|*\\*)
+            echo "❌ Unsafe object path: $encrypted_relative_path" >&2
+            exit 1
+            ;;
+    esac
+
+    case "$encrypted_relative_path" in
+        .env.age|*/.env.age|test_settings.yaml.age|*/test_settings.yaml.age) ;;
+        *)
+            echo "❌ Unexpected object below the configured prefix: $encrypted_relative_path" >&2
+            exit 1
+            ;;
+    esac
+
+    relative_path="${encrypted_relative_path%.age}"
+    destination_dir="$(dirname "$repository_root/$relative_path")"
+
+    if [ ! -d "$destination_dir" ]; then
+        echo "❌ Destination directory does not exist: ${destination_dir#"$repository_root"/}" >&2
+        exit 1
+    fi
+
+    resolved_destination_dir="$(cd "$destination_dir" && pwd -P)"
+    case "$resolved_destination_dir/" in
+        "$repository_root/"*) ;;
+        *)
+            echo "❌ Destination resolves outside the repository: $relative_path" >&2
+            exit 1
+            ;;
+    esac
+
+    remote_uris+=("$remote_uri")
+    relative_paths+=("$relative_path")
+done <"$object_list"
+
+if [ "${#remote_uris[@]}" -eq 0 ]; then
+    echo "❌ No encrypted test settings found below $gcs_uri." >&2
+    exit 1
+fi
+
+conflicts=()
+for relative_path in "${relative_paths[@]}"; do
+    if [ -e "$relative_path" ] || [ -L "$relative_path" ]; then
+        conflicts+=("$relative_path")
+    fi
+done
+
+if [ "$force" = "false" ] && [ "$dry_run" = "false" ]; then
+    if [ "${#conflicts[@]}" -gt 0 ]; then
+        echo "❌ Refusing to replace existing test settings:" >&2
+        printf '   %s\n' "${conflicts[@]}" >&2
+        echo "   Run with --force to replace them." >&2
+        exit 1
+    fi
+fi
+
+echo "🔓 Test settings selected for download:"
+for index in "${!remote_uris[@]}"; do
+    echo "   ${remote_uris[$index]} -> ${relative_paths[$index]}"
+done
+
+if [ "$dry_run" = "true" ]; then
+    if [ "${#conflicts[@]}" -gt 0 ]; then
+        echo "⚠️  Existing files would require --force:"
+        printf '   %s\n' "${conflicts[@]}"
+    fi
+    echo "✅ Dry run completed. No files were downloaded or decrypted."
+    exit 0
+fi
+
+for index in "${!remote_uris[@]}"; do
+    remote_uri="${remote_uris[$index]}"
+    relative_path="${relative_paths[$index]}"
+    encrypted_path="$staging_dir/encrypted/$index.age"
+    destination_dir="$(dirname "$relative_path")"
+    destination_name="$(basename "$relative_path")"
+    temporary_path="$(mktemp "$destination_dir/.${destination_name}.tmp.XXXXXX")"
+
+    mkdir -p "$(dirname "$encrypted_path")"
+    gcloud storage cp "$remote_uri" "$encrypted_path"
+
+    if ! age \
+        --decrypt \
+        --identity "$key_file" \
+        --output "$temporary_path" \
+        "$encrypted_path"; then
+        rm -f "$temporary_path"
+        echo "❌ Failed to decrypt $remote_uri." >&2
+        exit 1
+    fi
+
+    chmod 600 "$temporary_path"
+    temporary_paths+=("$temporary_path")
+done
+
+for index in "${!temporary_paths[@]}"; do
+    mv -f "${temporary_paths[$index]}" "${relative_paths[$index]}"
+done
+
+echo "✅ Downloaded and decrypted ${#remote_uris[@]} test settings file(s)."

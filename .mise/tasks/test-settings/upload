@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+#MISE description="Encrypt and upload test settings to Google Cloud Storage"
+#USAGE long_about "Encrypt and upload test settings to Google Cloud Storage.\n\nSee https://github.com/kiarina/test-settings for details."
+#USAGE flag "--dry-run" help="Show files and destinations without encrypting or uploading"
+#USAGE arg "<names>" var=#true help="File names to search for across the repository and upload (e.g. .env test_settings.yaml)"
+
+set -euo pipefail
+
+dry_run="${usage_dry_run:-false}"
+
+gcs_uri="$(mise run test-settings:resolve_gcs_uri)"
+
+if [ "$dry_run" = "false" ]; then
+    for command_name in age age-keygen gcloud; do
+        if ! command -v "$command_name" >/dev/null 2>&1; then
+            echo "❌ Required command not found: $command_name" >&2
+            exit 1
+        fi
+    done
+
+    key_file="${TEST_SETTINGS_AGE_KEYS_PATH:-$HOME/.config/test-settings/age/keys.txt}"
+    if [ ! -f "$key_file" ]; then
+        echo "❌ age key not found: $key_file" >&2
+        echo "   Run 'mise run age:init' first." >&2
+        exit 1
+    fi
+
+fi
+
+repository_root="$(git rev-parse --show-toplevel)"
+
+names=()
+while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    names+=("$name")
+done < <(printf '%s\n' ${usage_names:-})
+
+if [ "${#names[@]}" -eq 0 ]; then
+    echo "❌ No file names specified. Pass one or more names, e.g. mise run test-settings:upload .env test_settings.yaml" >&2
+    exit 1
+fi
+
+cd "$repository_root"
+
+# Build the find name expression from the requested names so that each name is
+# searched for across the whole repository (e.g. packages/*/​.env).
+find_name_expr=()
+for name in "${names[@]}"; do
+    if [ "${#find_name_expr[@]}" -gt 0 ]; then
+        find_name_expr+=(-o)
+    fi
+    find_name_expr+=(-name "$name")
+done
+
+settings_files=()
+while IFS= read -r -d '' path; do
+    relative_path="${path#./}"
+
+    if ! git -C "$repository_root" check-ignore -q -- "$relative_path"; then
+        echo "❌ Refusing to upload a file that is not ignored by Git: $relative_path" >&2
+        exit 1
+    fi
+
+    settings_files+=("$relative_path")
+done < <(
+    find . \
+        \( -path './.git' -o -path './.venv' -o -path './tests/assets' \) -prune -o \
+        -type f \( "${find_name_expr[@]}" \) -print0
+)
+
+if [ "${#settings_files[@]}" -eq 0 ]; then
+    echo "❌ No files named ${names[*]} found in the repository." >&2
+    exit 1
+fi
+
+echo "🔐 Test settings selected for upload:"
+for relative_path in "${settings_files[@]}"; do
+    echo "   $relative_path -> $gcs_uri/$relative_path.age"
+done
+
+if [ "$dry_run" = "true" ]; then
+    echo "✅ Dry run completed. No files were encrypted or uploaded."
+    exit 0
+fi
+
+staging_dir="$(mktemp -d)"
+trap 'rm -rf "$staging_dir"' EXIT
+
+# Derive every recipient from the key file so that, when keys.txt holds
+# multiple identities (e.g. during rotation), files are encrypted to all of
+# them and remain decryptable with any one key.
+recipients_file="$staging_dir/recipients"
+age-keygen -y "$key_file" >"$recipients_file"
+
+for relative_path in "${settings_files[@]}"; do
+    encrypted_path="$staging_dir/$relative_path.age"
+    mkdir -p "$(dirname "$encrypted_path")"
+
+    age \
+        --encrypt \
+        --recipients-file "$recipients_file" \
+        --output "$encrypted_path" \
+        "$relative_path"
+
+    gcloud storage cp \
+        "$encrypted_path" \
+        "$gcs_uri/$relative_path.age"
+done
+
+echo "✅ Encrypted and uploaded ${#settings_files[@]} test settings file(s)."
