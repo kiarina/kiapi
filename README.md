@@ -104,31 +104,35 @@ See each package README linked above for usage instructions.
 
 ## Quick Start
 
-### Use the kiapi server from an LLM agent
+### kiapi
 
+**Set up kiapi:**
 ```sh
-# Install kiapi itself
+# Install kiapi
 python3.12 -m pip install --upgrade kiapi  # If you cannot use uv
-uv tool install --python 3.12 kiapi  # If you can use uv
+uv tool install --python 3.12 kiapi        # If you can use uv
 
 # Change the default host, port, or memory budget if needed
-kiapi config init
-kiapi config edit
+kiapi config init  # Create the configuration file
+kiapi config edit  # Edit the configuration file in an editor
 
 # Check the current setup state
 kiapi status
 
-# Explicitly set up model weights, Docker images, and dedicated venvs
-kiapi activate  # Choose targets from the interactive list
-kiapi activate --all  # Set up everything (just under 600GB)
+# Prepare model weights, Docker images, and dedicated venv environments
+kiapi activate                   # Choose targets from the interactive list
+kiapi activate --all             # Set up everything (just under 600GB)
 kiapi activate --family acestep  # Set up only the specified family
 
 # Verify the setup
-kiapi check  # Choose targets from the interactive list
+kiapi check        # Choose targets from the interactive list
 kiapi check --all  # Verify everything
+```
 
-# Start the API server
-kiapi run  # Starts on 127.0.0.1:8000
+**Use from an LLM agent:**
+```sh
+# Start the kiapi server
+kiapi run                             # Start based on the configuration file (default: 127.0.0.1:8000)
 kiapi run --host 0.0.0.0 --port 8500  # Start on a specific host and port
 
 # Example integration with an agent
@@ -142,10 +146,7 @@ with the theme 'a person walking in the rain'.
 open ~/Downloads/bgm.wav
 ```
 
-### Access kiapi inside a closed network by using kiapi proxy
-
-
-### Run as a background service
+**Run as a background service:**
 ```sh
 # kiapi
 kiapi service install    # Register
@@ -153,6 +154,17 @@ kiapi service start      # Start
 kiapi service status     # Check status and the tail of logs
 kiapi service stop       # Stop
 kiapi service uninstall  # Remove
+```
+
+### kiapi[relay-gcp] + kiapi-proxy
+
+**Set up kiapi:**
+```sh
+# Install the GCP relay feature as an extra
+python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # If you cannot use uv
+uv tool install --python 3.12 'kiapi[relay-gcp]'        # If you can use uv
+
+kiapi run --relay gcp  # Start with the GCP relay feature enabled
 ```
 
 ## Development

@@ -101,31 +101,35 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 
 ## Quick Start
 
-### kiapi サーバーを LLM エージェントから使う
+### kiapi
 
+**kiapi のセットアップ:**
 ```sh
-# kiapi 本体のインストール
+# kiapi インストール
 python3.12 -m pip install --upgrade kiapi  # uv を使えない場合
-uv tool install --python 3.12 kiapi  # uv を使える場合
+uv tool install --python 3.12 kiapi        # uv を使える場合
 
 # デフォルトのホスト・ポートやメモリ予算を変更（必要な場合）
-kiapi config init
-kiapi config edit
+kiapi config init  # 設定ファイルを作成
+kiapi config edit  # 設定ファイルをエディタで編集
 
 # セットアップ状態の確認
 kiapi status
 
-# モデル重み、Docker image、専用 venv の明示的なセットアップ
-kiapi activate  # 表示されるリストから対象を選択してセットアップする場合
-kiapi activate --all  # 全てをセットアップする場合 (600GB 弱)
+# モデル重み、Docker image、専用 venv 環境の準備
+kiapi activate                   # リストから選択してセットアップする場合
+kiapi activate --all             # 全てをセットアップする場合 (600GB 弱)
 kiapi activate --family acestep  # 指定した family だけをセットアップする場合
 
 # 動作確認
-kiapi check  # 表示されるリストから対象を選択して動作確認する場合
+kiapi check        # リストから選択して動作確認する場合
 kiapi check --all  # 全てを動作確認する場合
+```
 
-# API サーバーの起動
-kiapi run  # 127.0.0.1:8000 で起動
+**LLM エージェントから使う:**
+```sh
+# kiapi サーバーを起動
+kiapi run                             # 設定ファイルに基づいて起動 (default: 127.0.0.1:8000)
 kiapi run --host 0.0.0.0 --port 8500  # ポートを指定して起動する場合
 
 # エージェントとの連携例
@@ -138,10 +142,7 @@ http://localhost:8000/openapi.json を把握してください。
 open ~/Downloads/bgm.wav
 ```
 
-### kiapi proxy を使って閉鎖環境内の kiapi にアクセスする
-
-
-### background サービスとして起動する
+**background サービスとして起動する:**
 ```sh
 # kiapi
 kiapi service install    # 登録
@@ -149,6 +150,17 @@ kiapi service start      # 起動
 kiapi service status     # 状態とログ末尾の確認
 kiapi service stop       # 停止
 kiapi service uninstall  # 削除
+```
+
+### kiapi[relay-gcp] + kiapi-proxy
+
+**kiapi のセットアップ:**
+```sh
+# GCP relay 機能を追加インストール
+python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # uv を使えない場合
+uv tool install --python 3.12 'kiapi[relay-gcp]'        # uv を使える場合
+
+kiapi run --relay gcp  # GCP relay 機能を有効にして起動
 ```
 
 ## Development
