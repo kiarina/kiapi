@@ -33,10 +33,10 @@ Z-Image is a relatively lightweight image generation model.
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | Tongyi Qianwen License | Not required | 5.5 GB | `turbo` (default). For distillation and small steps. Defaults are `steps: 9`, `guidance: null`, `quantize: null`. |
-| [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | Apache-2.0 | Not required | 19 GB | `base`. Non-distilled model. Defaults are `steps: 28`, `guidance: 4.0`, `quantize: 8`. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [filipstrand/Z-Image-Turbo-mflux-4bit](https://huggingface.co/filipstrand/Z-Image-Turbo-mflux-4bit) | Tongyi Qianwen License | Not required | 5.5 GB | ~14 GB | `turbo` (default). For distillation and small steps. Defaults are `steps: 9`, `guidance: null`, `quantize: null`. |
+| [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) | Apache-2.0 | Not required | 19 GB | ~28 GB | `base`. Non-distilled model. Defaults are `steps: 28`, `guidance: 4.0`, `quantize: 8`. |
 
 In kiapi's registered values, `turbo` has a weight of approximately `6.0 GiB` / runtime headroom of approximately `8.0 GiB`,
 `base` is expected to have a weight of approximately `12.0 GiB` / runtime headroom of approximately `16.0 GiB`.

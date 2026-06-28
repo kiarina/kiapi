@@ -28,10 +28,10 @@ search / fetch も Job として single-flight worker に投入されます。
 
 ## Dependencies
 
-| バックエンド | License | Description |
-|---|---|---|
-| [SearXNG](https://github.com/searxng/searxng) | AGPL-3.0 | メタ検索エンジン。kiapi が `docker run --rm` subprocess として起動する。 |
-| [Crawl4AI](https://github.com/unclecode/crawl4ai) | Apache-2.0 | ブラウザレンダリング + Markdown/PDF 変換。kiapi が `docker run --rm` subprocess として起動する。 |
+| バックエンド | License | Mem | Description |
+|---|---|---:|---|
+| [SearXNG](https://github.com/searxng/searxng) | AGPL-3.0 | ~0.7 GB | メタ検索エンジン。kiapi が `docker run --rm` subprocess として起動する。 |
+| [Crawl4AI](https://github.com/unclecode/crawl4ai) | Apache-2.0 | ~2 GB | ブラウザレンダリング + Markdown/PDF 変換。kiapi が `docker run --rm` subprocess として起動する。 |
 
 ## Notes
 

@@ -32,10 +32,10 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | Apache-2.0 | Not required | 31.6 GB | `turbo` (default). Distillation 8 step model. Defaults are `steps: 8`, `guidance: 1.0`, `quantize: 8`. |
-| [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) | Apache-2.0 | Not required | 31.6 GB | `base`. Non-distilled model. Defaults are `steps: 50`, `guidance: 4.0`, `quantize: 8`. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | Apache-2.0 | Not required | 31.6 GB | ~10 GB | `turbo` (default). Distillation 8 step model. Defaults are `steps: 8`, `guidance: 1.0`, `quantize: 8`. |
+| [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) | Apache-2.0 | Not required | 31.6 GB | ~20 GB | `base`. Non-distilled model. Defaults are `steps: 50`, `guidance: 4.0`, `quantize: 8`. |
 
 ## Notes
 

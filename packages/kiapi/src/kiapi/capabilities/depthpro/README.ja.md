@@ -29,9 +29,9 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [apple/DepthPro](https://huggingface.co/apple/DepthPro) | Apple Depth Pro License | 不要 | 1.8 GB | `base`（デフォルト）。単一画像から相対深度を推定。既定は `quantize: 8`。初回利用時にモデルをダウンロードすることがある。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [apple/DepthPro](https://huggingface.co/apple/DepthPro) | Apple Depth Pro License | 不要 | 1.8 GB | ~4 GB | `base`（デフォルト）。単一画像から相対深度を推定。既定は `quantize: 8`。初回利用時にモデルをダウンロードすることがある。 |
 
 ## Notes
 

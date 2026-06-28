@@ -32,9 +32,9 @@ kiapi では txt2img のみを公開し、生成結果を Files API の成果物
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | Ideogram license (非商用) | 必要 | 27.5 GB | `fp8`（デフォルト）。Hugging Face の gated repo。既定は `1024x1024`、`preset: V4_DEFAULT_20`、`quantize: null`。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | Ideogram license (非商用) | 必要 | 27.5 GB | ~30 GB | `fp8`（デフォルト）。Hugging Face の gated repo。既定は `1024x1024`、`preset: V4_DEFAULT_20`、`quantize: null`。 |
 
 ## Notes
 

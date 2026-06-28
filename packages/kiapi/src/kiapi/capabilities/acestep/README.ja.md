@@ -35,11 +35,11 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | MIT | 不要 | 19 GB | `xl-base`（デフォルト）。32ステップ / `guidance_scale=7.0`、最高品質。30秒の音声で約25秒（M4 Max）。 |
-| [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | MIT | 不要 | 9.4 GB | `turbo`（8ステップ、`guidance_scale` を無視）の DiT に加え、5Hz LM・VAE・Qwen3-Embedding-0.6B を同梱。速度重視で15秒で約4秒（M4 Max）。 |
-| [Qwen/Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) | Apache-2.0 | 不要 | 1.1 GB | テキストエンコーダ。ACE-Step/Ace-Step1.5 に同梱。 |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | MIT | 不要 | 19 GB | ~33 GB | `xl-base`（デフォルト）。32ステップ / `guidance_scale=7.0`、最高品質。30秒の音声で約25秒（M4 Max）。 |
+| [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | MIT | 不要 | 9.4 GB | ~16 GB | `turbo`（8ステップ、`guidance_scale` を無視）の DiT に加え、5Hz LM・VAE・Qwen3-Embedding-0.6B を同梱。速度重視で15秒で約4秒（M4 Max）。 |
+| [Qwen/Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) | Apache-2.0 | 不要 | 1.1 GB | —（同梱） | テキストエンコーダ。ACE-Step/Ace-Step1.5 に同梱。 |
 
 ## Notes
 

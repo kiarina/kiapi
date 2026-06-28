@@ -28,10 +28,10 @@ search / fetch are also submitted to single-flight workers as Jobs.
 
 ## Dependencies
 
-| Backend | License | Description |
-|---|---|---|
-| [SearXNG](https://github.com/searxng/searxng) | AGPL-3.0 | Meta search engine. kiapi starts as `docker run --rm` subprocess. |
-| [Crawl4AI](https://github.com/unclecode/crawl4ai) | Apache-2.0 | Browser rendering + Markdown/PDF conversion. kiapi starts as `docker run --rm` subprocess. |
+| Backend | License | Mem | Description |
+|---|---|---:|---|
+| [SearXNG](https://github.com/searxng/searxng) | AGPL-3.0 | ~0.7 GB | Meta search engine. kiapi starts as `docker run --rm` subprocess. |
+| [Crawl4AI](https://github.com/unclecode/crawl4ai) | Apache-2.0 | ~2 GB | Browser rendering + Markdown/PDF conversion. kiapi starts as `docker run --rm` subprocess. |
 
 ## Notes
 

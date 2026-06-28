@@ -32,10 +32,10 @@ SeedVR2 is an image-to-image super-resolution model that reconstructs details ba
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | Not required | 7.3 GB | `3b` (default). Lightweight variant. Defaults are `resolution: "2x"`, `softness: 0.0`, `quantize: 8`. |
-| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | Not required | 17 GB | `7b`. High capacity variant. It is heavier than `3b`, and the registered value of kiapi is expected to have a weight of about `7.0 GiB` and a runtime headroom of about `4.0 GiB`. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | Not required | 7.3 GB | ~4 GB | `3b` (default). Lightweight variant. Defaults are `resolution: "2x"`, `softness: 0.0`, `quantize: 8`. |
+| [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | Apache-2.0 | Not required | 17 GB | ~11 GB | `7b`. High capacity variant. It is heavier than `3b`, and the registered value of kiapi is expected to have a weight of about `7.0 GiB` and a runtime headroom of about `4.0 GiB`. |
 
 Model weights can be replaced with `KIAPI_SEEDVR2_MODEL_REPO`.
 Default is `numz/SeedVR2_comfyUI`.

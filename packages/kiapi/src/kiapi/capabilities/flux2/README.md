@@ -35,11 +35,11 @@
 
 ## Models
 
-| Model | License | Terms | Size | Description |
-|---|---|---|---:|---|
-| [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) | FLUX Non-Commercial License | Required | 52.9 GB | `klein-9b` (default). 9B Klein for small steps. Defaults are `steps: 4`, `guidance: 1.0`, `quantize: null`. Can be used for generation and editing. |
-| [black-forest-labs/FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) | Apache-2.0 | Not required | 23.7 GB | `klein-base-4b`. base variant. Defaults are `steps: 40`, `guidance: 1.0`, `quantize: 8`. Can be used for generation, editing, and LoRA learning. |
-| [black-forest-labs/FLUX.2-klein-base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) | FLUX Non-Commercial License | Required | 52.9 GB | `klein-base-9b`. base variant. Defaults are `steps: 40`, `guidance: 1.0`, `quantize: 8`. Can be used for generation, editing, and LoRA learning. |
+| Model | License | Terms | Size | Mem | Description |
+|---|---|---|---:|---:|---|
+| [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) | FLUX Non-Commercial License | Required | 52.9 GB | ~33 GB | `klein-9b` (default). 9B Klein for small steps. Defaults are `steps: 4`, `guidance: 1.0`, `quantize: null`. Can be used for generation and editing. |
+| [black-forest-labs/FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) | Apache-2.0 | Not required | 23.7 GB | ~13 GB | `klein-base-4b`. base variant. Defaults are `steps: 40`, `guidance: 1.0`, `quantize: 8`. Can be used for generation, editing, and LoRA learning. |
+| [black-forest-labs/FLUX.2-klein-base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) | FLUX Non-Commercial License | Required | 52.9 GB | ~22 GB | `klein-base-9b`. base variant. Defaults are `steps: 40`, `guidance: 1.0`, `quantize: 8`. Can be used for generation, editing, and LoRA learning. |
 
 ## Notes
 
