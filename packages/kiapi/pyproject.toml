@@ -69,7 +69,7 @@ dependencies = [
     "torchvision",
     "torchaudio",
     "mflux>=0.18.0",
-    "pydantic-settings-manager>=3.7.0",
+    "pydantic-settings-manager>=3.8.0",
 ]
 
 [project.optional-dependencies]

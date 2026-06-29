@@ -31,7 +31,7 @@ dependencies = [
     "click",
     "pydantic>=2",
     "pydantic-settings",
-    "pydantic-settings-manager>=3.7.0",
+    "pydantic-settings-manager>=3.8.0",
     "python-multipart",      # parse incoming multipart/form-data uploads
     "kiapi-relay",
 ]

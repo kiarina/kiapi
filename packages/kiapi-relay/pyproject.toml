@@ -27,7 +27,7 @@ dependencies = [
     "httpx",         # relay request client
     "pydantic>=2",
     "pydantic-settings",
-    "pydantic-settings-manager>=3.7.0",
+    "pydantic-settings-manager>=3.8.0",
     "kiarina-utils-common>=2.2.0",
 ]
 
