@@ -19,6 +19,7 @@ from kiapi_relay import (
     build_relay_response,
     new_relay_session_id,
 )
+from kiapi_relay.core._helpers.select_live_node import select_live_node
 
 from .._schemas.local_relay_notification import LocalRelayNotification
 from .._settings import LocalRelaySettings
@@ -37,9 +38,14 @@ class LocalRelay(BaseRelay):
 
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         self._ensure_directories()
+        self._write_liveness()
         listener = asyncio.create_task(
             self._listen_forever(),
             name="kiapi-relay-local-listener",
+        )
+        heartbeat = asyncio.create_task(
+            self._heartbeat_loop(),
+            name="kiapi-relay-local-heartbeat",
         )
         try:
             while True:
@@ -67,7 +73,9 @@ class LocalRelay(BaseRelay):
                 yield LocalRelayDelivery(self, notification, request)
         finally:
             listener.cancel()
-            await asyncio.gather(listener, return_exceptions=True)
+            heartbeat.cancel()
+            await asyncio.gather(listener, heartbeat, return_exceptions=True)
+            self._delete_liveness()
 
     async def request(
         self,
@@ -76,13 +84,16 @@ class LocalRelay(BaseRelay):
         timeout_s: float = 1800.0,
     ) -> RelayResponse:
         self._ensure_directories()
+        target_node_id = self._select_target_node()
         session_id = new_relay_session_id()
         self._session_dir(session_id).mkdir(parents=True, exist_ok=True)
         self._request_path(session_id).write_bytes(request.model_dump_json().encode())
-        self._request_notification_path(session_id).write_bytes(
+        notification_path = self._request_notification_path(target_node_id, session_id)
+        notification_path.parent.mkdir(parents=True, exist_ok=True)
+        notification_path.write_bytes(
             LocalRelayNotification(
                 session_id=session_id,
-                source_node_id=self.settings.source_node_id,
+                source_node_id=self.node_id,
             )
             .model_dump_json()
             .encode()
@@ -95,12 +106,53 @@ class LocalRelay(BaseRelay):
             )
         return await asyncio.to_thread(self._read_response, session_id)
 
+    async def _heartbeat_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self.settings.heartbeat_interval_s)
+            try:
+                self._write_liveness()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Relay liveness heartbeat failed")
+
+    def _write_liveness(self) -> None:
+        self._liveness_dir().mkdir(parents=True, exist_ok=True)
+        _write_json_atomic(self._liveness_path(self.node_id), {"ts": time.time()})
+
+    def _delete_liveness(self) -> None:
+        try:
+            self._liveness_path(self.node_id).unlink(missing_ok=True)
+        except OSError:
+            logger.warning("Failed to remove relay liveness entry", exc_info=True)
+
+    def _select_target_node(self) -> str:
+        entries: dict[str, Any] = {}
+        liveness_dir = self._liveness_dir()
+        if liveness_dir.exists():
+            for path in liveness_dir.glob("*.json"):
+                try:
+                    record = json.loads(path.read_bytes())
+                except (OSError, ValueError):
+                    continue
+                entries[path.stem] = record
+        node_id = select_live_node(entries, self.settings.liveness_ttl_s)
+        if node_id is None:
+            raise RelayRequestError(
+                RelayError(
+                    code="no_relay_node",
+                    message="no live kiapi relay node is available",
+                    retryable=True,
+                )
+            )
+        return node_id
+
     async def _wait_for_response(
         self,
         session_id: str,
         timeout_s: float,
     ) -> dict[str, Any]:
-        path = self._responses_dir(self.settings.source_node_id) / f"{session_id}.json"
+        path = self._responses_dir(self.node_id) / f"{session_id}.json"
         deadline = time.monotonic() + timeout_s
         last_status: str | None = None
         while time.monotonic() < deadline:
@@ -128,7 +180,7 @@ class LocalRelay(BaseRelay):
             notification,
             {
                 "session_id": notification.session_id,
-                "source_node_id": self.settings.node_id,
+                "source_node_id": self.node_id,
                 "status": "running",
                 "progress": {
                     "value": 0.0,
@@ -162,7 +214,7 @@ class LocalRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "failed",
                     "error": error.model_dump(mode="json"),
                 },
@@ -180,7 +232,7 @@ class LocalRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "succeeded",
                     "response": {
                         "content_type": metadata["content_type"],
@@ -222,7 +274,7 @@ class LocalRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "queued",
                     "progress": {
                         "value": 0.0,
@@ -313,7 +365,9 @@ class LocalRelay(BaseRelay):
         payload: dict[str, Any],
     ) -> None:
         self._write_response_notification(notification, payload)
-        self._request_notification_path(notification.session_id).unlink(missing_ok=True)
+        self._request_notification_path(self.node_id, notification.session_id).unlink(
+            missing_ok=True
+        )
 
     def _ensure_directories(self) -> None:
         self._requests_dir().mkdir(parents=True, exist_ok=True)
@@ -331,11 +385,20 @@ class LocalRelay(BaseRelay):
     def _nodes_dir(self) -> Path:
         return self._base_dir() / "nodes"
 
-    def _requests_dir(self) -> Path:
-        return self._nodes_dir() / self.settings.node_id / "requests"
+    def _liveness_dir(self) -> Path:
+        return self._base_dir() / "liveness"
 
-    def _request_notification_path(self, session_id: str) -> Path:
-        return self._requests_dir() / f"{session_id}.json"
+    def _liveness_path(self, node_id: str) -> Path:
+        return self._liveness_dir() / f"{node_id}.json"
+
+    def _requests_dir(self) -> Path:
+        return self._node_requests_dir(self.node_id)
+
+    def _node_requests_dir(self, node_id: str) -> Path:
+        return self._nodes_dir() / node_id / "requests"
+
+    def _request_notification_path(self, node_id: str, session_id: str) -> Path:
+        return self._node_requests_dir(node_id) / f"{session_id}.json"
 
     def _responses_dir(self, source_node_id: str) -> Path:
         return self._nodes_dir() / source_node_id / "responses"

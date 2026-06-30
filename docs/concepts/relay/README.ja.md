@@ -16,6 +16,16 @@ plugin registry を定義します。次の transport を提供します。
 `kiapi` が relay runner を host します。`kiapi-proxy` は同じ request client を使い、
 kiapi や MLX に依存せず conventional HTTP boundary を公開します。
 
+## Node Identity and Discovery
+
+各参加者は初回起動時に自分の `node_id` を生成し、user data directory に永続化します。
+そのため identity は再起動をまたいで安定し、手動設定は不要です。同じ directory 内の
+single-instance lock により、2 つめの process が同じ identity を共有することを防ぎます。
+serving node は `liveness/{node_id}` へ一定間隔で liveness heartbeat を publish し、正常
+終了時に削除します。requester は liveness record を read し、staleness window 以内で最も
+新しい heartbeat の node を選んで request を送ります。window 内に report した node が
+ない場合、request は `no_relay_node` で失敗します。
+
 ## Delivery Flow
 
 ```text
@@ -55,6 +65,7 @@ LocalRelay は local root 以下に GCP object layout を再現します。
 
 ```text
 {root}/{prefix}/
+  liveness/{node_id}.json
   nodes/{node_id}/requests/{session_id}.json
   nodes/{source_node_id}/responses/{session_id}.json
   sessions/{session_id}/request.json

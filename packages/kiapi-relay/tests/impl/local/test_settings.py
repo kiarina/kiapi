@@ -6,13 +6,12 @@ from kiapi_relay.impl.local import LocalRelaySettings
 
 def test_settings_normalize_prefix() -> None:
     settings = LocalRelaySettings(
-        node_id="worker-1",
         prefix="/private/kiapi/",
     )
 
     assert settings.prefix == "private/kiapi"
 
 
-def test_settings_reject_invalid_node_id() -> None:
+def test_settings_reject_empty_prefix() -> None:
     with pytest.raises(ValidationError):
-        LocalRelaySettings(node_id="worker/1")
+        LocalRelaySettings(prefix="/")

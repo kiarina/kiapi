@@ -19,6 +19,7 @@ from kiapi_relay import (
 
 class _Relay:
     name = "test"
+    node_id = "test-node"
 
     async def watch(self) -> AsyncIterator[RelayDelivery]:
         queue: asyncio.Queue[RelayDelivery] = asyncio.Queue()

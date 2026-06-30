@@ -31,11 +31,11 @@ class _Bucket:
 def _relay() -> GCPRelay:
     relay = object.__new__(GCPRelay)
     relay.settings = GCPRelaySettings(
-        node_id="worker",
         database_url="https://example.firebaseio.com",
         bucket="relay-bucket",
         prefix="private/kiapi",
     )
+    relay._node_id = "worker"
     relay._bucket = _Bucket()
     relay._scheduled = set()
     relay._queue = asyncio.Queue()

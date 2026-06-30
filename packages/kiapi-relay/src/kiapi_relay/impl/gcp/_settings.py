@@ -1,5 +1,3 @@
-import uuid
-
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings_manager import SettingsManager
@@ -11,15 +9,6 @@ class GCPRelaySettings(BaseSettings):
         extra="ignore",
     )
 
-    node_id: str = Field(
-        title="Relay node ID",
-        description="Unique RTDB node ID for this kiapi instance.",
-    )
-    source_node_id: str = Field(
-        default_factory=lambda: f"node-{uuid.uuid4().hex[:8]}",
-        title="Relay source node ID",
-        description="Identifies this client when issuing relay requests.",
-    )
     database_url: str = Field(
         title="Firebase Realtime Database URL",
         description="Database root URL, for example https://project.firebaseio.com.",
@@ -66,13 +55,21 @@ class GCPRelaySettings(BaseSettings):
         title="RTDB request poll interval seconds",
         description="Delay between response polls when issuing relay requests.",
     )
-
-    @field_validator("node_id", "source_node_id")
-    @classmethod
-    def validate_node_id(cls, value: str) -> str:
-        if not value or "/" in value or value in {".", ".."}:
-            raise ValueError("node id must be a non-empty RTDB path segment")
-        return value
+    heartbeat_interval_s: float = Field(
+        default=300.0,
+        gt=0,
+        title="Liveness heartbeat interval seconds",
+        description="How often the kiapi node refreshes its liveness entry.",
+    )
+    liveness_ttl_s: float = Field(
+        default=1800.0,
+        gt=0,
+        title="Liveness staleness threshold seconds",
+        description=(
+            "A node is considered usable only when its last heartbeat is newer "
+            "than this. Clients pick the most recently seen node within it."
+        ),
+    )
 
     @field_validator("database_url")
     @classmethod

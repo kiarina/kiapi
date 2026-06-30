@@ -702,7 +702,7 @@ requires-dist = [
     { name = "platformdirs" },
     { name = "psutil" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
+    { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "questionary" },
@@ -722,6 +722,7 @@ dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "platformdirs", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -740,9 +741,10 @@ requires-dist = [
     { name = "fastapi" },
     { name = "kiapi-relay", editable = "packages/kiapi-relay" },
     { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'gcp'", editable = "packages/kiapi-relay" },
+    { name = "platformdirs" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings" },
-    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
+    { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
     { name = "python-multipart" },
     { name = "uvicorn", extras = ["standard"] },
 ]
@@ -754,6 +756,7 @@ version = "0.1.0"
 source = { editable = "packages/kiapi-relay" }
 dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "filelock", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -770,13 +773,14 @@ gcp = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
+    { name = "filelock" },
     { name = "google-cloud-storage", marker = "extra == 'gcp'", specifier = ">=3.7.0" },
     { name = "httpx" },
     { name = "kiarina-lib-google", marker = "extra == 'gcp'", specifier = ">=2.2.1" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings" },
-    { name = "pydantic-settings-manager", specifier = ">=3.7.0" },
+    { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
 ]
 provides-extras = ["gcp"]
 
@@ -1379,15 +1383,15 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings-manager"
-version = "3.7.0"
+version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/97/4df36baf1a09f1d23a14c20bcd6224651a06063882274ba17a2f790c3ea5/pydantic_settings_manager-3.7.0.tar.gz", hash = "sha256:02d01080948f642483f1548d18e740e03565e004c57923a9e15d0abd6d4b519f", size = 81472, upload-time = "2026-06-26T00:18:01.316Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/34/011596575ecefa660fe93c4e5ecdedd2acccb86b7f01bf647f6feb009ca0/pydantic_settings_manager-3.8.0.tar.gz", hash = "sha256:2c75f50f9b4a5b6e91a75a04d2592bb4a4d8855cae1a3fc223d06896c54a0290", size = 86260, upload-time = "2026-06-29T04:01:07.44Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/1f/4236643ad99075b630bfa71b82806f716483a19090430d3b67c20e3031be/pydantic_settings_manager-3.7.0-py3-none-any.whl", hash = "sha256:147d98c56db0b61b29fbd00efc60c98e78fc4e2f5058a4278f05b3abe0d920ee", size = 22354, upload-time = "2026-06-26T00:18:00.335Z" },
+    { url = "https://files.pythonhosted.org/packages/53/9a/107257839f9bae894bb7936a76235919e8556eee0e9ca36a74bf2758d8f5/pydantic_settings_manager-3.8.0-py3-none-any.whl", hash = "sha256:ad8facf2c6d47ff3e14bfe2cdfe73d35f881955f3b929c13ed7b78fe7f3b9f7e", size = 23382, upload-time = "2026-06-29T04:01:06.523Z" },
 ]
 
 [[package]]

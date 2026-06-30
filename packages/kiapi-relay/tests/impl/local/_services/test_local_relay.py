@@ -10,14 +10,15 @@ from kiapi_relay.impl.local._schemas.local_relay_notification import (
 
 
 def _relay(tmp_path: Path) -> LocalRelay:
-    return LocalRelay(
+    relay = LocalRelay(
         LocalRelaySettings(
-            node_id="worker",
             root=tmp_path,
             prefix="private/kiapi",
             poll_interval_s=0.01,
         )
     )
+    relay.node_id = "worker"
+    return relay
 
 
 def _write_request(
@@ -32,7 +33,7 @@ def _write_request(
         ).model_dump_json()
     )
     relay._requests_dir().mkdir(parents=True, exist_ok=True)
-    relay._request_notification_path(session_id).write_text(
+    relay._request_notification_path(relay.node_id, session_id).write_text(
         LocalRelayNotification(
             session_id=session_id,
             source_node_id=source_node_id,
@@ -121,7 +122,7 @@ async def test_watch_recovers_completed_response_without_dispatch(
     task.cancel()
     await asyncio.gather(task, return_exceptions=True)
 
-    assert not relay._request_notification_path("session-1").exists()
+    assert not relay._request_notification_path(relay.node_id, "session-1").exists()
     response = json.loads(
         (relay._responses_dir("requester") / "session-1.json").read_bytes()
     )

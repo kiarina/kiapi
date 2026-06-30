@@ -7,12 +7,17 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 
 from kiapi.api import build_openapi
-from kiapi.core.app import AppContext
+from kiapi.core.app import AppContext, get_user_data_dir
 from kiapi.core.capability import capability_spec_registry
 from kiapi.core.logging import setup_logger
 from kiapi.core.model import model_registry
 from kiapi.core.worker import create_worker
-from kiapi_relay import RelayRunner, relay_registry
+from kiapi_relay import (
+    RelayRunner,
+    SingleInstanceLock,
+    get_or_create_node_id,
+    relay_registry,
+)
 from kiapi_relay import settings_manager as relay_settings_manager
 
 from .audio.acestep.router import router as acestep_router
@@ -60,6 +65,14 @@ async def lifespan(app: FastAPI):  # type: ignore
             "Start the server with `kiapi run` instead of importing the ASGI app directly."
         )
 
+    # Prevent a second kiapi from sharing this node identity and double-consuming
+    # relay requests, then resolve the persistent node ID for this data dir.
+    data_dir = get_user_data_dir()
+    instance_lock = SingleInstanceLock(data_dir, name="kiapi")
+    instance_lock.acquire()
+    node_id = get_or_create_node_id(data_dir)
+    app.state.instance_lock = instance_lock
+
     ctx = AppContext.create()
     worker = create_worker(ctx)
 
@@ -72,7 +85,9 @@ async def lifespan(app: FastAPI):  # type: ignore
     relay_runner: RelayRunner | None = None
 
     if relay_settings_manager.get_settings().default is not None:
-        relay_runner = RelayRunner(relay_registry.resolve(), app)
+        relay = relay_registry.resolve()
+        relay.node_id = node_id
+        relay_runner = RelayRunner(relay, app)
         relay_runner.start()
         app.state.relay_runner = relay_runner
 
@@ -82,6 +97,7 @@ async def lifespan(app: FastAPI):  # type: ignore
         await relay_runner.stop()
 
     await worker.stop()
+    instance_lock.release()
 
 
 app = FastAPI(title="kiapi", lifespan=lifespan, docs_url=None, redoc_url=None)
