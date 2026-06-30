@@ -77,7 +77,6 @@ uv tool install --python 3.12 "kiapi[relay-gcp]"
 ```
 
 ```sh
-export KIAPI_RELAY_GCP_NODE_ID="studio-1"
 export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
 export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
 export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
@@ -86,7 +85,9 @@ export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
 kiapi run --relay gcp
 ```
 
-The requester writes
+Each node generates its own `node_id` on first start, persists it in the user
+data directory, and publishes a liveness heartbeat under `{prefix}/liveness`.
+A requester picks the most recently seen node and writes
 `{prefix}/sessions/{session_id}/request.json` in GCS, then writes a notification
 to `{prefix}/nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
 `queued`, `running`, and the terminal result below the requester node's
@@ -116,7 +117,6 @@ in-process dispatch path but stores notifications and payloads under a local
 directory:
 
 ```sh
-export KIAPI_RELAY_LOCAL_NODE_ID="studio-1"
 export KIAPI_RELAY_LOCAL_ROOT="/tmp/kiapi/relay"
 export KIAPI_RELAY_LOCAL_PREFIX="private/kiapi"
 

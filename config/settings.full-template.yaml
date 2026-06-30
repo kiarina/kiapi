@@ -131,14 +131,6 @@ kiapi_relay:
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
 kiapi_relay.impl.gcp:
-  # Relay node ID: str
-  #   Unique RTDB node ID for this kiapi instance.
-  node_id:
-  #--------------------------------------------------
-  # Relay source node ID: str
-  #   Identifies this client when issuing relay requests.
-  # source_node_id: node-a17814fc
-  #--------------------------------------------------
   # Firebase Realtime Database URL: str
   #   Database root URL, for example https://project.firebaseio.com.
   database_url:
@@ -170,18 +162,18 @@ kiapi_relay.impl.gcp:
   # RTDB request poll interval seconds: float
   #   Delay between response polls when issuing relay requests.
   # request_poll_interval_s: 0.5
+  #--------------------------------------------------
+  # Liveness heartbeat interval seconds: float
+  #   How often the kiapi node refreshes its liveness entry.
+  # heartbeat_interval_s: 300.0
+  #--------------------------------------------------
+  # Liveness staleness threshold seconds: float
+  #   A node is considered usable only when its last heartbeat is newer than this. Clients pick the most recently seen node within it.
+  # liveness_ttl_s: 1800.0
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
 kiapi_relay.impl.local:
-  # Relay node ID: str
-  #   Unique local relay node ID for this kiapi instance.
-  # node_id: local
-  #--------------------------------------------------
-  # Relay source node ID: str
-  #   Identifies this client when issuing relay requests.
-  # source_node_id: node-7db075a7
-  #--------------------------------------------------
   # Local relay root: Path
   #   Directory used for local relay request and response payloads.
   # root:
@@ -194,6 +186,14 @@ kiapi_relay.impl.local:
   # Local relay poll interval seconds: float
   #   Delay between local request directory scans.
   # poll_interval_s: 0.2
+  #--------------------------------------------------
+  # Liveness heartbeat interval seconds: float
+  #   How often the kiapi node refreshes its liveness entry.
+  # heartbeat_interval_s: 300.0
+  #--------------------------------------------------
+  # Liveness staleness threshold seconds: float
+  #   A node is considered usable only when its last heartbeat is newer than this. Clients pick the most recently seen node within it.
+  # liveness_ttl_s: 1800.0
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------

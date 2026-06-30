@@ -36,6 +36,17 @@ The requester and kiapi relay can use separate service accounts. In production,
 separate identities are recommended so each side receives only the permissions
 it needs.
 
+### Node identity and discovery
+
+Each side generates its own `node_id` on first start and persists it in its user
+data directory, so identities are stable across restarts and never configured by
+hand. The kiapi node publishes a liveness heartbeat at
+`{prefix}/liveness/{node_id}` every `heartbeat_interval_s` and removes it on a
+clean shutdown. A requester reads `{prefix}/liveness`, picks the node with the
+most recent heartbeat within `liveness_ttl_s`, and addresses its request there.
+When no node has reported within that window, the request fails with
+`no_relay_node`.
+
 ## Prerequisites
 
 - A Google Cloud project added to Firebase
@@ -52,6 +63,9 @@ export PROJECT_ID="your-project-id"
 export REGION="asia-northeast1"
 export BUCKET="your-private-kiapi-relay-bucket"
 export DATABASE_URL="https://your-database.firebaseio.com"
+# kiapi generates its own node_id; set this only for the manual REST walkthrough
+# below. Read it from the node's data dir (`<data_dir>/node_id`) or from the
+# `{prefix}/liveness` list.
 export NODE_ID="studio-1"
 export PREFIX="private/kiapi"
 export RELAY_SERVICE_ACCOUNT="kiapi-relay@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -294,7 +308,6 @@ kiapi.core.relay:
   default: gcp
 
 kiapi.relay.gcp:
-  node_id: studio-1
   database_url: https://your-database.firebaseio.com
   bucket: your-private-kiapi-relay-bucket
   prefix: private/kiapi
@@ -322,7 +335,6 @@ For a foreground process:
 
 ```sh
 export KIAPI_RELAY_DEFAULT="gcp"
-export KIAPI_RELAY_GCP_NODE_ID="${NODE_ID}"
 export KIAPI_RELAY_GCP_DATABASE_URL="${DATABASE_URL}"
 export KIAPI_RELAY_GCP_BUCKET="${BUCKET}"
 export KIAPI_RELAY_GCP_PREFIX="${PREFIX}"
@@ -519,9 +531,11 @@ kiapi.relay.gcp:
 
 ### Duplicate Processing
 
-Use a unique `node_id` for each running kiapi process. GCS protects the
-`response.json` commit marker from duplicate creation, but two processes using
-the same node ID can still execute the same API request concurrently.
+Each kiapi process derives its `node_id` from its user data directory (auto
+generated on first start and reused afterwards), and a single-instance lock in
+that directory prevents a second process from sharing the same identity. Run a
+second node from a separate data directory to give it a distinct `node_id`. GCS
+additionally protects the `response.json` commit marker from duplicate creation.
 
 ## Security Notes
 
@@ -535,14 +549,13 @@ the same node ID can still execute the same API request concurrently.
 - Treat request headers as secrets because they can contain the kiapi API auth
   token.
 - Use a random, unguessable `session_id`.
-- Avoid placing secrets in `node_id`, `prefix`, or GCS object names.
+- Avoid placing secrets in the `prefix` or GCS object names.
 
 ## Settings Reference
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
 | `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | Relay specifier; use `gcp` to enable GCPRelay. |
-| `node_id` | `KIAPI_RELAY_GCP_NODE_ID` | required | Unique ID for this kiapi relay node. |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | Exact HTTPS RTDB instance URL. |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | Private GCS bucket name without `gs://`. |
 | `prefix` | `KIAPI_RELAY_GCP_PREFIX` | `kiapi` | Shared RTDB/GCS root prefix. |
@@ -550,6 +563,8 @@ the same node ID can still execute the same API request concurrently.
 | `lifecycle_age_days` | `KIAPI_RELAY_GCP_LIFECYCLE_AGE_DAYS` | `1` | Age used by the managed GCS delete rule. |
 | `manage_bucket_lifecycle` | `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE` | `true` | Whether GCPRelay updates the bucket lifecycle at startup. |
 | `reconnect_delay_s` | `KIAPI_RELAY_GCP_RECONNECT_DELAY_S` | `1.0` | Delay before reconnecting the RTDB SSE watch. |
+| `heartbeat_interval_s` | `KIAPI_RELAY_GCP_HEARTBEAT_INTERVAL_S` | `300.0` | How often the kiapi node refreshes its liveness entry under `{prefix}/liveness/{node_id}`. |
+| `liveness_ttl_s` | `KIAPI_RELAY_GCP_LIVENESS_TTL_S` | `1800.0` | A node is selectable only when its last heartbeat is newer than this; clients pick the most recent one within it. |
 
 ## Official References
 

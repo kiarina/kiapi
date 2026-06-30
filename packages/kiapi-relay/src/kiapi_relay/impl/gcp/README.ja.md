@@ -34,6 +34,15 @@ requester
 requester と kiapi relay は別の service account を使用できます。本番環境では identity を
 分離し、それぞれに必要な権限だけを付与することを推奨します。
 
+### Node identity and discovery
+
+各側は初回起動時に自分の `node_id` を生成し、user data directory に永続化します。
+そのため identity は再起動をまたいで安定し、手動設定は不要です。kiapi node は
+`{prefix}/liveness/{node_id}` へ `heartbeat_interval_s` ごとに liveness heartbeat を
+publish し、正常終了時に削除します。requester は `{prefix}/liveness` を read し、
+`liveness_ttl_s` 以内で最も新しい heartbeat の node を選んで request を送ります。
+その window 内に report した node がない場合、request は `no_relay_node` で失敗します。
+
 ## Prerequisites
 
 - Firebase に追加された Google Cloud project
@@ -50,6 +59,9 @@ export PROJECT_ID="your-project-id"
 export REGION="asia-northeast1"
 export BUCKET="your-private-kiapi-relay-bucket"
 export DATABASE_URL="https://your-database.firebaseio.com"
+# kiapi は自分の node_id を生成します。下記の手動 REST walkthrough 用にのみ設定して
+# ください。node の data dir（`<data_dir>/node_id`）または `{prefix}/liveness` の
+# 一覧から取得できます。
 export NODE_ID="studio-1"
 export PREFIX="private/kiapi"
 export RELAY_SERVICE_ACCOUNT="kiapi-relay@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -289,7 +301,6 @@ kiapi.core.relay:
   default: gcp
 
 kiapi.relay.gcp:
-  node_id: studio-1
   database_url: https://your-database.firebaseio.com
   bucket: your-private-kiapi-relay-bucket
   prefix: private/kiapi
@@ -316,7 +327,6 @@ foreground process では次のように設定できます。
 
 ```sh
 export KIAPI_RELAY_DEFAULT="gcp"
-export KIAPI_RELAY_GCP_NODE_ID="${NODE_ID}"
 export KIAPI_RELAY_GCP_DATABASE_URL="${DATABASE_URL}"
 export KIAPI_RELAY_GCP_BUCKET="${BUCKET}"
 export KIAPI_RELAY_GCP_PREFIX="${PREFIX}"
@@ -508,9 +518,11 @@ kiapi.relay.gcp:
 
 ### Duplicate Processing
 
-実行中の各 kiapi process に unique な `node_id` を使用してください。GCS は
-`response.json` commit marker の重複作成を防ぎますが、同じ node ID を使用する 2 process
-が同じ API request を同時に実行する可能性は残ります。
+各 kiapi process は自分の `node_id` を user data directory から導出し（初回起動時に自動
+生成し、以降は再利用）、同じ directory 内の single-instance lock により 2 つめの process
+が同じ identity を共有することを防ぎます。別の node を動かす場合は別の data directory から
+起動すれば、別の `node_id` になります。GCS はさらに `response.json` commit marker の重複
+作成を防ぎます。
 
 ## Security Notes
 
@@ -522,14 +534,13 @@ kiapi.relay.gcp:
 - relay service account を対象 project / bucket に限定する
 - request header には kiapi API auth token が含まれ得るため secret として扱う
 - random で推測困難な `session_id` を使用する
-- `node_id`、`prefix`、GCS object name に secret を含めない
+- `prefix` や GCS object name に secret を含めない
 
 ## Settings Reference
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
 | `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | GCPRelay を有効化するには `gcp` を指定。 |
-| `node_id` | `KIAPI_RELAY_GCP_NODE_ID` | required | kiapi relay node の unique ID。 |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | 正確な HTTPS RTDB instance URL。 |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | `gs://` を除いた private GCS bucket name。 |
 | `prefix` | `KIAPI_RELAY_GCP_PREFIX` | `kiapi` | RTDB / GCS で共通の root prefix。 |
@@ -537,6 +548,8 @@ kiapi.relay.gcp:
 | `lifecycle_age_days` | `KIAPI_RELAY_GCP_LIFECYCLE_AGE_DAYS` | `1` | managed GCS delete rule の age。 |
 | `manage_bucket_lifecycle` | `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE` | `true` | 起動時に GCPRelay が bucket lifecycle を更新するか。 |
 | `reconnect_delay_s` | `KIAPI_RELAY_GCP_RECONNECT_DELAY_S` | `1.0` | RTDB SSE watch の再接続までの delay。 |
+| `heartbeat_interval_s` | `KIAPI_RELAY_GCP_HEARTBEAT_INTERVAL_S` | `300.0` | kiapi node が `{prefix}/liveness/{node_id}` の liveness を更新する間隔。 |
+| `liveness_ttl_s` | `KIAPI_RELAY_GCP_LIVENESS_TTL_S` | `1800.0` | この時間より新しい heartbeat の node だけが選択対象。client はその中で最新を選ぶ。 |
 
 ## Official References
 

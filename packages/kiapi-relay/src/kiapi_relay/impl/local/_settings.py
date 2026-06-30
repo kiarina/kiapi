@@ -1,4 +1,3 @@
-import uuid
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -12,16 +11,6 @@ class LocalRelaySettings(BaseSettings):
         extra="ignore",
     )
 
-    node_id: str = Field(
-        default="local",
-        title="Relay node ID",
-        description="Unique local relay node ID for this kiapi instance.",
-    )
-    source_node_id: str = Field(
-        default_factory=lambda: f"node-{uuid.uuid4().hex[:8]}",
-        title="Relay source node ID",
-        description="Identifies this client when issuing relay requests.",
-    )
     root: Path = Field(
         default=Path("/tmp/kiapi/relay"),
         title="Local relay root",
@@ -38,13 +27,21 @@ class LocalRelaySettings(BaseSettings):
         title="Local relay poll interval seconds",
         description="Delay between local request directory scans.",
     )
-
-    @field_validator("node_id", "source_node_id")
-    @classmethod
-    def validate_node_id(cls, value: str) -> str:
-        if not value or "/" in value or value in {".", ".."}:
-            raise ValueError("node id must be a non-empty path segment")
-        return value
+    heartbeat_interval_s: float = Field(
+        default=300.0,
+        gt=0,
+        title="Liveness heartbeat interval seconds",
+        description="How often the kiapi node refreshes its liveness entry.",
+    )
+    liveness_ttl_s: float = Field(
+        default=1800.0,
+        gt=0,
+        title="Liveness staleness threshold seconds",
+        description=(
+            "A node is considered usable only when its last heartbeat is newer "
+            "than this. Clients pick the most recently seen node within it."
+        ),
+    )
 
     @field_validator("prefix")
     @classmethod

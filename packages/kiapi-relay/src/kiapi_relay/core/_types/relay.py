@@ -10,6 +10,7 @@ from .relay_name import RelayName
 @runtime_checkable
 class Relay(Protocol):
     name: RelayName
+    node_id: str
 
     def watch(self) -> AsyncIterator[RelayDelivery]: ...
 

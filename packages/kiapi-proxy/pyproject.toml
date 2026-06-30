@@ -29,6 +29,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "click",
+    "platformdirs",          # resolve the per-user data dir for node ID + lock
     "pydantic>=2",
     "pydantic-settings",
     "pydantic-settings-manager>=3.8.0",

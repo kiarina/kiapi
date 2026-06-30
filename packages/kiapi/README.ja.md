@@ -76,7 +76,6 @@ uv tool install --python 3.12 "kiapi[relay-gcp]"
 ```
 
 ```sh
-export KIAPI_RELAY_GCP_NODE_ID="studio-1"
 export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
 export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
 export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
@@ -85,9 +84,10 @@ export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
 kiapi run --relay gcp
 ```
 
-requester は GCS の
-`{prefix}/sessions/{session_id}/request.json` を書き込んだ後、RTDB の
-`{prefix}/nodes/{node_id}/requests/{session_id}` へ通知を書き込みます。relay は
+各 node は初回起動時に自分の `node_id` を生成して user data directory に永続化し、
+`{prefix}/liveness` 以下へ liveness heartbeat を publish します。requester は最も新しく
+観測された node を選び、GCS の `{prefix}/sessions/{session_id}/request.json` を書き込んだ
+後、RTDB の `{prefix}/nodes/{node_id}/requests/{session_id}` へ通知を書き込みます。relay は
 requester node の `responses` path へ `queued`、`running`、terminal result を通知します。
 
 - request は process 内の FastAPI app へ直接 dispatch され、relay が 1 件ずつ処理します。
@@ -112,7 +112,6 @@ GCP を使わずに relay を検証したい場合は `local` を使えます。
 経路を使い、通知と payload をローカルディレクトリ配下に保存します。
 
 ```sh
-export KIAPI_RELAY_LOCAL_NODE_ID="studio-1"
 export KIAPI_RELAY_LOCAL_ROOT="/tmp/kiapi/relay"
 export KIAPI_RELAY_LOCAL_PREFIX="private/kiapi"
 

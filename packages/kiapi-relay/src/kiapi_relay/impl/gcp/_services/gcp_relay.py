@@ -25,6 +25,7 @@ from kiapi_relay import (
     build_relay_response,
     new_relay_session_id,
 )
+from kiapi_relay.core._helpers.select_live_node import select_live_node
 
 from .._schemas.gcp_relay_notification import GCPRelayNotification
 from .._settings import GCPRelaySettings
@@ -68,9 +69,14 @@ class GCPRelay(BaseRelay):
         if self.settings.manage_bucket_lifecycle:
             await asyncio.to_thread(self._ensure_bucket_lifecycle)
         self._ensure_http()
+        await self._write_liveness()
         listener = asyncio.create_task(
             self._listen_forever(),
             name="kiapi-relay-gcp-listener",
+        )
+        heartbeat = asyncio.create_task(
+            self._heartbeat_loop(),
+            name="kiapi-relay-gcp-heartbeat",
         )
         try:
             while True:
@@ -104,7 +110,9 @@ class GCPRelay(BaseRelay):
                 yield GCPRelayDelivery(self, notification, request)
         finally:
             listener.cancel()
-            await asyncio.gather(listener, return_exceptions=True)
+            heartbeat.cancel()
+            await asyncio.gather(listener, heartbeat, return_exceptions=True)
+            await self._delete_liveness()
             await self._http.aclose()
 
     async def request(
@@ -114,9 +122,10 @@ class GCPRelay(BaseRelay):
         timeout_s: float = 1800.0,
     ) -> RelayResponse:
         self._ensure_http()
+        target_node_id = await self._select_target_node()
         session_id = new_relay_session_id()
         await asyncio.to_thread(self._upload_request, session_id, request)
-        await self._put_request_notification(session_id)
+        await self._put_request_notification(target_node_id, session_id)
 
         notification = await self._wait_for_response(session_id, timeout_s)
         if notification.get("status") == "failed":
@@ -124,6 +133,44 @@ class GCPRelay(BaseRelay):
                 RelayError.model_validate(notification.get("error") or {})
             )
         return await asyncio.to_thread(self._read_response, session_id)
+
+    async def _heartbeat_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self.settings.heartbeat_interval_s)
+            try:
+                await self._write_liveness()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Relay liveness heartbeat failed")
+
+    async def _write_liveness(self) -> None:
+        url = self._rtdb_url(self._liveness_path(self.node_id))
+        headers = await self._authorized_headers("PUT", url)
+        response = await self._http.put(url, headers=headers, json={"ts": time.time()})
+        response.raise_for_status()
+
+    async def _delete_liveness(self) -> None:
+        try:
+            url = self._rtdb_url(self._liveness_path(self.node_id))
+            headers = await self._authorized_headers("DELETE", url)
+            response = await self._http.delete(url, headers=headers)
+            response.raise_for_status()
+        except Exception:
+            logger.warning("Failed to remove relay liveness entry", exc_info=True)
+
+    async def _select_target_node(self) -> str:
+        entries = await self._get_json(self._liveness_root_path())
+        node_id = select_live_node(entries, self.settings.liveness_ttl_s)
+        if node_id is None:
+            raise RelayRequestError(
+                RelayError(
+                    code="no_relay_node",
+                    message="no live kiapi relay node is available",
+                    retryable=True,
+                )
+            )
+        return node_id
 
     async def aclose(self) -> None:
         if hasattr(self, "_http"):
@@ -142,15 +189,19 @@ class GCPRelay(BaseRelay):
             content_type="application/json",
         )
 
-    async def _put_request_notification(self, session_id: str) -> None:
-        url = self._rtdb_url(f"{self._requests_path()}/{session_id}")
+    async def _put_request_notification(
+        self,
+        target_node_id: str,
+        session_id: str,
+    ) -> None:
+        url = self._rtdb_url(f"{self._node_requests_path(target_node_id)}/{session_id}")
         headers = await self._authorized_headers("PUT", url)
         response = await self._http.put(
             url,
             headers=headers,
             json={
                 "session_id": session_id,
-                "source_node_id": self.settings.source_node_id,
+                "source_node_id": self.node_id,
             },
         )
         response.raise_for_status()
@@ -160,10 +211,7 @@ class GCPRelay(BaseRelay):
         session_id: str,
         timeout_s: float,
     ) -> dict[str, Any]:
-        path = (
-            f"{self.settings.prefix}/nodes/{self.settings.source_node_id}"
-            f"/responses/{session_id}"
-        )
+        path = f"{self.settings.prefix}/nodes/{self.node_id}/responses/{session_id}"
         deadline = time.monotonic() + timeout_s
         last_status: str | None = None
         while time.monotonic() < deadline:
@@ -200,7 +248,7 @@ class GCPRelay(BaseRelay):
             notification,
             {
                 "session_id": notification.session_id,
-                "source_node_id": self.settings.node_id,
+                "source_node_id": self.node_id,
                 "status": "running",
                 "progress": {
                     "value": 0.0,
@@ -241,7 +289,7 @@ class GCPRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "failed",
                     "error": error.model_dump(mode="json"),
                 },
@@ -259,7 +307,7 @@ class GCPRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "succeeded",
                     "response": {
                         "content_type": metadata["content_type"],
@@ -334,7 +382,7 @@ class GCPRelay(BaseRelay):
                 notification,
                 {
                     "session_id": notification.session_id,
-                    "source_node_id": self.settings.node_id,
+                    "source_node_id": self.node_id,
                     "status": "queued",
                     "progress": {
                         "value": 0.0,
@@ -484,7 +532,16 @@ class GCPRelay(BaseRelay):
         return f"{self.settings.database_url}/.json"
 
     def _requests_path(self) -> str:
-        return f"{self.settings.prefix}/nodes/{self.settings.node_id}/requests"
+        return self._node_requests_path(self.node_id)
+
+    def _node_requests_path(self, node_id: str) -> str:
+        return f"{self.settings.prefix}/nodes/{node_id}/requests"
+
+    def _liveness_root_path(self) -> str:
+        return f"{self.settings.prefix}/liveness"
+
+    def _liveness_path(self, node_id: str) -> str:
+        return f"{self._liveness_root_path()}/{node_id}"
 
     def _response_path(self, notification: GCPRelayNotification) -> str:
         return (

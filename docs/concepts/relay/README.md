@@ -16,6 +16,17 @@ client, schemas, and plugin registry. It provides:
 `kiapi` hosts the relay runner. `kiapi-proxy` uses the same request client to
 expose a conventional HTTP boundary without depending on kiapi or MLX.
 
+## Node Identity and Discovery
+
+Every participant generates its own `node_id` on first start and persists it in
+its user data directory, so identities are stable across restarts and never
+configured by hand. A single-instance lock in that directory stops a second
+process from sharing the same identity. A serving node publishes a liveness
+heartbeat at `liveness/{node_id}` on a fixed interval and removes it on clean
+shutdown. A requester reads the liveness records, selects the node with the most
+recent heartbeat within the staleness window, and addresses its request there.
+When none has reported within the window, the request fails with `no_relay_node`.
+
 ## Delivery Flow
 
 ```text
@@ -56,6 +67,7 @@ LocalRelay mirrors the GCP object layout under a local root:
 
 ```text
 {root}/{prefix}/
+  liveness/{node_id}.json
   nodes/{node_id}/requests/{session_id}.json
   nodes/{source_node_id}/responses/{session_id}.json
   sessions/{session_id}/request.json

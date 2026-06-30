@@ -10,10 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `GET /health` now reports the status of the relay started with the server in a `relay` field (`name`, `running`, `failed`), or `null` when no relay is configured.
 - Added a `request` method to the `Relay` protocol and implemented it on `LocalRelay` and `GCPRelay`, promoting the relay request client from the verification scripts into the relay packages. Responses are returned as `RelayResponse`, with binary bodies materialized to a temporary file the caller owns.
-- Added a `source_node_id` relay setting to identify the client when issuing relay requests, and a `request_poll_interval_s` setting for GCP request polling.
+- The server now resolves a persistent relay `node_id` from its user data directory and injects it into the relay, and acquires a single-instance lock under that directory at startup so a second `kiapi` cannot share the same node identity. Added a `request_poll_interval_s` setting for GCP request polling.
 
 ### Changed
 
+- The relay `node_id` is now generated automatically and persisted per data directory instead of being configured. The manual `node_id`/`source_node_id` relay settings were removed; clients discover a target node through liveness heartbeats and address responses with their own generated `node_id`.
 - Simplified the `Relay` protocol to a single `watch` method and moved listener tasks and the HTTP client into the `watch` lifecycle, removing the explicit `close` method.
 - Reworked the relay verification scripts to issue requests through `Relay.request` via the relay registry factories, removing the duplicated transport client in `scripts/relay/_client.py`.
 - Converted the repository into a uv workspace and moved the `kiapi` package to `packages/kiapi/` with a `src/` layout. Packaging and lint/test paths are now per-package.

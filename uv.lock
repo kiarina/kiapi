@@ -722,6 +722,7 @@ dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "platformdirs", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -740,6 +741,7 @@ requires-dist = [
     { name = "fastapi" },
     { name = "kiapi-relay", editable = "packages/kiapi-relay" },
     { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'gcp'", editable = "packages/kiapi-relay" },
+    { name = "platformdirs" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings" },
     { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
@@ -754,6 +756,7 @@ version = "0.1.0"
 source = { editable = "packages/kiapi-relay" }
 dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "filelock", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -770,6 +773,7 @@ gcp = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
+    { name = "filelock" },
     { name = "google-cloud-storage", marker = "extra == 'gcp'", specifier = ">=3.7.0" },
     { name = "httpx" },
     { name = "kiarina-lib-google", marker = "extra == 'gcp'", specifier = ">=2.2.1" },
