@@ -19,6 +19,7 @@
 - `README.ja.md`
 - `ARCHITECTURE.ja.md`
 - `docs/concepts/`
+- `mise.toml`
 - `pyproject.toml` とルート、および対象 `packages/<package>/pyproject.toml`
 - `.mise/tasks`
 - `Makefile`
