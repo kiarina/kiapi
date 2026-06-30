@@ -1,6 +1,9 @@
 [tools]
 python = "3.12"
 uv = "latest"
+node = "24"
+pnpm = "11"
 
 [env]
 _.file = ".env"
+_.path = ['{{config_root}}/node_modules/.bin']
