@@ -15,7 +15,7 @@ def invoke_service(
         ["service", command],
         env={
             "HOME": str(tmp_path),
-            "KIAPI_USER_CONFIG_DIR": str(tmp_path / "config"),
+            "KIARINA_UTILS_APP_USER_CONFIG_DIR": str(tmp_path / "config"),
         },
     )
 

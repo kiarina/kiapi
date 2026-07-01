@@ -6,11 +6,15 @@ from starlette.responses import Response
 
 from kiapi_relay import SingleInstanceLock, get_or_create_node_id, relay_registry
 
-from ..core.app import get_user_data_dir
+from ..core.app import configure_app, get_user_data_dir
 from ._helpers.handle_proxy_request import handle_proxy_request
 from ._settings import settings_manager
 
 _RELAY_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+# Set the application identity before any user-directory lookup runs (e.g. the
+# lifespan resolving the data dir). Idempotent, so it is safe alongside the CLI.
+configure_app()
 
 
 @asynccontextmanager

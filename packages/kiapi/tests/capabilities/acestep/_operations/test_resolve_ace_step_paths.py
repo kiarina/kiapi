@@ -4,7 +4,7 @@ from kiapi.capabilities.acestep._operations.resolve_ace_step_paths import (
     resolve_ace_step_paths,
 )
 from kiapi.capabilities.acestep._settings import AceStepSettings
-from kiapi.core.app._settings import settings_manager as app_settings_manager
+from kiapi.core.app import settings_manager as app_settings_manager
 
 
 def test_ace_step_path_settings_default_to_none() -> None:

@@ -11,7 +11,7 @@ def test_config_template_prints_generated_template(tmp_path: Path) -> None:
     result = runner.invoke(
         main,
         ["config", "template"],
-        env={"KIAPI_USER_CONFIG_DIR": str(tmp_path / "config")},
+        env={"KIARINA_UTILS_APP_USER_CONFIG_DIR": str(tmp_path / "config")},
     )
 
     assert result.exit_code == 0

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from kiapi.capabilities.acestep import register
-from kiapi.core.app._settings import settings_manager as app_settings_manager
+from kiapi.core.app import settings_manager as app_settings_manager
 from kiapi.core.model import model_registry
 from kiapi.core.setup import HfSnapshotResource, PythonVenvResource
 

@@ -32,23 +32,23 @@ kiapi.core.logging:
   # log_level: INFO
 
 #--------------------------------------------------------------------------------
-# Settings for application-wide user directories.
+# Application settings
 #--------------------------------------------------------------------------------
 kiapi.core.app:
   # User cache directory: str | None
-  #   Directory where kiapi may store user-specific cache files.
+  #   Directory where the application may store user-specific cache files.
   #   When unset, XDG_CACHE_HOME is used when available, otherwise the platform default for the running user is used.
   #   ~ is expanded as the home directory of the running user.
   # user_cache_dir: 
   #--------------------------------------------------
   # User config directory: str | None
-  #   Directory where kiapi may store user-specific configuration files.
+  #   Directory where the application may store user-specific configuration files.
   #   When unset, XDG_CONFIG_HOME is used when available, otherwise the platform default for the running user is used.
   #   ~ is expanded as the home directory of the running user.
   # user_config_dir: 
   #--------------------------------------------------
   # User data directory: str | None
-  #   Directory where kiapi may store user-specific persistent data files.
+  #   Directory where the application may store user-specific persistent data files.
   #   When unset, XDG_DATA_HOME is used when available, otherwise the platform default for the running user is used.
   #   ~ is expanded as the home directory of the running user.
   # user_data_dir: 

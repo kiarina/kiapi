@@ -11,6 +11,7 @@ from kiapi.capabilities.qwen import register as register_qwen
 from kiapi.capabilities.seedvr2 import register as register_seedvr2
 from kiapi.capabilities.web import register as register_web
 from kiapi.capabilities.zimage import register as register_zimage
+from kiapi.core.app import configure_app
 
 _registered = False
 
@@ -19,6 +20,11 @@ def register_all_capabilities() -> None:
     global _registered
     if _registered:
         return
+
+    # Capability registration resolves user directories (e.g. ACE-Step paths),
+    # so ensure the app identity is set even when this runs outside the CLI/ASGI
+    # entry points (docs build, tests). Idempotent.
+    configure_app()
 
     register_acestep()
     register_audiogen()

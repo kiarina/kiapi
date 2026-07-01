@@ -11,7 +11,7 @@ def test_config_init_creates_settings_file(tmp_path: Path) -> None:
     result = runner.invoke(
         main,
         ["config", "init"],
-        env={"KIAPI_USER_CONFIG_DIR": str(tmp_path / "config")},
+        env={"KIARINA_UTILS_APP_USER_CONFIG_DIR": str(tmp_path / "config")},
     )
 
     assert result.exit_code == 0
@@ -40,7 +40,7 @@ def test_config_init_keeps_existing_settings_file(tmp_path: Path) -> None:
     result = runner.invoke(
         main,
         ["config", "init"],
-        env={"KIAPI_USER_CONFIG_DIR": str(config_dir)},
+        env={"KIARINA_UTILS_APP_USER_CONFIG_DIR": str(config_dir)},
     )
 
     assert result.exit_code == 0

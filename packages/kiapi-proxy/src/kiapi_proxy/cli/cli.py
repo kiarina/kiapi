@@ -4,11 +4,13 @@ import uvicorn
 from kiapi_relay import settings_manager as relay_settings_manager
 
 from ..api import settings_manager
+from ..core.app import configure_app
 
 
 @click.group()
 def main() -> None:
     """kiapi-proxy command line interface."""
+    configure_app()
 
 
 @main.command()

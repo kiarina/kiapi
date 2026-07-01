@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reworked the relay verification scripts to issue requests through `Relay.request` via the relay registry factories, removing the duplicated transport client in `scripts/relay/_client.py`.
 - Converted the repository into a uv workspace and moved the `kiapi` package to `packages/kiapi/` with a `src/` layout. Packaging and lint/test paths are now per-package.
 - Extracted the relay subsystem into a separate `kiapi-relay` package. `kiapi.core.relay` is now `kiapi_relay`, and `kiapi.relay.{local,gcp}` are now `kiapi_relay.{local,gcp}`. The `relay-gcp` extra now pulls `kiapi-relay[gcp]`.
+- `kiapi.core.app` now fully delegates its user-directory resolution to the shared `kiarina-utils-app` package, removing the private `AppSettings`/user-directory copy and the direct `platformdirs` dependency. The app identity is set via `core.app.configure_app()` from the CLI (`kiapi ...`) and the ASGI app. `core.app` keeps `AppSettings`, `settings_manager`, `get_user_{cache,config,data}_dir`, and the `AppContext` schema; the directory getters now return `pathlib.Path`. The `settings.yaml` `kiapi.core.app` key is unchanged, but the user-directory override environment variables move from `KIAPI_` to `KIARINA_UTILS_APP_`.
 
 ## [0.2.0] - 2026-06-26
 

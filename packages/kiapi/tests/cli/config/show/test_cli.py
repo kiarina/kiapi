@@ -15,7 +15,7 @@ def test_config_show_prints_settings_file(tmp_path: Path) -> None:
     result = runner.invoke(
         main,
         ["config", "show"],
-        env={"KIAPI_USER_CONFIG_DIR": str(config_dir)},
+        env={"KIARINA_UTILS_APP_USER_CONFIG_DIR": str(config_dir)},
     )
 
     assert result.exit_code == 0
