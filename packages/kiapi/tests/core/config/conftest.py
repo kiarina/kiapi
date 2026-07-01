@@ -1,8 +1,7 @@
 from collections.abc import Iterator
 
 import pytest
-
-from kiapi.core.app import settings_manager as app_settings_manager
+from kiarina.utils.app import settings_manager as app_settings_manager
 
 
 @pytest.fixture(autouse=True)

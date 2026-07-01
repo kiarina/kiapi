@@ -27,7 +27,7 @@ implementations, and HTTP boundary:
 ```text
 kiapi/
   core/
-    app/       # AppContext, startup wiring, user directories
+    app/       # AppContext
     model/     # model registry
     setup/     # resource activation
     memory/    # memory budget and TTL eviction
@@ -60,18 +60,22 @@ Unactivated warmup targets are skipped with a warning, without stopping startup.
 
 ## Settings and User Directories
 
-`core/app` owns the application-wide `AppContext`. User-directory resolution is
-delegated to the shared `kiarina-utils-app` package, and resolves in this order:
-explicit setting, XDG environment variable, then `platformdirs`.
+`core/app` owns the application-wide `AppContext`. User-directory resolution and
+single-instance locking are provided by the shared `kiarina-utils-app` package,
+used directly (`kiarina.utils.app`). The app identity is set by calling
+`kiarina.utils.app.configure("kiapi", "kiarina")` at the CLI entry and the ASGI
+factory. Directories resolve in this order: explicit setting, XDG environment
+variable, then `platformdirs`.
 
-| Purpose | Setting (`kiapi.core.app`) | Environment fallback | platformdirs |
+| Purpose | Setting (`kiarina.utils.app`) | Environment fallback | platformdirs |
 |---|---|---|---|
 | cache | `user_cache_dir` | `XDG_CACHE_HOME/kiapi` | `user_cache_dir` |
 | config | `user_config_dir` | `XDG_CONFIG_HOME/kiapi` | `user_config_dir` |
 | data | `user_data_dir` | `XDG_DATA_HOME/kiapi` | `user_data_dir` |
 
-Settings are configured under the `kiapi.core.app` section of the user
-`settings.yaml`. Configured paths expand `~` for the current user.
+Settings are configured under the `kiarina.utils.app` section of the user
+`settings.yaml`, and the override environment variables use the
+`KIARINA_UTILS_APP_` prefix. Configured paths expand `~` for the current user.
 
 ## Related Concepts
 

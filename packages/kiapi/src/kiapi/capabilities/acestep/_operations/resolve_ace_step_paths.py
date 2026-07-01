@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from kiapi.core.app import get_user_data_dir
+from kiarina.utils.app import user_directory
 
 from .._schemas.ace_step_paths import AceStepPaths
 from .._settings import AceStepSettings
 
 
 def resolve_ace_step_paths(settings: AceStepSettings) -> AceStepPaths:
-    root = Path(get_user_data_dir()).expanduser() / "acestep"
+    root = user_directory.get_user_data_dir() / "acestep"
     python_path = (
         Path(settings.python_path).expanduser()
         if settings.python_path is not None

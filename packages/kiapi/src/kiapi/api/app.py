@@ -5,16 +5,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
+from kiarina.utils.app import single_instance, user_directory
 
 from kiapi.api import build_openapi
-from kiapi.core.app import AppContext, configure_app, get_user_data_dir
+from kiapi.core.app import AppContext
 from kiapi.core.capability import capability_spec_registry
 from kiapi.core.logging import setup_logger
 from kiapi.core.model import model_registry
 from kiapi.core.worker import create_worker
 from kiapi_relay import (
     RelayRunner,
-    SingleInstanceLock,
     get_or_create_node_id,
     relay_registry,
 )
@@ -39,10 +39,6 @@ from .video.ltx2.router import router as ltx2_router
 from .web.router import router as web_router
 
 logger = logging.getLogger(__name__)
-
-# Set the application identity before any user-directory lookup runs (e.g. the
-# lifespan resolving the data dir). Idempotent, so it is safe alongside the CLI.
-configure_app()
 
 COMMON_OPENAPI_PATHS = (
     "/health",
@@ -71,11 +67,9 @@ async def lifespan(app: FastAPI):  # type: ignore
 
     # Prevent a second kiapi from sharing this node identity and double-consuming
     # relay requests, then resolve the persistent node ID for this data dir.
-    data_dir = get_user_data_dir()
-    instance_lock = SingleInstanceLock(data_dir, name="kiapi")
-    instance_lock.acquire()
+    single_instance.acquire()
+    data_dir = user_directory.get_user_data_dir()
     node_id = get_or_create_node_id(data_dir)
-    app.state.instance_lock = instance_lock
 
     ctx = AppContext.create()
     worker = create_worker(ctx)
@@ -101,7 +95,7 @@ async def lifespan(app: FastAPI):  # type: ignore
         await relay_runner.stop()
 
     await worker.stop()
-    instance_lock.release()
+    single_instance.release()
 
 
 app = FastAPI(title="kiapi", lifespan=lifespan, docs_url=None, redoc_url=None)

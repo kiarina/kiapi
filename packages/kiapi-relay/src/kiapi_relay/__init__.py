@@ -1,5 +1,4 @@
 from .core import (
-    AlreadyRunningError,
     BaseRelay,
     Relay,
     RelayDelivery,
@@ -17,7 +16,6 @@ from .core import (
     RelayRunner,
     RelaySettings,
     RelaySpecifier,
-    SingleInstanceLock,
     build_relay_response,
     get_or_create_node_id,
     new_relay_session_id,
@@ -26,7 +24,6 @@ from .core import (
 )
 
 __all__ = [
-    "AlreadyRunningError",
     "BaseRelay",
     "Relay",
     "RelayDelivery",
@@ -44,7 +41,6 @@ __all__ = [
     "RelayRunner",
     "RelaySettings",
     "RelaySpecifier",
-    "SingleInstanceLock",
     "build_relay_response",
     "get_or_create_node_id",
     "new_relay_session_id",

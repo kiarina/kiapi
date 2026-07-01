@@ -24,7 +24,6 @@ classifiers = [
 ]
 dependencies = [
     "fastapi",       # in-process ASGI dispatch in RelayRunner
-    "filelock",      # cross-platform single-instance lock under the data dir
     "httpx",         # relay request client
     "pydantic>=2",
     "pydantic-settings",

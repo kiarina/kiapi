@@ -1,16 +1,16 @@
 import typing
 
 import pytest
+from kiarina.utils.app import configure, reset
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def configure_app() -> None:
-    # Match runtime: the CLI and ASGI app set the application identity before any
-    # user-directory lookup. Tests exercise those helpers directly, so configure
-    # once for the whole session.
-    from kiapi.core.app import configure_app as _configure_app
-
-    _configure_app()
+    # Match runtime: the app identity is set before any user-directory lookup.
+    # Reset first so this is safe to run for every test (`configure` raises if the
+    # identity is already set).
+    reset()
+    configure("kiapi", "kiarina")
 
 
 @pytest.fixture(autouse=True)

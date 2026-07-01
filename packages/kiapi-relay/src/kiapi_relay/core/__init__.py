@@ -9,7 +9,6 @@ from ._schemas.relay_multipart_body import RelayMultipartBody
 from ._schemas.relay_multipart_file import RelayMultipartFile
 from ._services.base_relay import BaseRelay
 from ._services.relay_runner import RelayRunner
-from ._services.single_instance import AlreadyRunningError, SingleInstanceLock
 from ._settings import RelaySettings, settings_manager
 from ._types.relay import Relay
 from ._types.relay_delivery import RelayDelivery
@@ -22,7 +21,6 @@ from ._views.relay_request import RelayRequest
 from ._views.relay_response import RelayResponse
 
 __all__ = [
-    "AlreadyRunningError",
     "BaseRelay",
     "Relay",
     "RelayDelivery",
@@ -40,7 +38,6 @@ __all__ = [
     "RelayRunner",
     "RelaySettings",
     "RelaySpecifier",
-    "SingleInstanceLock",
     "build_relay_response",
     "get_or_create_node_id",
     "new_relay_session_id",

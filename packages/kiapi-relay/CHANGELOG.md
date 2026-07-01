@@ -9,9 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Relay participants now derive a stable `node_id` from a data directory via
-  `get_or_create_node_id`, guarded by a `SingleInstanceLock` (cross-platform
-  filesystem lock backed by `filelock`) so a second process cannot reuse the
-  same identity and double-consume work. Both are exported from `kiapi_relay`.
+  `get_or_create_node_id`, exported from `kiapi_relay`. Single-instance locking
+  (preventing a second process from reusing the same identity) is provided by
+  the shared `kiarina-utils-app` package rather than `kiapi_relay`.
 - Added liveness-based node discovery. A serving node publishes a heartbeat
   under `{prefix}/liveness/{node_id}` on `heartbeat_interval_s` (default `300`)
   as part of the `watch` lifecycle, and removes it on clean shutdown.

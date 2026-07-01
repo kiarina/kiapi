@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from html import escape
 from pathlib import Path
 
+from kiarina.utils.app import configure
+
 from kiapi.api._helpers.build_openapi import build_openapi
 from kiapi.cli import register_all_capabilities
 from kiapi.core.capability import CapabilitySpec, capability_spec_registry
@@ -32,6 +34,7 @@ class PageDoc:
 
 
 def main() -> None:
+    configure("kiapi", "kiarina")
     register_all_capabilities()
 
     from kiapi.api.app import COMMON_OPENAPI_PATHS, app
