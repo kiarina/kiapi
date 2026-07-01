@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **kiapi-relay**: Added a `gcp:setup` mise task (run from `packages/kiapi-relay/`) that interactively provisions the GCS bucket, Firebase Realtime Database instance, and authentication for `GCPRelay`, then prints the kiapi YAML to paste with `kiapi config edit`. The GCP relay README was rewritten around this task.
+- Manage Node dev tooling with pnpm through a root `package.json`; `firebase-tools` is now a project-local dev dependency installed by `mise run setup` (`pnpm install`) rather than a global `npm install -g`, and mise puts it on `PATH` via `node_modules/.bin`.
+- **kiapi-relay**: Added a `gcp:setup` mise task (run from `packages/kiapi-relay/`) that interactively provisions the GCS bucket, Firebase Realtime Database instance, and authentication for `GCPRelay`, then prints the kiapi YAML to paste with `kiapi config edit`. It uses the project-local `firebase-tools`. The GCP relay README was rewritten around this task.
 - **kiapi**: `GET /health` now reports the status of the relay started with the server in a `relay` field (`name`, `running`, `failed`), or `null` when no relay is configured.
 - **kiapi-relay**: Added a `name` attribute to the `Relay` protocol, populated by the relay registry through a `factory_wrapper` and shared via a new `BaseRelay` base class. `RelayRunner.status()` returns a new `RelayHealth` view (`name`, `running`, `failed`).
 - **kiapi**: Added a `request` method to the `Relay` protocol and implemented it on `LocalRelay` and `GCPRelay`, promoting the relay request client from the verification scripts into the relay packages. Responses are returned as `RelayResponse`, with binary bodies materialized to a temporary file the caller owns.

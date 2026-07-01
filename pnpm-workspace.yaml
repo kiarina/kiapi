@@ -1,0 +1,4 @@
+# firebase-tools' protobufjs postinstall build is not needed; keep it disabled
+# so `pnpm install` runs without prompting to approve build scripts.
+allowBuilds:
+  protobufjs: false

@@ -39,7 +39,7 @@ step "Checking required commands"
 require_command gcloud "https://cloud.google.com/sdk/docs/install"
 require_command fzf "https://github.com/junegunn/fzf#installation"
 require_command jq "https://jqlang.github.io/jq/download/"
-require_command firebase "npm install -g firebase-tools"
+require_command firebase "run 'pnpm install' at the repository root (firebase-tools is a project-local dev dependency)"
 
 # gcloud must be logged in with a Project Owner-equivalent principal.
 gcloud_account="$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null | head -n1)"

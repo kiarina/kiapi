@@ -62,8 +62,9 @@ The setup task needs these CLIs on the relay node:
 
 - `gcloud`, logged in with a Project Owner-equivalent account
   (`gcloud auth login`).
-- `firebase-tools`, logged in with `firebase login`
-  (`npm install -g firebase-tools`).
+- `firebase-tools`, logged in with `firebase login`. It is a project-local dev
+  dependency, so `mise run setup` (or `pnpm install` at the repository root)
+  installs it and mise puts it on `PATH`.
 - `fzf` and `jq` for the interactive prompts.
 
 ### Automated Setup

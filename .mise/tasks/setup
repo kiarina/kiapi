@@ -11,6 +11,9 @@ echo "📦 Syncing workspace dependencies..."
 # mlx-video) that aren't in uv.lock. Use `make sync` for an exact reconcile.
 uv sync --inexact --all-packages --all-extras --all-groups
 
+echo "📦 Installing Node tooling (firebase-tools, etc.)..."
+pnpm install --frozen-lockfile
+
 echo "📥 Downloading test assets..."
 mise run test-assets:download
 

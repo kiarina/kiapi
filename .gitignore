@@ -29,3 +29,6 @@ test_settings.yaml
 
 # Test assets downloaded via mise
 tests/assets/
+
+# Node modules (pnpm-managed dev tooling, e.g. firebase-tools)
+node_modules/

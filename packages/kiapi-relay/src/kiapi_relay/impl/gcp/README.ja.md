@@ -57,7 +57,9 @@ uv tool install --python 3.12 "kiapi[relay-gcp]"
 setup task には relay node 上で次の CLI が必要です。
 
 - `gcloud`（Project Owner 相当のアカウントで `gcloud auth login` 済み）
-- `firebase-tools`（`firebase login` 済み、`npm install -g firebase-tools`）
+- `firebase-tools`（`firebase login` 済み）。project-local な dev dependency なので、
+  `mise run setup`（またはリポジトリルートで `pnpm install`）で導入され、mise が `PATH`
+  に載せます。
 - 対話プロンプト用の `fzf` と `jq`
 
 ### Automated Setup
