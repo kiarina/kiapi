@@ -77,10 +77,19 @@ step "Configuring the GCS bucket"
 
 prompt_default bucket_region "Bucket region" "asia-northeast1"
 prompt_default bucket_name "Bucket name" "${project_id}-kiapi"
-prompt_default prefix "Object / RTDB prefix" "kiapi"
+# An empty prefix (the default) places relay objects at the bucket and database
+# roots. Any value is stripped of surrounding slashes to keep paths clean.
+prompt_default prefix "Object / RTDB prefix (empty for root)" ""
 prefix="${prefix#/}"
 prefix="${prefix%/}"
-[ -n "$prefix" ] || die "prefix must not be empty."
+
+# session_prefix is the GCS key prefix the lifecycle rule targets: "sessions/"
+# at the root, or "<prefix>/sessions/" when a prefix is set.
+if [ -n "$prefix" ]; then
+    session_prefix="${prefix}/sessions/"
+else
+    session_prefix="sessions/"
+fi
 
 if gcloud storage buckets describe "gs://${bucket_name}" >/dev/null 2>&1; then
     info "↷ Bucket gs://${bucket_name} already exists, skipping creation."
@@ -98,11 +107,11 @@ fi
 # metadata permissions, so leave manage_bucket_lifecycle: false in the YAML.
 lifecycle_file="$(mktemp)"
 trap 'rm -f "$lifecycle_file"' EXIT
-jq -n --arg prefix "${prefix}/sessions/" '
+jq -n --arg prefix "$session_prefix" '
     {rule: [{action: {type: "Delete"}, condition: {age: 1, matchesPrefix: [$prefix]}}]}
 ' >"$lifecycle_file"
 
-info "Applying lifecycle rule (delete ${prefix}/sessions/ after 1 day)..."
+info "Applying lifecycle rule (delete ${session_prefix} after 1 day)..."
 gcloud storage buckets update "gs://${bucket_name}" --lifecycle-file="$lifecycle_file"
 info "✅ Lifecycle rule applied."
 
@@ -274,6 +283,15 @@ if [ -n "$google_impersonate" ]; then
       impersonate_service_account: ${google_impersonate}"
 fi
 
+# Emit the prefix line only when a prefix was set; an empty prefix uses the
+# bucket and database roots and matches the setting default.
+if [ -n "$prefix" ]; then
+    prefix_line="
+  prefix: ${prefix}"
+else
+    prefix_line=""
+fi
+
 cat <<YAML
 
 Add the following with 'kiapi config edit':
@@ -284,8 +302,7 @@ kiapi.core.relay:
 
 kiapi.relay.gcp:
   database_url: ${database_url}
-  bucket: ${bucket_name}
-  prefix: ${prefix}
+  bucket: ${bucket_name}${prefix_line}
   google_settings_key: relay
   manage_bucket_lifecycle: false
 

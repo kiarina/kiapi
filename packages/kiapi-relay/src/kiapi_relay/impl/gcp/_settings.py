@@ -18,9 +18,12 @@ class GCPRelaySettings(BaseSettings):
         description="Bucket used for relay request and response payloads.",
     )
     prefix: str = Field(
-        default="kiapi",
+        default="",
         title="Object and RTDB prefix",
-        description="Shared prefix used below both RTDB and GCS roots.",
+        description=(
+            "Shared prefix used below both RTDB and GCS roots. "
+            "Leave empty to use the bucket and database roots directly."
+        ),
     )
     google_settings_key: str | None = Field(
         default=None,
@@ -82,10 +85,10 @@ class GCPRelaySettings(BaseSettings):
     @field_validator("prefix")
     @classmethod
     def normalize_prefix(cls, value: str) -> str:
-        value = value.strip("/")
-        if not value:
-            raise ValueError("prefix must not be empty")
-        return value
+        # An empty prefix is allowed and places relay objects at the bucket and
+        # database roots. Stripping slashes keeps path joins free of leading or
+        # doubled separators.
+        return value.strip("/")
 
 
 settings_manager = SettingsManager(GCPRelaySettings)

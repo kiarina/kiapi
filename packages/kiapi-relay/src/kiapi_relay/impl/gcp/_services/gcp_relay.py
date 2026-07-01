@@ -211,7 +211,7 @@ class GCPRelay(BaseRelay):
         session_id: str,
         timeout_s: float,
     ) -> dict[str, Any]:
-        path = f"{self.settings.prefix}/nodes/{self.node_id}/responses/{session_id}"
+        path = self._prefixed(f"nodes/{self.node_id}/responses/{session_id}")
         deadline = time.monotonic() + timeout_s
         last_status: str | None = None
         while time.monotonic() < deadline:
@@ -510,7 +510,7 @@ class GCPRelay(BaseRelay):
 
     def _ensure_bucket_lifecycle(self) -> None:
         self._bucket.reload()
-        session_prefix = f"{self.settings.prefix}/sessions/"
+        session_prefix = self._prefixed("sessions/")
         for rule in self._bucket.lifecycle_rules:
             action = rule.get("action", {})
             condition = rule.get("condition", {})
@@ -526,6 +526,12 @@ class GCPRelay(BaseRelay):
         )
         self._bucket.patch()
 
+    def _prefixed(self, suffix: str) -> str:
+        # Join the configured prefix with a path suffix. An empty prefix leaves
+        # the suffix at the root, avoiding a leading or doubled slash.
+        prefix = self.settings.prefix
+        return f"{prefix}/{suffix}" if prefix else suffix
+
     def _rtdb_url(self, path: str) -> str:
         if path:
             return f"{self.settings.database_url}/{path}.json"
@@ -535,25 +541,24 @@ class GCPRelay(BaseRelay):
         return self._node_requests_path(self.node_id)
 
     def _node_requests_path(self, node_id: str) -> str:
-        return f"{self.settings.prefix}/nodes/{node_id}/requests"
+        return self._prefixed(f"nodes/{node_id}/requests")
 
     def _liveness_root_path(self) -> str:
-        return f"{self.settings.prefix}/liveness"
+        return self._prefixed("liveness")
 
     def _liveness_path(self, node_id: str) -> str:
         return f"{self._liveness_root_path()}/{node_id}"
 
     def _response_path(self, notification: GCPRelayNotification) -> str:
-        return (
-            f"{self.settings.prefix}/nodes/{notification.source_node_id}/responses/"
-            f"{notification.session_id}"
+        return self._prefixed(
+            f"nodes/{notification.source_node_id}/responses/{notification.session_id}"
         )
 
     def _request_object(self, session_id: str) -> str:
-        return f"{self.settings.prefix}/sessions/{session_id}/request.json"
+        return self._prefixed(f"sessions/{session_id}/request.json")
 
     def _response_json_object(self, session_id: str) -> str:
-        return f"{self.settings.prefix}/sessions/{session_id}/response.json"
+        return self._prefixed(f"sessions/{session_id}/response.json")
 
     def _response_body_object(self, session_id: str) -> str:
-        return f"{self.settings.prefix}/sessions/{session_id}/response.body"
+        return self._prefixed(f"sessions/{session_id}/response.body")

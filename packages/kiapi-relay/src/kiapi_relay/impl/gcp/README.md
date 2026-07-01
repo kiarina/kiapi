@@ -140,7 +140,6 @@ kiapi.core.relay:
 kiapi.relay.gcp:
   database_url: https://your-instance.asia-southeast1.firebasedatabase.app
   bucket: your-project-kiapi
-  prefix: kiapi
   google_settings_key: relay
   manage_bucket_lifecycle: false
 
@@ -156,6 +155,10 @@ For a service account key, use `type: service_account` with
 `service_account_file`; for impersonation, use `type: default` with
 `impersonate_service_account`.
 
+`prefix` is omitted here because it defaults to empty, placing relay objects at
+the bucket and database roots. Set it only to share one bucket or database
+across multiple isolated relays.
+
 Use YAML rather than shell-only environment variables when kiapi runs through
 `kiapi service`, because the background service must receive the same
 configuration after login or reboot.
@@ -168,7 +171,6 @@ For a foreground process:
 export KIAPI_RELAY_DEFAULT="gcp"
 export KIAPI_RELAY_GCP_DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
 export KIAPI_RELAY_GCP_BUCKET="your-project-kiapi"
-export KIAPI_RELAY_GCP_PREFIX="kiapi"
 export KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE="false"
 
 kiapi run
@@ -308,7 +310,7 @@ list):
 ```sh
 export BUCKET="your-project-kiapi"
 export DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
-export PREFIX="kiapi"
+export PREFIX=""  # empty for the roots, or the prefix you configured
 export NODE_ID="studio-1"
 ```
 
@@ -318,14 +320,15 @@ Verify GCS access:
 gcloud storage ls "gs://${BUCKET}"
 ```
 
-Verify an authenticated RTDB read with an ADC access token:
+Verify an authenticated RTDB read with an ADC access token
+(`${PREFIX:+${PREFIX}/}` inserts the prefix segment only when one is set):
 
 ```sh
 ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
 
 curl --fail --silent --show-error \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  "${DATABASE_URL}/${PREFIX}/nodes/${NODE_ID}/requests.json"
+  "${DATABASE_URL}/${PREFIX:+${PREFIX}/}nodes/${NODE_ID}/requests.json"
 ```
 
 Then start kiapi and submit one small CPU-safe or already-activated API request
@@ -400,7 +403,7 @@ additionally protects the `response.json` commit marker from duplicate creation.
 | `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | Relay specifier; use `gcp` to enable GCPRelay. |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | Exact HTTPS RTDB instance URL. |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | Private GCS bucket name without `gs://`. |
-| `prefix` | `KIAPI_RELAY_GCP_PREFIX` | `kiapi` | Shared RTDB/GCS root prefix. |
+| `prefix` | `KIAPI_RELAY_GCP_PREFIX` | empty | Shared RTDB/GCS prefix; empty uses the roots directly. |
 | `google_settings_key` | `KIAPI_RELAY_GCP_GOOGLE_SETTINGS_KEY` | default Google config | Named `kiarina.lib.google` credential configuration. |
 | `lifecycle_age_days` | `KIAPI_RELAY_GCP_LIFECYCLE_AGE_DAYS` | `1` | Age used by the managed GCS delete rule. |
 | `manage_bucket_lifecycle` | `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE` | `true` | Whether GCPRelay updates the bucket lifecycle at startup. |

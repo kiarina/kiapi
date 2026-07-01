@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `GCPRelaySettings.prefix` now defaults to empty, placing relay objects at the
+  GCS bucket and RTDB roots. A non-empty prefix is still supported; path
+  building was reworked so an empty prefix produces no leading or doubled
+  separators. Set a prefix only to share one bucket or database across multiple
+  isolated relays.
+
 - Added a `gcp:setup` mise task (run from the `kiapi-relay` package directory)
   that interactively provisions the GCS bucket, Firebase Realtime Database
   instance, and authentication for `GCPRelay`, then prints the kiapi YAML to

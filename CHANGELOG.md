@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **kiapi-relay**: `GCPRelaySettings.prefix` now defaults to empty, placing relay objects at the GCS bucket and RTDB roots (a non-empty prefix is still supported). Path building was reworked so an empty prefix produces no leading or doubled separators.
 - Manage Node dev tooling with pnpm through a root `package.json`; `firebase-tools` is now a project-local dev dependency installed by `mise run setup` (`pnpm install`) rather than a global `npm install -g`, and mise puts it on `PATH` via `node_modules/.bin`.
 - **kiapi-relay**: Added a `gcp:setup` mise task (run from `packages/kiapi-relay/`) that interactively provisions the GCS bucket, Firebase Realtime Database instance, and authentication for `GCPRelay`, then prints the kiapi YAML to paste with `kiapi config edit`. It uses the project-local `firebase-tools`. The GCP relay README was rewritten around this task.
 - **kiapi**: `GET /health` now reports the status of the relay started with the server in a `relay` field (`name`, `running`, `failed`), or `null` when no relay is configured.
