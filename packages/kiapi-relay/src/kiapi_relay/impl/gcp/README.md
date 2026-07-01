@@ -47,186 +47,59 @@ most recent heartbeat within `liveness_ttl_s`, and addresses its request there.
 When no node has reported within that window, the request fails with
 `no_relay_node`.
 
-## Prerequisites
+## Setup
 
-- A Google Cloud project added to Firebase
-- A Firebase Realtime Database instance
-- A private GCS bucket
-- Google Cloud CLI (`gcloud`) for the command examples
-- kiapi installed on the relay node
-- Permission to configure IAM, RTDB, and the GCS bucket
+### Prerequisites
 
-Set the values used in the examples:
-
-```sh
-export PROJECT_ID="your-project-id"
-export REGION="asia-northeast1"
-export BUCKET="your-private-kiapi-relay-bucket"
-export DATABASE_URL="https://your-database.firebaseio.com"
-# kiapi generates its own node_id; set this only for the manual REST walkthrough
-# below. Read it from the node's data dir (`<data_dir>/node_id`) or from the
-# `{prefix}/liveness` list.
-export NODE_ID="studio-1"
-export PREFIX="private/kiapi"
-export RELAY_SERVICE_ACCOUNT="kiapi-relay@${PROJECT_ID}.iam.gserviceaccount.com"
-```
-
-Depending on the RTDB location, the database URL can use either the
-`firebaseio.com` or `firebasedatabase.app` domain. Copy the exact URL displayed
-by the Firebase console.
-
-## GCP Setup
-
-### Create Firebase RTDB
-
-1. Open the [Firebase console](https://console.firebase.google.com/).
-2. Add Firebase to the target Google Cloud project if needed.
-3. Open **Build > Realtime Database**.
-4. Create a database and select its region.
-5. Copy the database URL into `DATABASE_URL`.
-
-Do not enable public read/write rules for the relay. RTDB Security Rules deny
-access by default, and authenticated server access should be used.
-
-The relay performs these operations:
-
-- continuously reads
-  `{prefix}/nodes/{kiapi_node_id}/requests`;
-- writes progress and results below
-  `{prefix}/nodes/{requester_node_id}/responses`;
-- deletes the processed request notification;
-- uses a root multi-location `PATCH` to publish the terminal result and delete
-  the request atomically.
-
-See the official documentation for
-[RTDB Security Rules](https://firebase.google.com/docs/database/security) and
-[REST authentication](https://firebase.google.com/docs/database/rest/auth).
-
-### Create GCS Bucket
-
-Create a dedicated bucket with uniform bucket-level access:
-
-```sh
-gcloud storage buckets create "gs://${BUCKET}" \
-  --project="${PROJECT_ID}" \
-  --location="${REGION}" \
-  --uniform-bucket-level-access
-```
-
-Do not make the bucket public. Request bodies, prompts, generated content, and
-binary response files can all be stored there.
-
-### Configure Lifecycle
-
-Relay session objects should be deleted automatically.
-
-There are two supported approaches.
-
-#### Recommended: Manage Lifecycle Outside kiapi
-
-Create `lifecycle.json`:
-
-```json
-{
-  "rule": [
-    {
-      "action": {
-        "type": "Delete"
-      },
-      "condition": {
-        "age": 1,
-        "matchesPrefix": [
-          "private/kiapi/sessions/"
-        ]
-      }
-    }
-  ]
-}
-```
-
-Apply and verify it:
-
-```sh
-gcloud storage buckets update "gs://${BUCKET}" \
-  --lifecycle-file=lifecycle.json
-
-gcloud storage buckets describe "gs://${BUCKET}" \
-  --format="default(lifecycle_config)"
-```
-
-Then set `manage_bucket_lifecycle: false` in kiapi. This keeps bucket metadata
-administration outside the relay runtime.
-
-#### Alternative: Let GCPRelay Manage Lifecycle
-
-The default `manage_bucket_lifecycle: true` makes GCPRelay install a
-prefix-scoped delete rule at startup.
-
-The relay identity then requires:
-
-- `storage.buckets.get`
-- `storage.buckets.update`
-
-`roles/storage.admin` includes these permissions but is broad. A custom role
-containing only the required bucket permissions is preferable.
-
-Cloud Storage notes that lifecycle configuration changes can take up to 24
-hours to fully take effect. See
-[Manage object lifecycles](https://cloud.google.com/storage/docs/managing-lifecycles).
-
-### Create Service Account and IAM
-
-Create a relay service account:
-
-```sh
-gcloud iam service-accounts create kiapi-relay \
-  --project="${PROJECT_ID}" \
-  --display-name="kiapi GCP relay"
-```
-
-Grant object access on the relay bucket:
-
-```sh
-gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
-  --member="serviceAccount:${RELAY_SERVICE_ACCOUNT}" \
-  --role="roles/storage.objectUser"
-```
-
-Grant the Firebase Realtime Database product role:
-
-```sh
-gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${RELAY_SERVICE_ACCOUNT}" \
-  --role="roles/firebasedatabase.admin"
-```
-
-`roles/storage.objectUser` supplies the object read/create/update/delete
-permissions needed to read requests, detect completed responses, and write
-responses. It does not grant bucket lifecycle administration.
-
-`roles/firebasedatabase.admin` is the product-level role for full RTDB
-read/write access. A Firebase Admin SDK service account can also be used.
-These identities are privileged; review the assignment against your
-organization's least-privilege policy.
-
-Official references:
-
-- [Firebase product-level IAM roles](https://firebase.google.com/docs/projects/iam/roles-predefined-product)
-- [Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
-
-## Authentication
-
-GCPRelay obtains credentials through
-[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
 Install kiapi with the `relay-gcp` extra so the Google Cloud Storage client and
 Google authentication helper are available:
 
 ```sh
-python3.12 -m pip install --upgrade "kiapi[relay-gcp]"
 uv tool install --python 3.12 "kiapi[relay-gcp]"
 ```
 
-It requests these OAuth scopes:
+The setup task needs these CLIs on the relay node:
+
+- `gcloud`, logged in with a Project Owner-equivalent account
+  (`gcloud auth login`).
+- `firebase-tools`, logged in with `firebase login`
+  (`npm install -g firebase-tools`).
+- `fzf` and `jq` for the interactive prompts.
+
+### Automated Setup
+
+Run the setup task from the `kiapi-relay` package directory:
+
+```sh
+cd packages/kiapi-relay
+mise run gcp:setup
+```
+
+The task provisions everything the relay needs and prints the kiapi YAML to
+paste with `kiapi config edit`:
+
+- selects the Google Cloud project;
+- creates a private, uniform-access GCS bucket (default name
+  `{project_id}-kiapi`, default region `asia-northeast1`) and installs the
+  lifecycle rule that deletes `{prefix}/sessions/` objects after one day;
+- adds Firebase to the project and creates a Realtime Database instance
+  (default location `asia-southeast1`), deriving the correct `database_url`;
+- configures authentication and grants the relay identity
+  `roles/storage.objectUser` on the bucket and `roles/firebasedatabase.admin`
+  on the project.
+
+Existing buckets and RTDB instances are detected and left untouched, so the
+task is safe to re-run.
+
+> A named RTDB instance requires the Blaze (pay-as-you-go) billing plan. If
+> creation fails, upgrade the project in the
+> [Firebase console](https://console.firebase.google.com/) and re-run the task.
+
+### Authentication methods
+
+GCPRelay obtains credentials through
+[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
+It requests these OAuth scopes; the last two are required by the RTDB REST API:
 
 ```text
 https://www.googleapis.com/auth/cloud-platform
@@ -234,96 +107,53 @@ https://www.googleapis.com/auth/firebase.database
 https://www.googleapis.com/auth/userinfo.email
 ```
 
-The last two are required by the RTDB REST API.
+The task offers three methods:
 
-### Application Default Credentials
+- **Application Default Credentials** (default) — runs
+  `gcloud auth application-default login` with the scopes above. Convenient for
+  development; the logged-in user needs the relay roles. It is not the preferred
+  unattended production credential.
+- **Service Account** — creates a JSON key (default
+  `~/.config/kiapi-relay/gcp/key.json`, `chmod 600`). Service account keys are
+  long-lived; never commit or share the file.
+- **Impersonation** — grants your ADC user
+  `roles/iam.serviceAccountTokenCreator` on the target service account, avoiding
+  a stored key.
 
-For local testing, log in to ADC with all required scopes:
+`roles/storage.objectUser` supplies the object read/create/update/delete
+permissions the relay needs; it does not grant bucket lifecycle administration,
+so the task manages the lifecycle rule directly and emits
+`manage_bucket_lifecycle: false`. `roles/firebasedatabase.admin` grants full
+RTDB read/write access. Both identities are privileged; review the assignment
+against your organization's least-privilege policy.
 
-```sh
-gcloud auth application-default login \
-  --scopes="https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/firebase.database,https://www.googleapis.com/auth/userinfo.email"
+### kiapi Configuration
 
-gcloud config set project "${PROJECT_ID}"
-```
-
-The logged-in user still needs the GCS and Firebase permissions described
-above. ADC created by `gcloud auth application-default login` is convenient for
-development but is not the preferred unattended production credential.
-
-See
-[`gcloud auth application-default login`](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login).
-
-### Service Account Key
-
-If your environment requires a service account key, store the key outside the
-repository and configure it through kiapi's YAML:
-
-```sh
-gcloud iam service-accounts keys create \
-  "/absolute/path/to/kiapi-relay-key.json" \
-  --iam-account="${RELAY_SERVICE_ACCOUNT}"
-```
-
-```yaml
-kiarina.lib.google:
-  default: relay
-  configs:
-    relay:
-      type: service_account
-      project_id: your-project-id
-      service_account_file: /absolute/path/to/kiapi-relay-key.json
-```
-
-Service account keys are long-lived credentials. Never commit the key file,
-copy it into an application image, or expose it to requester nodes.
-
-### Service Account Impersonation
-
-Service account impersonation avoids storing a long-lived target service
-account key:
-
-```yaml
-kiarina.lib.google:
-  default: relay
-  configs:
-    relay:
-      type: default
-      project_id: your-project-id
-      impersonate_service_account: kiapi-relay@your-project-id.iam.gserviceaccount.com
-```
-
-The source principal needs
-`roles/iam.serviceAccountTokenCreator` on the target relay service account. The
-target service account needs the RTDB and GCS permissions.
-
-## kiapi Configuration
-
-### YAML
-
-Run `kiapi config edit` and add:
+The task prints a block like the following (ADC example) to add with
+`kiapi config edit`:
 
 ```yaml
 kiapi.core.relay:
   default: gcp
 
 kiapi.relay.gcp:
-  database_url: https://your-database.firebaseio.com
-  bucket: your-private-kiapi-relay-bucket
-  prefix: private/kiapi
+  database_url: https://your-instance.asia-southeast1.firebasedatabase.app
+  bucket: your-project-kiapi
+  prefix: kiapi
   google_settings_key: relay
-  lifecycle_age_days: 1
   manage_bucket_lifecycle: false
-  reconnect_delay_s: 1.0
 
 kiarina.lib.google:
   default: relay
   configs:
     relay:
-      type: service_account
+      type: default
       project_id: your-project-id
-      service_account_file: /absolute/path/to/kiapi-relay-key.json
 ```
+
+For a service account key, use `type: service_account` with
+`service_account_file`; for impersonation, use `type: default` with
+`impersonate_service_account`.
 
 Use YAML rather than shell-only environment variables when kiapi runs through
 `kiapi service`, because the background service must receive the same
@@ -335,9 +165,9 @@ For a foreground process:
 
 ```sh
 export KIAPI_RELAY_DEFAULT="gcp"
-export KIAPI_RELAY_GCP_DATABASE_URL="${DATABASE_URL}"
-export KIAPI_RELAY_GCP_BUCKET="${BUCKET}"
-export KIAPI_RELAY_GCP_PREFIX="${PREFIX}"
+export KIAPI_RELAY_GCP_DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
+export KIAPI_RELAY_GCP_BUCKET="your-project-kiapi"
+export KIAPI_RELAY_GCP_PREFIX="kiapi"
 export KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE="false"
 
 kiapi run
@@ -469,6 +299,17 @@ precondition. If it already exists after a restart or duplicate execution, the
 relay reports the committed response without dispatching the API request again.
 
 ## Verification
+
+Set the values the setup task chose (kiapi generates its own `NODE_ID`; read it
+from the node's data dir at `<data_dir>/node_id` or from the `{prefix}/liveness`
+list):
+
+```sh
+export BUCKET="your-project-kiapi"
+export DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
+export PREFIX="kiapi"
+export NODE_ID="studio-1"
+```
 
 Verify GCS access:
 

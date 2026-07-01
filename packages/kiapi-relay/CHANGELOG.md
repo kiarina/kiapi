@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Added a `gcp:setup` mise task (run from the `kiapi-relay` package directory)
+  that interactively provisions the GCS bucket, Firebase Realtime Database
+  instance, and authentication for `GCPRelay`, then prints the kiapi YAML to
+  paste with `kiapi config edit`. Existing buckets and RTDB instances are
+  detected and left untouched, so the task is safe to re-run. The GCP relay
+  README was rewritten around this task.
+
 - Relay participants now derive a stable `node_id` from a data directory via
   `get_or_create_node_id`, exported from `kiapi_relay`. Single-instance locking
   (preventing a second process from reusing the same identity) is provided by

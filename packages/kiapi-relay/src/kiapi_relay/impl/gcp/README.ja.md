@@ -43,183 +43,56 @@ publish し、正常終了時に削除します。requester は `{prefix}/livene
 `liveness_ttl_s` 以内で最も新しい heartbeat の node を選んで request を送ります。
 その window 内に report した node がない場合、request は `no_relay_node` で失敗します。
 
-## Prerequisites
+## Setup
 
-- Firebase に追加された Google Cloud project
-- Firebase Realtime Database instance
-- private GCS bucket
-- command 例で使用する Google Cloud CLI（`gcloud`）
-- relay node にインストール済みの kiapi
-- IAM、RTDB、GCS bucket を設定できる権限
+### Prerequisites
 
-例で使用する値を設定します。
-
-```sh
-export PROJECT_ID="your-project-id"
-export REGION="asia-northeast1"
-export BUCKET="your-private-kiapi-relay-bucket"
-export DATABASE_URL="https://your-database.firebaseio.com"
-# kiapi は自分の node_id を生成します。下記の手動 REST walkthrough 用にのみ設定して
-# ください。node の data dir（`<data_dir>/node_id`）または `{prefix}/liveness` の
-# 一覧から取得できます。
-export NODE_ID="studio-1"
-export PREFIX="private/kiapi"
-export RELAY_SERVICE_ACCOUNT="kiapi-relay@${PROJECT_ID}.iam.gserviceaccount.com"
-```
-
-RTDB の location により、database URL は `firebaseio.com` または
-`firebasedatabase.app` domain になります。Firebase console に表示される正確な URL を
-コピーしてください。
-
-## GCP Setup
-
-### Create Firebase RTDB
-
-1. [Firebase console](https://console.firebase.google.com/) を開きます。
-2. 必要であれば対象の Google Cloud project に Firebase を追加します。
-3. **Build > Realtime Database** を開きます。
-4. database と region を選択して作成します。
-5. database URL を `DATABASE_URL` に設定します。
-
-relay のために public read/write rule を有効化しないでください。RTDB Security Rules は
-既定で access を拒否するため、認証済み server access を使用します。
-
-relay は次の操作を行います。
-
-- `{prefix}/nodes/{kiapi_node_id}/requests` を継続的に read する
-- `{prefix}/nodes/{requester_node_id}/responses` 以下へ progress / result を write する
-- 処理済み request notification を delete する
-- root multi-location `PATCH` で terminal result の公開と request 削除を atomic に行う
-
-公式文書の
-[RTDB Security Rules](https://firebase.google.com/docs/database/security) と
-[REST authentication](https://firebase.google.com/docs/database/rest/auth) も確認してください。
-
-### Create GCS Bucket
-
-uniform bucket-level access を有効にした専用 bucket を作成します。
-
-```sh
-gcloud storage buckets create "gs://${BUCKET}" \
-  --project="${PROJECT_ID}" \
-  --location="${REGION}" \
-  --uniform-bucket-level-access
-```
-
-bucket を public にしないでください。request body、prompt、生成内容、binary response
-file などが保存される可能性があります。
-
-### Configure Lifecycle
-
-relay session object は自動削除する必要があります。
-
-2 つの方法を利用できます。
-
-#### Recommended: Manage Lifecycle Outside kiapi
-
-`lifecycle.json` を作成します。
-
-```json
-{
-  "rule": [
-    {
-      "action": {
-        "type": "Delete"
-      },
-      "condition": {
-        "age": 1,
-        "matchesPrefix": [
-          "private/kiapi/sessions/"
-        ]
-      }
-    }
-  ]
-}
-```
-
-適用して確認します。
-
-```sh
-gcloud storage buckets update "gs://${BUCKET}" \
-  --lifecycle-file=lifecycle.json
-
-gcloud storage buckets describe "gs://${BUCKET}" \
-  --format="default(lifecycle_config)"
-```
-
-その後、kiapi に `manage_bucket_lifecycle: false` を設定します。これにより、bucket
-metadata の管理を relay runtime から分離できます。
-
-#### Alternative: Let GCPRelay Manage Lifecycle
-
-既定の `manage_bucket_lifecycle: true` では、GCPRelay が起動時に prefix 限定の delete
-rule を設定します。
-
-relay identity には次の権限も必要です。
-
-- `storage.buckets.get`
-- `storage.buckets.update`
-
-`roles/storage.admin` にはこれらの権限が含まれますが、広い権限です。必要な bucket
-権限だけを含む custom role を推奨します。
-
-Cloud Storage では lifecycle 設定変更の反映に最大 24 時間かかる場合があります。
-[Manage object lifecycles](https://cloud.google.com/storage/docs/managing-lifecycles)
-を参照してください。
-
-### Create Service Account and IAM
-
-relay service account を作成します。
-
-```sh
-gcloud iam service-accounts create kiapi-relay \
-  --project="${PROJECT_ID}" \
-  --display-name="kiapi GCP relay"
-```
-
-relay bucket の object access を付与します。
-
-```sh
-gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
-  --member="serviceAccount:${RELAY_SERVICE_ACCOUNT}" \
-  --role="roles/storage.objectUser"
-```
-
-Firebase Realtime Database の product role を付与します。
-
-```sh
-gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${RELAY_SERVICE_ACCOUNT}" \
-  --role="roles/firebasedatabase.admin"
-```
-
-`roles/storage.objectUser` は request の read、完了済み response の検出、response の write
-に必要な object read/create/update/delete 権限を提供します。bucket lifecycle の管理権限は
-含みません。
-
-`roles/firebasedatabase.admin` は RTDB への完全な read/write access を付与する product-level
-role です。Firebase Admin SDK service account も使用できます。これらは強い権限を持つため、
-組織の least-privilege policy に照らして割り当てを確認してください。
-
-公式 reference:
-
-- [Firebase product-level IAM roles](https://firebase.google.com/docs/projects/iam/roles-predefined-product)
-- [Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
-
-## Authentication
-
-GCPRelay は
-[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google)
-から credential を取得します。
 Google Cloud Storage client と Google authentication helper を利用できるように、
 `relay-gcp` extra 付きで kiapi をインストールしてください。
 
 ```sh
-python3.12 -m pip install --upgrade "kiapi[relay-gcp]"
 uv tool install --python 3.12 "kiapi[relay-gcp]"
 ```
 
-次の OAuth scope を要求します。
+setup task には relay node 上で次の CLI が必要です。
+
+- `gcloud`（Project Owner 相当のアカウントで `gcloud auth login` 済み）
+- `firebase-tools`（`firebase login` 済み、`npm install -g firebase-tools`）
+- 対話プロンプト用の `fzf` と `jq`
+
+### Automated Setup
+
+`kiapi-relay` パッケージディレクトリから setup task を実行します。
+
+```sh
+cd packages/kiapi-relay
+mise run gcp:setup
+```
+
+task が relay に必要な resource を一括で provision し、`kiapi config edit` に貼り付ける
+kiapi YAML を出力します。
+
+- Google Cloud project を選択する
+- private で uniform-access な GCS bucket を作成し（default 名 `{project_id}-kiapi`、
+  default region `asia-northeast1`）、`{prefix}/sessions/` object を 1 日で削除する
+  lifecycle rule を設定する
+- project に Firebase を追加し、Realtime Database instance を作成して（default location
+  `asia-southeast1`）、正しい `database_url` を導出する
+- 認証を設定し、relay identity に bucket の `roles/storage.objectUser` と project の
+  `roles/firebasedatabase.admin` を付与する
+
+既存の bucket と RTDB instance は検出してそのまま残すため、task は再実行しても安全です。
+
+> named RTDB instance は Blaze（従量課金）プランが必要です。作成に失敗した場合は
+> [Firebase console](https://console.firebase.google.com/) で project をアップグレードして
+> task を再実行してください。
+
+### Authentication methods
+
+GCPRelay は
+[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google)
+から credential を取得します。次の OAuth scope を要求し、後ろの 2 つは RTDB REST API の
+必須 scope です。
 
 ```text
 https://www.googleapis.com/auth/cloud-platform
@@ -227,96 +100,48 @@ https://www.googleapis.com/auth/firebase.database
 https://www.googleapis.com/auth/userinfo.email
 ```
 
-後ろの 2 つは RTDB REST API の必須 scope です。
+task は 3 つの方法を提供します。
 
-### Application Default Credentials
+- **Application Default Credentials**（default）— 上記 scope 付きで
+  `gcloud auth application-default login` を実行します。開発時に便利ですが、login した
+  user に relay role が必要です。無人の本番実行に推奨する credential ではありません。
+- **Service Account** — JSON key を作成します（default `~/.config/kiapi-relay/gcp/key.json`、
+  `chmod 600`）。service account key は長期間有効なため、file を commit したり公開したり
+  しないでください。
+- **Impersonation** — ADC user に target service account の
+  `roles/iam.serviceAccountTokenCreator` を付与し、key の保存を避けます。
 
-local test では、必要な scope をすべて指定して ADC に login します。
+`roles/storage.objectUser` は relay が必要とする object read/create/update/delete 権限を
+提供します。bucket lifecycle の管理権限は含まないため、task 自身が lifecycle rule を設定し、
+`manage_bucket_lifecycle: false` を出力します。`roles/firebasedatabase.admin` は RTDB への
+完全な read/write access を付与します。いずれも強い権限のため、組織の least-privilege policy
+に照らして割り当てを確認してください。
 
-```sh
-gcloud auth application-default login \
-  --scopes="https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/firebase.database,https://www.googleapis.com/auth/userinfo.email"
+### kiapi Configuration
 
-gcloud config set project "${PROJECT_ID}"
-```
-
-login した user にも、前述した GCS / Firebase 権限が必要です。
-`gcloud auth application-default login` で作成した ADC は開発時には便利ですが、無人の
-本番実行に推奨する credential ではありません。
-
-[`gcloud auth application-default login`](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login)
-も参照してください。
-
-### Service Account Key
-
-環境上 service account key が必要な場合は、repository 外に key を保存し、kiapi の YAML
-で設定します。
-
-```sh
-gcloud iam service-accounts keys create \
-  "/absolute/path/to/kiapi-relay-key.json" \
-  --iam-account="${RELAY_SERVICE_ACCOUNT}"
-```
-
-```yaml
-kiarina.lib.google:
-  default: relay
-  configs:
-    relay:
-      type: service_account
-      project_id: your-project-id
-      service_account_file: /absolute/path/to/kiapi-relay-key.json
-```
-
-service account key は長期間有効な credential です。key file を commit したり、application
-image にコピーしたり、requester node へ公開したりしないでください。
-
-### Service Account Impersonation
-
-service account impersonation を使うと、長期間有効な target service account key を保存せずに
-済みます。
-
-```yaml
-kiarina.lib.google:
-  default: relay
-  configs:
-    relay:
-      type: default
-      project_id: your-project-id
-      impersonate_service_account: kiapi-relay@your-project-id.iam.gserviceaccount.com
-```
-
-source principal には target relay service account に対する
-`roles/iam.serviceAccountTokenCreator` が必要です。target service account には RTDB /
-GCS 権限が必要です。
-
-## kiapi Configuration
-
-### YAML
-
-`kiapi config edit` を実行し、次の設定を追加します。
+task は次のような block（ADC の例）を出力するので、`kiapi config edit` で追加します。
 
 ```yaml
 kiapi.core.relay:
   default: gcp
 
 kiapi.relay.gcp:
-  database_url: https://your-database.firebaseio.com
-  bucket: your-private-kiapi-relay-bucket
-  prefix: private/kiapi
+  database_url: https://your-instance.asia-southeast1.firebasedatabase.app
+  bucket: your-project-kiapi
+  prefix: kiapi
   google_settings_key: relay
-  lifecycle_age_days: 1
   manage_bucket_lifecycle: false
-  reconnect_delay_s: 1.0
 
 kiarina.lib.google:
   default: relay
   configs:
     relay:
-      type: service_account
+      type: default
       project_id: your-project-id
-      service_account_file: /absolute/path/to/kiapi-relay-key.json
 ```
+
+service account key の場合は `type: service_account` と `service_account_file` を、
+impersonation の場合は `type: default` と `impersonate_service_account` を使用します。
 
 `kiapi service` で実行する場合は、shell だけの environment variable より YAML を使用して
 ください。login や reboot 後も background service が同じ設定を受け取る必要があります。
@@ -327,9 +152,9 @@ foreground process では次のように設定できます。
 
 ```sh
 export KIAPI_RELAY_DEFAULT="gcp"
-export KIAPI_RELAY_GCP_DATABASE_URL="${DATABASE_URL}"
-export KIAPI_RELAY_GCP_BUCKET="${BUCKET}"
-export KIAPI_RELAY_GCP_PREFIX="${PREFIX}"
+export KIAPI_RELAY_GCP_DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
+export KIAPI_RELAY_GCP_BUCKET="your-project-kiapi"
+export KIAPI_RELAY_GCP_PREFIX="kiapi"
 export KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE="false"
 
 kiapi run
@@ -459,6 +284,16 @@ restart や duplicate execution 後にすでに存在する場合、relay は AP
 せず、commit 済み response を通知します。
 
 ## Verification
+
+setup task で選択した値を設定します（`NODE_ID` は kiapi が自動生成します。node の data
+dir の `<data_dir>/node_id`、または `{prefix}/liveness` の一覧から取得してください）。
+
+```sh
+export BUCKET="your-project-kiapi"
+export DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
+export PREFIX="kiapi"
+export NODE_ID="studio-1"
+```
 
 GCS access を確認します。
 
