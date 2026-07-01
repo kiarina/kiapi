@@ -139,10 +139,6 @@ kiapi_relay.impl.gcp:
   #   Bucket used for relay request and response payloads.
   bucket:
   #--------------------------------------------------
-  # Object and RTDB prefix: str
-  #   Shared prefix used below both RTDB and GCS roots.
-  # prefix: kiapi
-  #--------------------------------------------------
   # Google settings key: str | None
   #   Named kiarina.lib.google settings entry used for RTDB and GCS access.
   # google_settings_key: 
@@ -152,7 +148,7 @@ kiapi_relay.impl.gcp:
   # lifecycle_age_days: 1
   #--------------------------------------------------
   # Manage GCS lifecycle: bool
-  #   Install the prefix-scoped delete lifecycle rule at startup.
+  #   Install the session-scoped delete lifecycle rule at startup.
   # manage_bucket_lifecycle: true
   #--------------------------------------------------
   # RTDB reconnect delay seconds: float

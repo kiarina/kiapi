@@ -17,11 +17,6 @@ class GCPRelaySettings(BaseSettings):
         title="GCS bucket",
         description="Bucket used for relay request and response payloads.",
     )
-    prefix: str = Field(
-        default="kiapi",
-        title="Object and RTDB prefix",
-        description="Shared prefix used below both RTDB and GCS roots.",
-    )
     google_settings_key: str | None = Field(
         default=None,
         title="Google settings key",
@@ -41,7 +36,7 @@ class GCPRelaySettings(BaseSettings):
     manage_bucket_lifecycle: bool = Field(
         default=True,
         title="Manage GCS lifecycle",
-        description="Install the prefix-scoped delete lifecycle rule at startup.",
+        description="Install the session-scoped delete lifecycle rule at startup.",
     )
     reconnect_delay_s: float = Field(
         default=1.0,
@@ -77,14 +72,6 @@ class GCPRelaySettings(BaseSettings):
         value = value.rstrip("/")
         if not value.startswith("https://"):
             raise ValueError("database_url must use https")
-        return value
-
-    @field_validator("prefix")
-    @classmethod
-    def normalize_prefix(cls, value: str) -> str:
-        value = value.strip("/")
-        if not value:
-            raise ValueError("prefix must not be empty")
         return value
 
 

@@ -20,6 +20,9 @@ upgrade:
 clean:
 	mise run clean
 #--------------------------------------------------
+setup-relay-gcp:
+	mise -C packages/kiapi-relay run gcp:setup
+#--------------------------------------------------
 test-settings-upload:
 	mise run test-settings:upload .env test_settings.yaml
 test-settings-download:

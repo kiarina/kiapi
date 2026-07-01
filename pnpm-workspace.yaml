@@ -1,0 +1,7 @@
+# firebase-tools pulls in dependencies with native/postinstall build scripts
+# (protobufjs, re2) that we don't need for the GCP relay setup task. Keep their
+# builds disabled so `pnpm install` runs without prompting to approve build
+# scripts or failing with ERR_PNPM_IGNORED_BUILDS in CI.
+allowBuilds:
+  protobufjs: false
+  re2: false

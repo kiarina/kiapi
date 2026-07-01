@@ -1,0 +1,303 @@
+#!/usr/bin/env bash
+#MISE description="Provision GCP resources (GCS bucket, Firebase RTDB, auth) for GCPRelay"
+#USAGE long_about "Interactively provision the Google Cloud resources GCPRelay needs\nand print the kiapi YAML to paste into `kiapi config edit`.\n\nSee packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.md for details."
+
+set -euo pipefail
+
+#--------------------------------------------------------------------------------
+# Helpers
+#--------------------------------------------------------------------------------
+
+info() { printf '%s\n' "$*"; }
+step() { printf '\n\033[1m▶ %s\033[0m\n' "$*"; }
+die() {
+    printf '❌ %s\n' "$*" >&2
+    exit 1
+}
+
+# prompt_default <variable> <prompt> <default>
+prompt_default() {
+    local __var="$1" __prompt="$2" __default="$3" __reply
+    read -r -p "$__prompt [$__default]: " __reply || true
+    printf -v "$__var" '%s' "${__reply:-$__default}"
+}
+
+require_command() {
+    local name="$1" hint="$2"
+    if ! command -v "$name" >/dev/null 2>&1; then
+        die "Required command not found: $name
+   Install it first: $hint"
+    fi
+}
+
+#--------------------------------------------------------------------------------
+# 1. Command and login checks
+#--------------------------------------------------------------------------------
+
+step "Checking required commands"
+
+require_command gcloud "https://cloud.google.com/sdk/docs/install"
+require_command fzf "https://github.com/junegunn/fzf#installation"
+require_command jq "https://jqlang.github.io/jq/download/"
+require_command firebase "run 'pnpm install' at the repository root (firebase-tools is a project-local dev dependency)"
+
+# gcloud must be logged in with a Project Owner-equivalent principal.
+gcloud_account="$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null | head -n1)"
+if [ -z "$gcloud_account" ]; then
+    die "gcloud is not logged in.
+   Run 'gcloud auth login' with a Project Owner-equivalent account first."
+fi
+info "✅ gcloud account: $gcloud_account"
+
+# firebase-tools must be logged in (project listing fails otherwise).
+if ! firebase projects:list >/dev/null 2>&1; then
+    die "firebase-tools is not logged in.
+   Run 'firebase login' first."
+fi
+info "✅ firebase-tools is logged in"
+
+#--------------------------------------------------------------------------------
+# 2. Project selection
+#--------------------------------------------------------------------------------
+
+step "Selecting the Google Cloud project"
+
+project_id="$(
+    gcloud projects list --format="value(projectId)" |
+        fzf --prompt="Project> " --height=40% --border
+)"
+[ -n "$project_id" ] || die "No project selected."
+info "✅ project_id: $project_id"
+
+#--------------------------------------------------------------------------------
+# 3. GCS bucket
+#--------------------------------------------------------------------------------
+
+step "Configuring the GCS bucket"
+
+prompt_default bucket_region "Bucket region" "asia-northeast1"
+prompt_default bucket_name "Bucket name" "${project_id}-kiapi"
+
+# session_prefix is the GCS key prefix the lifecycle rule targets. Relay objects
+# live at the bucket root, so session objects are under "sessions/".
+session_prefix="sessions/"
+
+if gcloud storage buckets describe "gs://${bucket_name}" >/dev/null 2>&1; then
+    info "↷ Bucket gs://${bucket_name} already exists, skipping creation."
+else
+    info "Creating bucket gs://${bucket_name} in ${bucket_region}..."
+    gcloud storage buckets create "gs://${bucket_name}" \
+        --project="$project_id" \
+        --location="$bucket_region" \
+        --uniform-bucket-level-access
+    info "✅ Bucket created."
+fi
+
+# Install the lifecycle rule so relay session objects are deleted automatically.
+# With this managed outside kiapi, the relay identity does not need bucket
+# metadata permissions, so leave manage_bucket_lifecycle: false in the YAML.
+lifecycle_file="$(mktemp)"
+trap 'rm -f "$lifecycle_file"' EXIT
+jq -n --arg prefix "$session_prefix" '
+    {rule: [{action: {type: "Delete"}, condition: {age: 1, matchesPrefix: [$prefix]}}]}
+' >"$lifecycle_file"
+
+info "Applying lifecycle rule (delete ${session_prefix} after 1 day)..."
+gcloud storage buckets update "gs://${bucket_name}" --lifecycle-file="$lifecycle_file"
+info "✅ Lifecycle rule applied."
+
+#--------------------------------------------------------------------------------
+# 4. Firebase Realtime Database
+#--------------------------------------------------------------------------------
+
+step "Configuring the Firebase Realtime Database"
+
+# Adding Firebase to the project is required before an RTDB instance can be
+# created. It is a no-op when Firebase is already enabled.
+if ! firebase projects:list --json 2>/dev/null |
+    jq -e --arg p "$project_id" '.result[]? | select(.projectId == $p)' >/dev/null; then
+    info "Adding Firebase to project ${project_id}..."
+    firebase projects:addfirebase "$project_id" || true
+fi
+
+rtdb_location="$(
+    printf '%s\n' asia-southeast1 us-central1 europe-west1 |
+        fzf --prompt="RTDB location> " --height=40% --border \
+            --header="Select the Realtime Database location (default: asia-southeast1)"
+)"
+rtdb_location="${rtdb_location:-asia-southeast1}"
+info "RTDB location: ${rtdb_location}"
+
+prompt_default rtdb_instance_id "RTDB instance id" "${project_id}-kiapi"
+
+if firebase database:instances:list --project "$project_id" --json 2>/dev/null |
+    jq -e --arg id "$rtdb_instance_id" \
+        '.result[]? | select((.instance // .name) == $id)' >/dev/null; then
+    info "↷ RTDB instance ${rtdb_instance_id} already exists, skipping creation."
+else
+    info "Creating RTDB instance ${rtdb_instance_id}..."
+    if ! firebase database:instances:create "$rtdb_instance_id" \
+        --location "$rtdb_location" \
+        --project "$project_id"; then
+        die "Failed to create the RTDB instance.
+   A named RTDB instance requires the Blaze (pay-as-you-go) billing plan.
+   Upgrade the project at https://console.firebase.google.com/project/${project_id}/usage/details
+   and re-run this task."
+    fi
+    info "✅ RTDB instance created."
+fi
+
+# The database URL domain depends on the location: us-central1 uses
+# firebaseio.com, every other location uses <location>.firebasedatabase.app.
+if [ "$rtdb_location" = "us-central1" ]; then
+    database_url="https://${rtdb_instance_id}.firebaseio.com"
+else
+    database_url="https://${rtdb_instance_id}.${rtdb_location}.firebasedatabase.app"
+fi
+info "✅ database_url: ${database_url}"
+
+#--------------------------------------------------------------------------------
+# 5. Authentication
+#--------------------------------------------------------------------------------
+
+step "Selecting the authentication method"
+
+relay_scopes="https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/firebase.database,https://www.googleapis.com/auth/userinfo.email"
+
+auth_method="$(
+    printf '%s\n' \
+        "Application Default Credentials" \
+        "Service Account" \
+        "Impersonation" |
+        fzf --prompt="Auth method> " --height=40% --border \
+            --header="Select how the relay authenticates (default: Application Default Credentials)"
+)"
+auth_method="${auth_method:-Application Default Credentials}"
+info "Auth method: ${auth_method}"
+
+# grant_relay_roles <member> grants the two roles the relay identity needs:
+# object access on the bucket and full RTDB access on the project.
+grant_relay_roles() {
+    local member="$1"
+    info "Granting roles/storage.objectUser on gs://${bucket_name} to ${member}..."
+    gcloud storage buckets add-iam-policy-binding "gs://${bucket_name}" \
+        --member="$member" \
+        --role="roles/storage.objectUser" >/dev/null
+    info "Granting roles/firebasedatabase.admin on ${project_id} to ${member}..."
+    gcloud projects add-iam-policy-binding "$project_id" \
+        --member="$member" \
+        --role="roles/firebasedatabase.admin" \
+        --condition=None >/dev/null
+    info "✅ Relay roles granted."
+}
+
+# ensure_service_account <sa_email> <sa_name> creates the account if missing.
+ensure_service_account() {
+    local sa_email="$1" sa_name="$2"
+    if gcloud iam service-accounts describe "$sa_email" --project "$project_id" >/dev/null 2>&1; then
+        info "↷ Service account ${sa_email} already exists."
+    else
+        info "Creating service account ${sa_name}..."
+        gcloud iam service-accounts create "$sa_name" \
+            --project="$project_id" \
+            --display-name="kiapi GCP relay" >/dev/null
+        info "✅ Service account created."
+    fi
+}
+
+google_config_type="default"
+google_service_account_file=""
+google_impersonate=""
+
+case "$auth_method" in
+"Application Default Credentials")
+    info "Launching ADC login with the relay scopes..."
+    gcloud auth application-default login --scopes="$relay_scopes"
+    gcloud config set project "$project_id" >/dev/null
+    info "✅ ADC configured. The logged-in user needs the GCS and RTDB roles above."
+    ;;
+"Service Account")
+    prompt_default sa_name "Service account name" "kiapi"
+    prompt_default key_path "Key output path" "$HOME/.config/kiapi-relay/gcp/key.json"
+    sa_email="${sa_name}@${project_id}.iam.gserviceaccount.com"
+
+    ensure_service_account "$sa_email" "$sa_name"
+    grant_relay_roles "serviceAccount:${sa_email}"
+
+    mkdir -p "$(dirname "$key_path")"
+    info "Creating a JSON key at ${key_path}..."
+    gcloud iam service-accounts keys create "$key_path" \
+        --iam-account="$sa_email"
+    chmod 600 "$key_path"
+    info "✅ Key written (chmod 600). Keep it outside version control."
+
+    google_config_type="service_account"
+    google_service_account_file="$key_path"
+    ;;
+"Impersonation")
+    prompt_default sa_name "Target service account name" "kiapi"
+    sa_email="${sa_name}@${project_id}.iam.gserviceaccount.com"
+
+    ensure_service_account "$sa_email" "$sa_name"
+    grant_relay_roles "serviceAccount:${sa_email}"
+
+    info "Granting roles/iam.serviceAccountTokenCreator on ${sa_email} to ${gcloud_account}..."
+    gcloud iam service-accounts add-iam-policy-binding "$sa_email" \
+        --project="$project_id" \
+        --member="user:${gcloud_account}" \
+        --role="roles/iam.serviceAccountTokenCreator" >/dev/null
+    info "✅ Token Creator granted. Ensure ADC is available (gcloud auth application-default login)."
+
+    google_config_type="default"
+    google_impersonate="$sa_email"
+    ;;
+*)
+    die "Unknown auth method: $auth_method"
+    ;;
+esac
+
+#--------------------------------------------------------------------------------
+# 6. Emit kiapi YAML
+#--------------------------------------------------------------------------------
+
+step "kiapi configuration"
+
+google_block="    relay:
+      type: ${google_config_type}
+      project_id: ${project_id}"
+if [ -n "$google_service_account_file" ]; then
+    google_block="${google_block}
+      service_account_file: ${google_service_account_file}"
+fi
+if [ -n "$google_impersonate" ]; then
+    google_block="${google_block}
+      impersonate_service_account: ${google_impersonate}"
+fi
+
+cat <<YAML
+
+Add the following with 'kiapi config edit':
+
+--------------------------------------------------------------------------------
+kiapi.core.relay:
+  default: gcp
+
+kiapi.relay.gcp:
+  database_url: ${database_url}
+  bucket: ${bucket_name}
+  google_settings_key: relay
+  manage_bucket_lifecycle: false
+
+kiarina.lib.google:
+  default: relay
+  configs:
+${google_block}
+--------------------------------------------------------------------------------
+
+Then start the relay:
+
+  kiapi run --relay gcp
+
+YAML
+
+info "✅ GCP setup complete."
