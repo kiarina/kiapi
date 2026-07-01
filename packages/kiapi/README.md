@@ -79,17 +79,16 @@ uv tool install --python 3.12 "kiapi[relay-gcp]"
 ```sh
 export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
 export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
-export KIAPI_RELAY_GCP_PREFIX="private/kiapi"
 
 # Uses Application Default Credentials by default.
 kiapi run --relay gcp
 ```
 
 Each node generates its own `node_id` on first start, persists it in the user
-data directory, and publishes a liveness heartbeat under `{prefix}/liveness`.
+data directory, and publishes a liveness heartbeat under `liveness`.
 A requester picks the most recently seen node and writes
-`{prefix}/sessions/{session_id}/request.json` in GCS, then writes a notification
-to `{prefix}/nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
+`sessions/{session_id}/request.json` in GCS, then writes a notification
+to `nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
 `queued`, `running`, and the terminal result below the requester node's
 `responses` path.
 
@@ -101,7 +100,7 @@ to `{prefix}/nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
   response found after restart is reported without executing the API again.
 - The terminal RTDB response and request deletion use one atomic multi-location
   update.
-- Startup installs a prefix-scoped lifecycle rule that deletes session objects
+- Startup installs a session-scoped lifecycle rule that deletes session objects
   after one day. Set `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE=false` when
   infrastructure manages this rule.
 

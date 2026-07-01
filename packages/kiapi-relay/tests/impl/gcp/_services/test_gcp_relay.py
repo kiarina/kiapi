@@ -33,7 +33,6 @@ def _relay() -> GCPRelay:
     relay.settings = GCPRelaySettings(
         database_url="https://example.firebaseio.com",
         bucket="relay-bucket",
-        prefix="private/kiapi",
     )
     relay._node_id = "worker"
     relay._bucket = _Bucket()
@@ -57,9 +56,7 @@ def test_write_json_response_uses_response_json_only() -> None:
     assert metadata["body"] == {"ok": True}
     assert metadata["content_type"] == "application/json"
     calls = relay._bucket.calls
-    assert [call[1] for call in calls] == [
-        "private/kiapi/sessions/session-1/response.json"
-    ]
+    assert [call[1] for call in calls] == ["sessions/session-1/response.json"]
     assert calls[0][2]["if_generation_match"] == 0
 
 
@@ -82,8 +79,8 @@ def test_write_binary_response_uploads_body_before_metadata(tmp_path: Path) -> N
 
     calls = relay._bucket.calls
     assert [call[1] for call in calls] == [
-        "private/kiapi/sessions/session-1/response.body",
-        "private/kiapi/sessions/session-1/response.json",
+        "sessions/session-1/response.body",
+        "sessions/session-1/response.json",
     ]
     metadata = json.loads(calls[1][2]["value"])
     assert metadata["content_type"] == "image/png"
@@ -120,8 +117,8 @@ def test_rtdb_url_uses_firebase_root_json_path() -> None:
 
     assert relay._rtdb_url("") == "https://example.firebaseio.com/.json"
     assert (
-        relay._rtdb_url("private/kiapi/nodes/worker/requests")
-        == "https://example.firebaseio.com/private/kiapi/nodes/worker/requests.json"
+        relay._rtdb_url("nodes/worker/requests")
+        == "https://example.firebaseio.com/nodes/worker/requests.json"
     )
 
 

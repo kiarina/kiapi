@@ -20,8 +20,8 @@ configuration, and a basic end-to-end verification.
 
 ```text
 requester
-  ├─ GCS:  {prefix}/sessions/{session_id}/request.json
-  └─ RTDB: {prefix}/nodes/{kiapi_node_id}/requests/{session_id}
+  ├─ GCS:  sessions/{session_id}/request.json
+  └─ RTDB: nodes/{kiapi_node_id}/requests/{session_id}
                          │
                          ▼
                     GCPRelay
@@ -41,8 +41,8 @@ it needs.
 Each side generates its own `node_id` on first start and persists it in its user
 data directory, so identities are stable across restarts and never configured by
 hand. The kiapi node publishes a liveness heartbeat at
-`{prefix}/liveness/{node_id}` every `heartbeat_interval_s` and removes it on a
-clean shutdown. A requester reads `{prefix}/liveness`, picks the node with the
+`liveness/{node_id}` every `heartbeat_interval_s` and removes it on a
+clean shutdown. A requester reads `liveness`, picks the node with the
 most recent heartbeat within `liveness_ttl_s`, and addresses its request there.
 When no node has reported within that window, the request fails with
 `no_relay_node`.
@@ -82,7 +82,7 @@ paste with `kiapi config edit`:
 - selects the Google Cloud project;
 - creates a private, uniform-access GCS bucket (default name
   `{project_id}-kiapi`, default region `asia-northeast1`) and installs the
-  lifecycle rule that deletes `{prefix}/sessions/` objects after one day;
+  lifecycle rule that deletes `sessions/` objects after one day;
 - adds Firebase to the project and creates a Realtime Database instance
   (default location `asia-southeast1`), deriving the correct `database_url`;
 - configures authentication and grants the relay identity
@@ -155,9 +155,8 @@ For a service account key, use `type: service_account` with
 `service_account_file`; for impersonation, use `type: default` with
 `impersonate_service_account`.
 
-`prefix` is omitted here because it defaults to empty, placing relay objects at
-the bucket and database roots. Set it only to share one bucket or database
-across multiple isolated relays.
+Relay objects live at the bucket and database roots. Use a dedicated bucket and
+RTDB instance per relay deployment rather than sharing one across environments.
 
 Use YAML rather than shell-only environment variables when kiapi runs through
 `kiapi service`, because the background service must receive the same
@@ -205,7 +204,7 @@ without the configured relay.
 Write this object first:
 
 ```text
-{prefix}/sessions/{session_id}/request.json
+sessions/{session_id}/request.json
 ```
 
 Example:
@@ -256,7 +255,7 @@ For multipart endpoints such as `POST /v1/files`, use `multipart` instead of
 After `request.json` has been uploaded, write:
 
 ```text
-{prefix}/nodes/{kiapi_node_id}/requests/{session_id}
+nodes/{kiapi_node_id}/requests/{session_id}
 ```
 
 ```json
@@ -269,7 +268,7 @@ After `request.json` has been uploaded, write:
 The requester watches:
 
 ```text
-{prefix}/nodes/{requester_node_id}/responses/{session_id}
+nodes/{requester_node_id}/responses/{session_id}
 ```
 
 ### Progress and Result
@@ -287,14 +286,14 @@ Terminal statuses:
 JSON API responses are stored in:
 
 ```text
-{prefix}/sessions/{session_id}/response.json
+sessions/{session_id}/response.json
 ```
 
 Binary API responses are stored in this order:
 
 ```text
-{prefix}/sessions/{session_id}/response.body
-{prefix}/sessions/{session_id}/response.json
+sessions/{session_id}/response.body
+sessions/{session_id}/response.json
 ```
 
 `response.json` is the commit marker and is created with a GCS generation
@@ -304,13 +303,12 @@ relay reports the committed response without dispatching the API request again.
 ## Verification
 
 Set the values the setup task chose (kiapi generates its own `NODE_ID`; read it
-from the node's data dir at `<data_dir>/node_id` or from the `{prefix}/liveness`
+from the node's data dir at `<data_dir>/node_id` or from the `liveness`
 list):
 
 ```sh
 export BUCKET="your-project-kiapi"
 export DATABASE_URL="https://your-instance.asia-southeast1.firebasedatabase.app"
-export PREFIX=""  # empty for the roots, or the prefix you configured
 export NODE_ID="studio-1"
 ```
 
@@ -320,15 +318,14 @@ Verify GCS access:
 gcloud storage ls "gs://${BUCKET}"
 ```
 
-Verify an authenticated RTDB read with an ADC access token
-(`${PREFIX:+${PREFIX}/}` inserts the prefix segment only when one is set):
+Verify an authenticated RTDB read with an ADC access token:
 
 ```sh
 ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
 
 curl --fail --silent --show-error \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  "${DATABASE_URL}/${PREFIX:+${PREFIX}/}nodes/${NODE_ID}/requests.json"
+  "${DATABASE_URL}/nodes/${NODE_ID}/requests.json"
 ```
 
 Then start kiapi and submit one small CPU-safe or already-activated API request
@@ -384,7 +381,7 @@ additionally protects the `response.json` commit marker from duplicate creation.
 
 ## Security Notes
 
-- Use a dedicated private bucket and a dedicated RTDB prefix.
+- Use a dedicated private bucket and a dedicated RTDB instance.
 - Use separate requester and relay identities.
 - Prefer service account impersonation or workload identity over key files.
 - Never commit service account keys, API auth tokens, prompts, or generated
@@ -394,7 +391,7 @@ additionally protects the `response.json` commit marker from duplicate creation.
 - Treat request headers as secrets because they can contain the kiapi API auth
   token.
 - Use a random, unguessable `session_id`.
-- Avoid placing secrets in the `prefix` or GCS object names.
+- Avoid placing secrets in GCS object names.
 
 ## Settings Reference
 
@@ -403,12 +400,11 @@ additionally protects the `response.json` commit marker from duplicate creation.
 | `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | Relay specifier; use `gcp` to enable GCPRelay. |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | Exact HTTPS RTDB instance URL. |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | Private GCS bucket name without `gs://`. |
-| `prefix` | `KIAPI_RELAY_GCP_PREFIX` | empty | Shared RTDB/GCS prefix; empty uses the roots directly. |
 | `google_settings_key` | `KIAPI_RELAY_GCP_GOOGLE_SETTINGS_KEY` | default Google config | Named `kiarina.lib.google` credential configuration. |
 | `lifecycle_age_days` | `KIAPI_RELAY_GCP_LIFECYCLE_AGE_DAYS` | `1` | Age used by the managed GCS delete rule. |
 | `manage_bucket_lifecycle` | `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE` | `true` | Whether GCPRelay updates the bucket lifecycle at startup. |
 | `reconnect_delay_s` | `KIAPI_RELAY_GCP_RECONNECT_DELAY_S` | `1.0` | Delay before reconnecting the RTDB SSE watch. |
-| `heartbeat_interval_s` | `KIAPI_RELAY_GCP_HEARTBEAT_INTERVAL_S` | `300.0` | How often the kiapi node refreshes its liveness entry under `{prefix}/liveness/{node_id}`. |
+| `heartbeat_interval_s` | `KIAPI_RELAY_GCP_HEARTBEAT_INTERVAL_S` | `300.0` | How often the kiapi node refreshes its liveness entry under `liveness/{node_id}`. |
 | `liveness_ttl_s` | `KIAPI_RELAY_GCP_LIVENESS_TTL_S` | `1800.0` | A node is selectable only when its last heartbeat is newer than this; clients pick the most recent one within it. |
 
 ## Official References
