@@ -42,11 +42,11 @@ dependencies = [
     # LTX-2 installs mlx-video after uv sync. Its librosa dependency pulls numba,
     # whose current Python 3.12 wheels do not support numpy 2.5 yet.
     "numpy<2.5",
-    "platformdirs",
     "pillow",
     "psutil", # process RSS measurement (framework-agnostic fallback)
     "httpx", # web search capability: async HTTP client for the SearXNG backend
     "kiarina-utils-common>=2.2.0",
+    "kiarina-utils-app>=2.3.0", # user directory resolution (replaces core/app internals)
     # --- relay (shared request/response transport, split into its own package) ---
     "kiapi-relay",
     # --- embedding capability (mlx-embeddings) ---

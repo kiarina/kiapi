@@ -7,7 +7,7 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 
 from kiapi.api import build_openapi
-from kiapi.core.app import AppContext, get_user_data_dir
+from kiapi.core.app import AppContext, configure_app, get_user_data_dir
 from kiapi.core.capability import capability_spec_registry
 from kiapi.core.logging import setup_logger
 from kiapi.core.model import model_registry
@@ -39,6 +39,10 @@ from .video.ltx2.router import router as ltx2_router
 from .web.router import router as web_router
 
 logger = logging.getLogger(__name__)
+
+# Set the application identity before any user-directory lookup runs (e.g. the
+# lifespan resolving the data dir). Idempotent, so it is safe alongside the CLI.
+configure_app()
 
 COMMON_OPENAPI_PATHS = (
     "/health",

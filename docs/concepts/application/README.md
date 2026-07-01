@@ -60,17 +60,18 @@ Unactivated warmup targets are skipped with a warning, without stopping startup.
 
 ## Settings and User Directories
 
-`core/app` owns the application-wide `AppContext`. User directories resolve in
-this order: explicit kiapi setting, XDG environment variable, then
-`platformdirs`.
+`core/app` owns the application-wide `AppContext`. User-directory resolution is
+delegated to the shared `kiarina-utils-app` package, and resolves in this order:
+explicit setting, XDG environment variable, then `platformdirs`.
 
-| Purpose | Setting | Environment fallback | platformdirs |
+| Purpose | Setting (`kiapi.core.app`) | Environment fallback | platformdirs |
 |---|---|---|---|
-| cache | `KIAPI_USER_CACHE_DIR` | `XDG_CACHE_HOME/kiapi` | `user_cache_dir` |
-| config | `KIAPI_USER_CONFIG_DIR` | `XDG_CONFIG_HOME/kiapi` | `user_config_dir` |
-| data | `KIAPI_USER_DATA_DIR` | `XDG_DATA_HOME/kiapi` | `user_data_dir` |
+| cache | `user_cache_dir` | `XDG_CACHE_HOME/kiapi` | `user_cache_dir` |
+| config | `user_config_dir` | `XDG_CONFIG_HOME/kiapi` | `user_config_dir` |
+| data | `user_data_dir` | `XDG_DATA_HOME/kiapi` | `user_data_dir` |
 
-Configured paths expand `~` for the current user.
+Settings are configured under the `kiapi.core.app` section of the user
+`settings.yaml`. Configured paths expand `~` for the current user.
 
 ## Related Concepts
 

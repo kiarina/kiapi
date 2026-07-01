@@ -138,7 +138,7 @@ kiapi mainly writes to these local paths at runtime.
 | Files API uploads, generated artifacts, and URL/data URL inputs | `KIAPI_FILES_ROOT` | `/tmp/kiapi/files` | Storage referenced by `file_id`. The default may disappear after OS reboot or tmp cleanup. Use `~/.kiapi/files` or external storage for long-term retention. |
 | Temporary working directories during request processing | `KIAPI_TMP_ROOT` | `/tmp/kiapi/work` | Used for chat/embedding input expansion, generation intermediates, LoRA training work, and similar tasks. |
 | Web backend subprocess logs | `KIAPI_WEB_BACKEND_LOG_DIR` | `/tmp/kiapi/logs/web` | stdout/stderr for SearXNG / Crawl4AI Docker subprocesses. |
-| ACE-Step dedicated venv / project / checkpoints | `KIAPI_ACESTEP_PYTHON_PATH`, `KIAPI_ACESTEP_PROJECT_ROOT`, `KIAPI_ACESTEP_CHECKPOINT_DIR` | `KIAPI_USER_DATA_DIR` or `acestep/` under the platformdirs user data dir | When `python_path`, `project_root`, and `checkpoint_dir` are omitted, kiapi places the ACE-Step venv and checkpoints under a persistent ACE-Step directory. |
+| ACE-Step dedicated venv / project / checkpoints | `KIAPI_ACESTEP_PYTHON_PATH`, `KIAPI_ACESTEP_PROJECT_ROOT`, `KIAPI_ACESTEP_CHECKPOINT_DIR` | `acestep/` under the user data dir | When `python_path`, `project_root`, and `checkpoint_dir` are omitted, kiapi places the ACE-Step venv and checkpoints under a persistent ACE-Step directory. |
 
 Other model weights and library caches are managed by Hugging Face, mflux,
 Docker, or each library/tool. kiapi generally does not move them into its own

@@ -1,5 +1,6 @@
 import click
 
+from kiapi.core.app import configure_app
 from kiapi.core.config import UserConfigError, load_user_settings
 
 from .activate.cli import activate
@@ -14,6 +15,7 @@ from .status.cli import status
 @click.group()
 def main() -> None:
     """kiapi command line interface."""
+    configure_app()
     try:
         load_user_settings()
     except UserConfigError as exc:

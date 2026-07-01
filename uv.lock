@@ -659,6 +659,7 @@ dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiarina-utils-app", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mflux", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mlx-audiocraft", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -666,7 +667,6 @@ dependencies = [
     { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "numpy", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pillow", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "platformdirs", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "psutil", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -692,6 +692,7 @@ requires-dist = [
     { name = "httpx" },
     { name = "kiapi-relay", editable = "packages/kiapi-relay" },
     { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'relay-gcp'", editable = "packages/kiapi-relay" },
+    { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", specifier = ">=0.18.0" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
@@ -699,7 +700,6 @@ requires-dist = [
     { name = "mlx-vlm", specifier = "==0.6.3" },
     { name = "numpy", specifier = "<2.5" },
     { name = "pillow" },
-    { name = "platformdirs" },
     { name = "psutil" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
@@ -722,7 +722,7 @@ dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "platformdirs", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "kiarina-utils-app", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -741,7 +741,7 @@ requires-dist = [
     { name = "fastapi" },
     { name = "kiapi-relay", editable = "packages/kiapi-relay" },
     { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'gcp'", editable = "packages/kiapi-relay" },
-    { name = "platformdirs" },
+    { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings" },
     { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
@@ -796,6 +796,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2e/67/1dd32bb1e6dc096f68e17208410dc2e0ccbfaa037309fdef27c97dc8f6a0/kiarina_lib_google-2.2.1.tar.gz", hash = "sha256:2cda82833989536b60d3f4d8e44381515c2b4cd164dd21c5341f538a77f47ad6", size = 12541, upload-time = "2026-06-24T16:19:29.584Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/06/92/f202190656647c49d5ea340f267f0a2dc586c2b84990c447540f42079065/kiarina_lib_google-2.2.1-py3-none-any.whl", hash = "sha256:8c31f8563c7d20d55716c40d229e10926b67a14167447bab1b3494e7c65bb698", size = 10862, upload-time = "2026-06-24T16:19:28.025Z" },
+]
+
+[[package]]
+name = "kiarina-utils-app"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "filelock", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "platformdirs", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cf/f7/65bc1ddb03b9b2aa418360aa2ee22cecce49c4a4dba84123ca7974a740ef/kiarina_utils_app-2.3.0.tar.gz", hash = "sha256:f67ed946bf8b9ec474f3820a1abd74219a33f787bad297c48c7b93ca9831516c", size = 9876, upload-time = "2026-07-01T00:04:59.531Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/50/39dfa6a7e272ddd4b8c443e4076e07d0e3a7b2ffe7cea69c74c4f81fae82/kiarina_utils_app-2.3.0-py3-none-any.whl", hash = "sha256:fbf0d8d54b62842d0b5de20c200eee114acba5e393461a2ace9436ea907da014", size = 8500, upload-time = "2026-07-01T00:04:52.409Z" },
 ]
 
 [[package]]
