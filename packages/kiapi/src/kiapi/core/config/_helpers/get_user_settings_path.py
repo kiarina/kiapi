@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from kiapi.core.app import get_user_config_dir
+from kiarina.utils.app import user_directory
 
 
 def get_user_settings_path() -> Path:
-    return Path(get_user_config_dir()).expanduser() / "settings.yaml"
+    return user_directory.get_user_config_dir() / "settings.yaml"

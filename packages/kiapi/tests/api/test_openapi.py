@@ -1,5 +1,6 @@
 from typing import Any, cast
 
+import pytest
 from fastapi.testclient import TestClient
 
 from kiapi.api import build_openapi
@@ -7,9 +8,17 @@ from kiapi.api.app import app
 from kiapi.cli import register_all_capabilities
 from kiapi.core.capability import capability_spec_registry
 
-register_all_capabilities()
 
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def _register_capabilities(configure_app: None) -> None:
+    # Capability registration resolves user directories, so depend on
+    # `configure_app` explicitly to run after the app identity is set.
+    register_all_capabilities()
+
+
+@pytest.fixture
+def client(_register_capabilities: None) -> TestClient:
+    return TestClient(app)
 
 
 def test_root_openapi_documents_common_paths_and_capability_links() -> None:
@@ -232,7 +241,7 @@ def test_zimage_openapi_is_limited_to_zimage_paths() -> None:
     assert "/v1/image/qwen/generate" not in schema["paths"]
 
 
-def test_capability_model_list_uses_public_model_schema() -> None:
+def test_capability_model_list_uses_public_model_schema(client: TestClient) -> None:
     response = client.get("/v1/image/zimage/models")
 
     assert response.status_code == 200
@@ -277,7 +286,9 @@ def test_capability_openapi_includes_detailed_markdown_description() -> None:
     assert "turbo" in description
 
 
-def test_docs_endpoints_render_swagger_ui_for_selected_openapi() -> None:
+def test_docs_endpoints_render_swagger_ui_for_selected_openapi(
+    client: TestClient,
+) -> None:
     routes = [
         ("/docs", "/openapi.json", "kiapi Common API"),
         ("/v1/chat/docs", "/v1/chat/openapi.json", "kiapi Chat API"),
@@ -305,7 +316,9 @@ def test_docs_endpoints_are_not_in_openapi_documents() -> None:
     assert "/v1/image/zimage/openapi.json" not in zimage_schema["paths"]
 
 
-def test_redoc_endpoints_render_redoc_for_selected_openapi() -> None:
+def test_redoc_endpoints_render_redoc_for_selected_openapi(
+    client: TestClient,
+) -> None:
     routes = [
         ("/redoc", "/openapi.json", "kiapi Common API"),
         ("/v1/chat/redoc", "/v1/chat/openapi.json", "kiapi Chat API"),

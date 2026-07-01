@@ -34,7 +34,7 @@ kiapi.core.logging:
 #--------------------------------------------------------------------------------
 # Application settings
 #--------------------------------------------------------------------------------
-kiapi.core.app:
+kiarina.utils.app:
   # User cache directory: str | None
   #   Directory where the application may store user-specific cache files.
   #   When unset, XDG_CACHE_HOME is used when available, otherwise the platform default for the running user is used.

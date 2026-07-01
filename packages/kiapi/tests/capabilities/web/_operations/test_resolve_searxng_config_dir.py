@@ -1,9 +1,10 @@
 from pathlib import Path
 
+from kiarina.utils.app import settings_manager as app_settings_manager
+
 from kiapi.capabilities.web._operations.resolve_searxng_config_dir import (
     resolve_searxng_config_dir,
 )
-from kiapi.core.app import settings_manager as app_settings_manager
 
 
 def test_resolve_searxng_config_dir_copies_bundled_settings(

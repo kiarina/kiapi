@@ -1,16 +1,16 @@
 import click
 import uvicorn
+from kiarina.utils.app import configure
 
 from kiapi_relay import settings_manager as relay_settings_manager
 
 from ..api import settings_manager
-from ..core.app import configure_app
 
 
 @click.group()
 def main() -> None:
     """kiapi-proxy command line interface."""
-    configure_app()
+    configure("kiapi-proxy", "kiarina")
 
 
 @main.command()

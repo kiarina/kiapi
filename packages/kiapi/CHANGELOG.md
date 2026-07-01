@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `GET /health` now reports the status of the relay started with the server in a `relay` field (`name`, `running`, `failed`), or `null` when no relay is configured.
 - Added a `request` method to the `Relay` protocol and implemented it on `LocalRelay` and `GCPRelay`, promoting the relay request client from the verification scripts into the relay packages. Responses are returned as `RelayResponse`, with binary bodies materialized to a temporary file the caller owns.
-- The server now resolves a persistent relay `node_id` from its user data directory and injects it into the relay, and acquires a single-instance lock under that directory at startup so a second `kiapi` cannot share the same node identity. Added a `request_poll_interval_s` setting for GCP request polling.
+- The server now resolves a persistent relay `node_id` from its user data directory and injects it into the relay, and acquires a single-instance lock (via `kiarina-utils-app`, scoped to the user cache directory) at startup so a second `kiapi` cannot share the same node identity. Added a `request_poll_interval_s` setting for GCP request polling.
 
 ### Changed
 
@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reworked the relay verification scripts to issue requests through `Relay.request` via the relay registry factories, removing the duplicated transport client in `scripts/relay/_client.py`.
 - Converted the repository into a uv workspace and moved the `kiapi` package to `packages/kiapi/` with a `src/` layout. Packaging and lint/test paths are now per-package.
 - Extracted the relay subsystem into a separate `kiapi-relay` package. `kiapi.core.relay` is now `kiapi_relay`, and `kiapi.relay.{local,gcp}` are now `kiapi_relay.{local,gcp}`. The `relay-gcp` extra now pulls `kiapi-relay[gcp]`.
-- `kiapi.core.app` now fully delegates its user-directory resolution to the shared `kiarina-utils-app` package, removing the private `AppSettings`/user-directory copy and the direct `platformdirs` dependency. The app identity is set via `core.app.configure_app()` from the CLI (`kiapi ...`) and the ASGI app. `core.app` keeps `AppSettings`, `settings_manager`, `get_user_{cache,config,data}_dir`, and the `AppContext` schema; the directory getters now return `pathlib.Path`. The `settings.yaml` `kiapi.core.app` key is unchanged, but the user-directory override environment variables move from `KIAPI_` to `KIARINA_UTILS_APP_`.
+- User-directory resolution and single-instance locking are delegated to the shared `kiarina-utils-app` package and used directly (`kiarina.utils.app`) rather than through a `core.app` re-export layer, removing the private `AppSettings`/user-directory copy and the direct `platformdirs` dependency. `kiapi.core.app` now provides only the `AppContext` schema. The app identity is set by calling `kiarina.utils.app.configure("kiapi", "kiarina")` at the CLI entry (`kiapi ...`) and the ASGI factory used by hot reload. The directory getters return `pathlib.Path`. The user `settings.yaml` section for these settings moves from `kiapi.core.app` to `kiarina.utils.app`, and the override environment variables move from `KIAPI_` to `KIARINA_UTILS_APP_`.
 
 ## [0.2.0] - 2026-06-26
 

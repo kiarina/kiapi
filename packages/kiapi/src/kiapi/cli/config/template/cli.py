@@ -4,7 +4,7 @@ from pydantic_settings_manager import generate_user_configs_yaml
 _SETTINGS_IMPORT_PATHS = [
     "kiapi.api",
     "kiapi.core.logging",
-    "kiapi.core.app",
+    "kiarina.utils.app",
     "kiapi.core.workdir",
     "kiapi.core.file",
     "kiapi.core.memory",
