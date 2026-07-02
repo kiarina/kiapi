@@ -48,6 +48,61 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -d '{"messages":[{"role":"user","content":"hello"}],"stream":true}'
 ```
 
+## Command line interface
+
+`kiapi-proxy` は `kiapi` と同じコマンド構成を持ち、設定ファイルとサービス登録を
+独自に備えています。これにより proxy を kiapi とは独立して管理できます。
+
+```bash
+kiapi-proxy run       # proxy サーバーを起動
+kiapi-proxy check     # サーバーを起動せずに kiapi への relay 接続を確認
+kiapi-proxy config    # ユーザー設定ファイルを管理
+kiapi-proxy service   # launchd ユーザーサービスを管理(macOS)
+```
+
+### Settings file
+
+proxy は kiapi とは別に、独自のユーザー設定ファイルを持ちます。
+
+```bash
+kiapi-proxy config init      # 未作成なら作成する
+kiapi-proxy config show      # 現在のファイルを表示する
+kiapi-proxy config edit      # $EDITOR / $VISUAL で開く
+kiapi-proxy config template  # コメント付きの完全なテンプレートを表示する
+```
+
+ファイルはユーザー設定ディレクトリ(例:
+`~/.config/kiapi-proxy/settings.yaml`)に置かれ、proxy 設定(`kiapi_proxy.api`)と
+relay 設定(`kiapi_relay`)を保持します。ここで設定した値は各コマンド実行時に
+読み込まれます。環境変数が優先されます。
+
+### Health check
+
+proxy サーバーを起動せずに、relay 経由で稼働中の kiapi ノードへリクエストが
+届くかを確認します。
+
+```bash
+kiapi-proxy check --relay local
+kiapi-proxy check --relay gcp
+```
+
+`check` は relay 経由でリクエストを 1 回(既定は `/health`)送り、応答を表示します。
+`--path` で別のエンドポイントを、`--timeout` で待ち時間の上限を指定できます。
+`--relay` を省略すると、設定済みの proxy/relay の既定値にフォールバックします。
+
+### Service (macOS)
+
+`kiapi-proxy run` を実行する launchd ユーザーエージェント
+(`io.github.kiarina.kiapi-proxy`)を、kiapi のサービスとは独立して登録します。
+
+```bash
+kiapi-proxy service install
+kiapi-proxy service start
+kiapi-proxy service status    # relay 経由の /health エンドツーエンド確認を含む
+kiapi-proxy service stop
+kiapi-proxy service uninstall
+```
+
 ## Configuration
 
 | 環境変数 | デフォルト | 説明 |

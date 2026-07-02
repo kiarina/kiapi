@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Expanded the `kiapi-proxy` CLI to mirror the `kiapi` command layout, so the
+  proxy is managed independently from kiapi:
+  - `kiapi-proxy config` (`init`, `show`, `edit`, `template`) manages a user
+    settings file separate from kiapi's, loaded on every command. It holds proxy
+    settings (`kiapi_proxy.api`) and relay settings (`kiapi_relay`).
+  - `kiapi-proxy check --relay local|gcp` sends a single request (default
+    `/health`, overridable with `--path`) through the relay to a live kiapi node
+    and prints the response, without starting the proxy server, so relay
+    connectivity can be verified as a health check.
+  - `kiapi-proxy service` (`install`, `start`, `status`, `stop`, `uninstall`)
+    manages a launchd user agent (`io.github.kiarina.kiapi-proxy`) that runs
+    `kiapi-proxy run`, independent from the kiapi service.
 - At startup the proxy resolves a persistent relay `node_id` from its user data
   directory (app name `kiapi-proxy`) and injects it into the relay, and acquires
   a single-instance lock so a second `kiapi-proxy` cannot share the same node

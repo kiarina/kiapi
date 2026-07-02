@@ -49,6 +49,61 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -d '{"messages":[{"role":"user","content":"hello"}],"stream":true}'
 ```
 
+## Command line interface
+
+`kiapi-proxy` mirrors the `kiapi` command layout, with its own settings file and
+service registration so the proxy is managed independently from kiapi.
+
+```bash
+kiapi-proxy run       # start the proxy server
+kiapi-proxy check     # check the relay link to kiapi without starting the server
+kiapi-proxy config    # manage the user settings file
+kiapi-proxy service   # manage the launchd user service (macOS)
+```
+
+### Settings file
+
+The proxy keeps its own user settings file, separate from kiapi's:
+
+```bash
+kiapi-proxy config init      # create it if it does not exist
+kiapi-proxy config show      # print the current file
+kiapi-proxy config edit      # open it in $EDITOR / $VISUAL
+kiapi-proxy config template  # print the full commented template
+```
+
+The file lives in the user config directory (for example
+`~/.config/kiapi-proxy/settings.yaml`) and holds the proxy settings
+(`kiapi_proxy.api`) and the relay settings (`kiapi_relay`). Values set here are
+loaded on every command; environment variables still take precedence.
+
+### Health check
+
+Confirm that requests can travel over the relay to a live kiapi node without
+starting the proxy server:
+
+```bash
+kiapi-proxy check --relay local
+kiapi-proxy check --relay gcp
+```
+
+`check` sends a single request (default `/health`) through the relay and prints
+the response. Use `--path` to probe another endpoint and `--timeout` to bound the
+wait. Without `--relay` it falls back to the configured proxy/relay default.
+
+### Service (macOS)
+
+Register a launchd user agent (`io.github.kiarina.kiapi-proxy`) that runs
+`kiapi-proxy run`, independent from the kiapi service:
+
+```bash
+kiapi-proxy service install
+kiapi-proxy service start
+kiapi-proxy service status    # includes an end-to-end /health probe through the relay
+kiapi-proxy service stop
+kiapi-proxy service uninstall
+```
+
 ## Configuration
 
 | Environment variable | Default | Description |
