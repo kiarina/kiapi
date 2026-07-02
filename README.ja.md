@@ -157,14 +157,34 @@ kiapi service uninstall  # 削除
 **pre-requisite:**
 - GCP プロジェクトを作成し、課金を有効化する
 - Firebase プロジェクトを作成し、Blaze Plan にアップグレードする
-- `gcloud` CLI をインストール
-- `firebase-tools` CLI をインストール
+- [gcloud](https://cloud.google.com/sdk/docs/install) をインストール
+- [firebase-tools](https://firebase.google.com/docs/cli) をインストール
+- [mise](https://mise.jdx.dev/getting-started.html) をインストール
 
 **GCP 環境のセットアップ:**
+対話形式で、GCS バケット、Realtime Database、認証の設定を行います。
 ```sh
+gcloud login
+firebase login
 make setup-relay-gcp
-# 対話式で GCS バケット、Realtime Database、認証の設定を行います
-# 生成された YAML テキストは kiapi, kiapi-proxy の設定ファイルに貼り付けます
+```
+生成された YAML テキストは kiapi, kiapi-proxy の設定ファイルに貼り付けます。
+```yaml
+kiapi_relay:
+  default: gcp
+
+kiapi_relay.impl.gcp:
+  database_url: {database_url}
+  bucket: {bucket}
+  google_settings_key: relay
+  manage_bucket_lifecycle: false
+
+kiarina.lib.google:
+  default: relay
+  configs:
+    relay:
+      type: default
+      project_id: {project_id}
 ```
 
 **kiapi のセットアップ:**
@@ -182,6 +202,8 @@ kiapi run --relay gcp  # GCP relay 機能を有効にして起動
 **kiapi-proxy のセットアップ:**
 kiapi-proxy は、kiapi とは別のマシンや OS でも動作します。
 ```sh
+gcloud login
+
 python3.12 -m pip install --upgrade 'kiapi-proxy[relay-gcp]'
 uv tool install --python 3.12 'kiapi-proxy[relay-gcp]'
 
