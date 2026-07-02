@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **kiapi-relay**: The `gcp:setup` task no longer passes `--scopes` to
+  `gcloud auth application-default login`. The default ADC scopes already
+  include `cloud-platform`, which covers the GCS and RTDB access the relay
+  needs, so the extra scopes were unnecessary.
+- **kiapi-relay**: The `gcp:setup` Impersonation method now runs
+  `gcloud auth application-default login` itself instead of only reminding the
+  user to, since ADC is the base credential the impersonation chain mints SA
+  tokens from, and grants `roles/iam.serviceAccountTokenCreator` to the actual
+  ADC principal rather than the active gcloud CLI account.
+
 ### Fixed
 
 - **kiapi**: The hot-reload worker subprocess (`kiapi run --debug`) now loads the user settings file in the ASGI factory, so relays configured only in user settings (for example the GCP relay's `database_url`/`bucket`) start correctly. Previously `kiapi run --relay gcp --debug` failed at startup with "required field is not set" because the reload subprocess never ran `load_user_settings()`.

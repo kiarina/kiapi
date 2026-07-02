@@ -107,26 +107,19 @@ task is safe to re-run.
 
 GCPRelay obtains credentials through
 [`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
-It requests these OAuth scopes; the last two are required by the RTDB REST API:
-
-```text
-https://www.googleapis.com/auth/cloud-platform
-https://www.googleapis.com/auth/firebase.database
-https://www.googleapis.com/auth/userinfo.email
-```
 
 The task offers three methods:
 
 - **Application Default Credentials** (default) — runs
-  `gcloud auth application-default login` with the scopes above. Convenient for
-  development; the logged-in user needs the relay roles. It is not the preferred
-  unattended production credential.
+  `gcloud auth application-default login`. Convenient for development; the
+  logged-in user needs the relay roles. It is not the preferred unattended
+  production credential.
 - **Service Account** — creates a JSON key (default
   `~/.config/kiapi-relay/gcp/key.json`, `chmod 600`). Service account keys are
   long-lived; never commit or share the file.
-- **Impersonation** — grants your ADC user
-  `roles/iam.serviceAccountTokenCreator` on the target service account, avoiding
-  a stored key.
+- **Impersonation** — runs `gcloud auth application-default login` and grants
+  that user `roles/iam.serviceAccountTokenCreator` on the target service
+  account, so it mints short-lived SA tokens without a stored key.
 
 `roles/storage.objectUser` supplies the object read/create/update/delete
 permissions the relay needs; it does not grant bucket lifecycle administration,
@@ -348,8 +341,6 @@ from the requester. Confirm:
 
 ### RTDB Returns 401 or 403
 
-- Confirm the credential includes the `firebase.database` and
-  `userinfo.email` scopes.
 - Confirm the service account or user has access to the Firebase project.
 - Confirm `database_url` is the exact URL of the intended RTDB instance.
 - Check RTDB Security Rules and IAM assignments.

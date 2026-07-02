@@ -63,3 +63,5 @@ verify-kiapi-relay:
 	mise run verify --kiapi-relay
 verify-kiapi-proxy:
 	mise run verify --kiapi-proxy
+verify-kiapi-proxy-fastest:
+	mise run verify --kiapi-proxy --family embedding

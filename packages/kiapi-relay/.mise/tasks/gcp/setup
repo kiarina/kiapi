@@ -171,8 +171,6 @@ info "✅ database_url: ${database_url}"
 
 step "Selecting the authentication method"
 
-relay_scopes="https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/firebase.database,https://www.googleapis.com/auth/userinfo.email"
-
 auth_method="$(
     printf '%s\n' \
         "Application Default Credentials" \
@@ -220,8 +218,8 @@ google_impersonate=""
 
 case "$auth_method" in
 "Application Default Credentials")
-    info "Launching ADC login with the relay scopes..."
-    gcloud auth application-default login --scopes="$relay_scopes"
+    info "Launching ADC login..."
+    gcloud auth application-default login
     gcloud config set project "$project_id" >/dev/null
     info "✅ ADC configured. The logged-in user needs the GCS and RTDB roles above."
     ;;
@@ -250,12 +248,33 @@ case "$auth_method" in
     ensure_service_account "$sa_email" "$sa_name"
     grant_relay_roles "serviceAccount:${sa_email}"
 
-    info "Granting roles/iam.serviceAccountTokenCreator on ${sa_email} to ${gcloud_account}..."
+    # Impersonation uses ADC as the base credential to mint tokens for the SA,
+    # so ADC must be present. The target scopes are applied when the impersonated
+    # token is generated, so the base login needs no extra scopes.
+    info "Launching ADC login (base credential for impersonation)..."
+    gcloud auth application-default login
+    gcloud config set project "$project_id" >/dev/null
+
+    # Grant Token Creator to the ADC principal itself, not the gcloud CLI
+    # account: impersonation mints tokens from ADC, and the ADC and gcloud
+    # credential stores can hold different accounts. The default ADC login
+    # includes the email scope, so userinfo returns the principal.
+    require_command curl "https://curl.se/download.html"
+    adc_account="$(
+        curl -sf "https://www.googleapis.com/oauth2/v3/userinfo" \
+            -H "Authorization: Bearer $(gcloud auth application-default print-access-token)" |
+            jq -r '.email // empty'
+    )" || true
+    [ -n "$adc_account" ] || die "Could not determine the ADC account email.
+   Ensure 'gcloud auth application-default login' completed with the email scope."
+    info "✅ ADC account: ${adc_account}"
+
+    info "Granting roles/iam.serviceAccountTokenCreator on ${sa_email} to ${adc_account}..."
     gcloud iam service-accounts add-iam-policy-binding "$sa_email" \
         --project="$project_id" \
-        --member="user:${gcloud_account}" \
+        --member="user:${adc_account}" \
         --role="roles/iam.serviceAccountTokenCreator" >/dev/null
-    info "✅ Token Creator granted. Ensure ADC is available (gcloud auth application-default login)."
+    info "✅ Token Creator granted."
 
     google_config_type="default"
     google_impersonate="$sa_email"

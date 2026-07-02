@@ -163,10 +163,16 @@ kiapi service uninstall  # 削除
 
 **GCP 環境のセットアップ:**
 対話形式で、GCS バケット、Realtime Database、認証の設定を行います。
+認証は、下記の3つの方法から選択できます。
+- ADC
+- Service Account Key
+- ADC + Impersonation
+今回は ADC を使った方法を例にします。
 ```sh
-gcloud login
-firebase login
-make setup-relay-gcp
+gcloud login  # GCS bucket, 権限設定のために gcloud にログイン
+firebase login  # RTDB の作成のために firebase にログイン
+
+make setup-relay-gcp  # 対話形式で GCP 環境をセットアップ
 ```
 生成された YAML テキストは kiapi, kiapi-proxy の設定ファイルに貼り付けます。
 ```yaml
@@ -202,7 +208,7 @@ kiapi run --relay gcp  # GCP relay 機能を有効にして起動
 **kiapi-proxy のセットアップ:**
 kiapi-proxy は、kiapi とは別のマシンや OS でも動作します。
 ```sh
-gcloud login
+gcloud auth application-default login  # kiapi-proxy が GCP にアクセスするための認証情報を作成
 
 python3.12 -m pip install --upgrade 'kiapi-proxy[relay-gcp]'
 uv tool install --python 3.12 'kiapi-proxy[relay-gcp]'

@@ -101,25 +101,19 @@ kiapi YAML を出力します。
 
 GCPRelay は
 [`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google)
-から credential を取得します。次の OAuth scope を要求し、後ろの 2 つは RTDB REST API の
-必須 scope です。
-
-```text
-https://www.googleapis.com/auth/cloud-platform
-https://www.googleapis.com/auth/firebase.database
-https://www.googleapis.com/auth/userinfo.email
-```
+から credential を取得します。
 
 task は 3 つの方法を提供します。
 
-- **Application Default Credentials**（default）— 上記 scope 付きで
+- **Application Default Credentials**（default）—
   `gcloud auth application-default login` を実行します。開発時に便利ですが、login した
   user に relay role が必要です。無人の本番実行に推奨する credential ではありません。
 - **Service Account** — JSON key を作成します（default `~/.config/kiapi-relay/gcp/key.json`、
   `chmod 600`）。service account key は長期間有効なため、file を commit したり公開したり
   しないでください。
-- **Impersonation** — ADC user に target service account の
-  `roles/iam.serviceAccountTokenCreator` を付与し、key の保存を避けます。
+- **Impersonation** — `gcloud auth application-default login` を実行し、その user に
+  target service account の `roles/iam.serviceAccountTokenCreator` を付与します。key を
+  保存せずに短期の SA token を発行します。
 
 `roles/storage.objectUser` は relay が必要とする object read/create/update/delete 権限を
 提供します。bucket lifecycle の管理権限は含まないため、task 自身が lifecycle rule を設定し、
@@ -334,7 +328,6 @@ curl --fail --silent --show-error \
 
 ### RTDB Returns 401 or 403
 
-- credential に `firebase.database` と `userinfo.email` scope が含まれることを確認する
 - service account または user に Firebase project への access があることを確認する
 - `database_url` が対象 RTDB instance の正確な URL であることを確認する
 - RTDB Security Rules と IAM assignment を確認する

@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- The `gcp:setup` task no longer passes `--scopes` to
+  `gcloud auth application-default login`. The default ADC scopes already
+  include `cloud-platform`, which covers the GCS and RTDB access the relay
+  needs, so the extra scopes were unnecessary.
+- The `gcp:setup` Impersonation method now runs
+  `gcloud auth application-default login` itself instead of only reminding the
+  user to, since ADC is the base credential the impersonation chain mints SA
+  tokens from. It then grants `roles/iam.serviceAccountTokenCreator` to the
+  actual ADC principal (resolved via userinfo) rather than the active gcloud
+  CLI account, so the binding is correct even when the two credential stores
+  hold different accounts.
+
 ## [0.3.0] - 2026-07-02
 
 ### Added
