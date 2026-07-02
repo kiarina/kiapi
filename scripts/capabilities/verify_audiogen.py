@@ -225,7 +225,7 @@ def main() -> None:
         elif arg in ["1", "2", "3", "4", "5", "6"] and sys.argv[i - 1] != "--id":
             target_id = arg
 
-    verify_dir = Path(".verify/audiogen")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "audiogen"
     if verify_dir.exists() and not target_id:
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

@@ -7,6 +7,7 @@ assertion and formatting utilities the verify scripts rely on.
 from __future__ import annotations
 
 import base64
+import os
 import time
 from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
@@ -20,7 +21,39 @@ from kiapi_relay import (
     RelayJsonBody,
     RelayRequest,
     RelayResponse,
+    get_or_create_node_id,
 )
+
+
+def load_user_settings() -> None:
+    """Load the kiapi user settings into the relay settings managers.
+
+    The relay verify scripts run standalone (``uv run python
+    scripts/relay/verify_<relay>.py``), not through the kiapi CLI, so the
+    settings that ``kiapi config edit`` writes to ``~/.config/kiapi/settings.yaml``
+    are never applied to the relay ``settings_manager`` instances. Mirror what
+    the kiapi CLI does at startup before constructing a relay client, otherwise
+    required fields (for example the GCP relay ``database_url`` / ``bucket``)
+    look unset even though the user configured them.
+    """
+    from kiarina.utils.app import configure
+
+    from kiapi.core.config import load_user_settings as _load_user_settings
+
+    configure("kiapi", "kiarina")
+    _load_user_settings()
+
+
+def assign_verify_node_id(client: Relay) -> None:
+    """Give the verify client its own persistent relay node id.
+
+    The relay client must carry a ``node_id`` distinct from the server's so the
+    server can route responses back to it. The verify client is not kiapi or
+    kiapi-proxy, so it keeps its own id under the verify data directory rather
+    than borrowing either server's identity.
+    """
+    data_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "relay-node"
+    client.node_id = get_or_create_node_id(data_dir)
 
 
 def build_request(

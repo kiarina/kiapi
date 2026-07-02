@@ -154,13 +154,54 @@ kiapi service uninstall  # 削除
 
 ### kiapi[relay-gcp] + kiapi-proxy
 
+**pre-requisite:**
+- GCP プロジェクトを作成し、課金を有効化する
+- Firebase プロジェクトを作成し、Blaze Plan にアップグレードする
+- `gcloud` CLI をインストール
+- `firebase-tools` CLI をインストール
+
+**GCP 環境のセットアップ:**
+```sh
+make setup-relay-gcp
+# 対話式で GCS バケット、Realtime Database、認証の設定を行います
+# 生成された YAML テキストは kiapi, kiapi-proxy の設定ファイルに貼り付けます
+```
+
 **kiapi のセットアップ:**
 ```sh
-# GCP relay 機能を追加インストール
 python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # uv を使えない場合
 uv tool install --python 3.12 'kiapi[relay-gcp]'        # uv を使える場合
 
+kiapi config init  # 設定ファイルを作成
+kiapi config edit  # 設定ファイルをエディタで編集
+# setup で出力された内容を貼り付けます
+
 kiapi run --relay gcp  # GCP relay 機能を有効にして起動
+```
+
+**kiapi-proxy のセットアップ:**
+kiapi-proxy は、kiapi とは別のマシンや OS でも動作します。
+```sh
+python3.12 -m pip install --upgrade 'kiapi-proxy[relay-gcp]'
+uv tool install --python 3.12 'kiapi-proxy[relay-gcp]'
+
+kiapi-proxy config init  # 設定ファイルを作成
+kiapi-proxy config edit  # 設定ファイルをエディタで編集
+# setup で出力された内容を貼り付けます
+
+kiapi-proxy run --relay gcp  # GCP relay 機能を有効にして起動
+```
+
+**エージェントとの連携例**
+kiapi-proxy を起動しているマシンで下記を実行します。
+```sh
+codex e "
+http://localhost:8080/openapi.json を把握してください。
+音楽生成 API を使って、~/Downloads/bgm.wav に、「雨の中を歩く人」というテーマの 20 秒の BGM を生成してください。
+"
+
+# 生成されたファイルを確認
+open ~/Downloads/bgm.wav
 ```
 
 ## Development

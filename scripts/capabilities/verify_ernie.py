@@ -104,7 +104,7 @@ def _make_dataset_zip() -> bytes:
 
 
 def main() -> None:
-    verify_dir = Path(".verify/ernie")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "ernie"
     if verify_dir.exists():
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

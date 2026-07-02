@@ -92,9 +92,16 @@ paste with `kiapi config edit`:
 Existing buckets and RTDB instances are detected and left untouched, so the
 task is safe to re-run.
 
-> A named RTDB instance requires the Blaze (pay-as-you-go) billing plan. If
-> creation fails, upgrade the project in the
-> [Firebase console](https://console.firebase.google.com/) and re-run the task.
+> If RTDB creation fails, check `firebase-debug.log` in the current directory
+> for the underlying error. Two common causes:
+>
+> - `firebase-tools` is not logged in and falls back to Application Default
+>   Credentials, which fails the Realtime Database calls with a quota-project
+>   403 on `firebasedatabase.googleapis.com`. Run `firebase login` and re-run
+>   the task. (A `firebase projects:list` that works via ADC is not enough.)
+> - A named RTDB instance requires the Blaze (pay-as-you-go) billing plan.
+>   Upgrade the project in the
+>   [Firebase console](https://console.firebase.google.com/) and re-run the task.
 
 ### Authentication methods
 
@@ -134,19 +141,19 @@ The task prints a block like the following (ADC example) to add with
 `kiapi config edit`:
 
 ```yaml
-kiapi.core.relay:
+kiapi_relay:
   default: gcp
 
-kiapi.relay.gcp:
+kiapi_relay.impl.gcp:
   database_url: https://your-instance.asia-southeast1.firebasedatabase.app
   bucket: your-project-kiapi
-  google_settings_key: relay
+  google_settings_key: kiapi
   manage_bucket_lifecycle: false
 
 kiarina.lib.google:
-  default: relay
+  default: kiapi
   configs:
-    relay:
+    kiapi:
       type: default
       project_id: your-project-id
 ```
@@ -360,7 +367,7 @@ Either grant the bucket metadata permissions or configure the lifecycle rule
 outside kiapi and set:
 
 ```yaml
-kiapi.relay.gcp:
+kiapi_relay.impl.gcp:
   manage_bucket_lifecycle: false
 ```
 
@@ -397,7 +404,7 @@ additionally protects the `response.json` commit marker from duplicate creation.
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
-| `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | Relay specifier; use `gcp` to enable GCPRelay. |
+| `kiapi_relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | Relay specifier; use `gcp` to enable GCPRelay. |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | Exact HTTPS RTDB instance URL. |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | Private GCS bucket name without `gs://`. |
 | `google_settings_key` | `KIAPI_RELAY_GCP_GOOGLE_SETTINGS_KEY` | default Google config | Named `kiarina.lib.google` credential configuration. |

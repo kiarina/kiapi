@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-gcp = [
+relay-gcp = [
     "kiapi-relay[gcp]",
 ]
 

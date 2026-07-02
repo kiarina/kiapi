@@ -1,9 +1,6 @@
 .PHONY: init list sync update upgrade format lint check test build clean ci config pages
-.PHONY: dev staging verify verify-fast verify-one
-.PHONY: verify-chat verify-embedding verify-depthpro verify-ernie verify-flux2
-.PHONY: verify-ideogram4 verify-qwen verify-seedvr2 verify-zimage
-.PHONY: verify-acestep verify-audiogen verify-ltx2 verify-web
-.PHONY: verify-relay verify-relay-local verify-relay-gcp
+.PHONY: dev staging verify verify-fast
+.PHONY: verify-kiapi verify-kiapi-relay verify-kiapi-proxy
 .DEFAULT_GOAL := check
 #--------------------------------------------------
 init:
@@ -60,37 +57,9 @@ verify:
 	mise run verify
 verify-fast:
 	mise run verify --fast
-verify-one:
-	mise run verify embedding
-verify-chat:
-	mise run verify chat
-verify-embedding:
-	mise run verify embedding
-verify-depthpro:
-	mise run verify depthpro
-verify-ernie:
-	mise run verify ernie
-verify-flux2:
-	mise run verify flux2
-verify-ideogram4:
-	mise run verify ideogram4
-verify-qwen:
-	mise run verify qwen
-verify-seedvr2:
-	mise run verify seedvr2
-verify-zimage:
-	mise run verify zimage
-verify-acestep:
-	mise run verify acestep
-verify-audiogen:
-	mise run verify audiogen
-verify-ltx2:
-	mise run verify ltx2
-verify-web:
-	mise run verify web
-verify-relay:
-	mise run verify relay
-verify-relay-local:
-	mise run verify relay-local
-verify-relay-gcp:
-	mise run verify relay-gcp
+verify-kiapi:
+	mise run verify --kiapi
+verify-kiapi-relay:
+	mise run verify --kiapi-relay
+verify-kiapi-proxy:
+	mise run verify --kiapi-proxy

@@ -85,9 +85,17 @@ kiapi YAML を出力します。
 
 既存の bucket と RTDB instance は検出してそのまま残すため、task は再実行しても安全です。
 
-> named RTDB instance は Blaze（従量課金）プランが必要です。作成に失敗した場合は
-> [Firebase console](https://console.firebase.google.com/) で project をアップグレードして
-> task を再実行してください。
+> RTDB の作成に失敗した場合は、まずカレントディレクトリの `firebase-debug.log`
+> で実際のエラーを確認してください。よくある原因は 2 つです。
+>
+> - `firebase-tools` が未ログインで Application Default Credentials に
+>   フォールバックし、`firebasedatabase.googleapis.com` への Realtime Database
+>   呼び出しが quota-project の 403 で失敗している。`firebase login` を実行して
+>   task を再実行してください（ADC 経由で成功する `firebase projects:list` では
+>   不十分です）。
+> - named RTDB instance は Blaze（従量課金）プランが必要です。
+>   [Firebase console](https://console.firebase.google.com/) で project を
+>   アップグレードして task を再実行してください。
 
 ### Authentication methods
 
@@ -124,19 +132,19 @@ task は 3 つの方法を提供します。
 task は次のような block（ADC の例）を出力するので、`kiapi config edit` で追加します。
 
 ```yaml
-kiapi.core.relay:
+kiapi_relay:
   default: gcp
 
-kiapi.relay.gcp:
+kiapi_relay.impl.gcp:
   database_url: https://your-instance.asia-southeast1.firebasedatabase.app
   bucket: your-project-kiapi
-  google_settings_key: relay
+  google_settings_key: kiapi
   manage_bucket_lifecycle: false
 
 kiarina.lib.google:
-  default: relay
+  default: kiapi
   configs:
-    relay:
+    kiapi:
       type: default
       project_id: your-project-id
 ```
@@ -343,7 +351,7 @@ curl --fail --silent --show-error \
 bucket metadata 権限を付与するか、kiapi 外で lifecycle rule を設定して次を指定します。
 
 ```yaml
-kiapi.relay.gcp:
+kiapi_relay.impl.gcp:
   manage_bucket_lifecycle: false
 ```
 
@@ -377,7 +385,7 @@ kiapi.relay.gcp:
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
-| `kiapi.core.relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | GCPRelay を有効化するには `gcp` を指定。 |
+| `kiapi_relay.default` | `KIAPI_RELAY_DEFAULT` | disabled | GCPRelay を有効化するには `gcp` を指定。 |
 | `database_url` | `KIAPI_RELAY_GCP_DATABASE_URL` | required | 正確な HTTPS RTDB instance URL。 |
 | `bucket` | `KIAPI_RELAY_GCP_BUCKET` | required | `gs://` を除いた private GCS bucket name。 |
 | `google_settings_key` | `KIAPI_RELAY_GCP_GOOGLE_SETTINGS_KEY` | default Google config | 使用する `kiarina.lib.google` の named credential 設定。 |

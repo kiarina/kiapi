@@ -731,7 +731,7 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-gcp = [
+relay-gcp = [
     { name = "kiapi-relay", extra = ["gcp"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 
@@ -740,7 +740,7 @@ requires-dist = [
     { name = "click" },
     { name = "fastapi" },
     { name = "kiapi-relay", editable = "packages/kiapi-relay" },
-    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'gcp'", editable = "packages/kiapi-relay" },
+    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'relay-gcp'", editable = "packages/kiapi-relay" },
     { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings" },
@@ -748,7 +748,7 @@ requires-dist = [
     { name = "python-multipart" },
     { name = "uvicorn", extras = ["standard"] },
 ]
-provides-extras = ["gcp"]
+provides-extras = ["relay-gcp"]
 
 [[package]]
 name = "kiapi-relay"

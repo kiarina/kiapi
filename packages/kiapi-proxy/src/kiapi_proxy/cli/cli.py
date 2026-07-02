@@ -1,52 +1,25 @@
 import click
-import uvicorn
 from kiarina.utils.app import configure
 
-from kiapi_relay import settings_manager as relay_settings_manager
+from kiapi_proxy.core.config import UserConfigError, load_user_settings
 
-from ..api import settings_manager
+from .check.cli import check
+from .config.cli import config_cli
+from .run.cli import run
+from .service.cli import service
 
 
 @click.group()
 def main() -> None:
     """kiapi-proxy command line interface."""
     configure("kiapi-proxy", "kiarina")
+    try:
+        load_user_settings()
+    except UserConfigError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
-@main.command()
-@click.option("--host", type=str, help="Bind socket to this host")
-@click.option("--port", type=int, help="Bind socket to this port")
-@click.option(
-    "--relay",
-    type=str,
-    help="Relay to forward requests through, for example: local, gcp",
-)
-def run(
-    host: str | None,
-    port: int | None,
-    relay: str | None,
-) -> None:
-    """Run the kiapi-proxy server."""
-    cli_args: dict[str, str | int] = {}
-
-    if host is not None:
-        cli_args["host"] = host
-    if port is not None:
-        cli_args["port"] = port
-
-    if cli_args:
-        settings_manager.cli_args = cli_args
-
-    if relay is not None:
-        # Forward through the named relay by setting it as the relay default.
-        relay_settings_manager.cli_args = {"default": relay}
-
-    settings = settings_manager.get_settings()
-
-    from ..api.app import app
-
-    uvicorn.run(
-        app,
-        host=settings.host,
-        port=settings.port,
-    )
+main.add_command(run)
+main.add_command(check)
+main.add_command(config_cli)
+main.add_command(service)

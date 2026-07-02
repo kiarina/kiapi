@@ -6,6 +6,8 @@ from kiapi_relay import RelaySpecifier
 
 
 class ProxySettings(BaseSettings):
+    """Settings for the proxy server binding, relay selection, and request waits."""
+
     model_config = SettingsConfigDict(
         env_prefix="KIAPI_PROXY_",
         extra="ignore",

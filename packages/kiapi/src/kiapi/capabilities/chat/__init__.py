@@ -12,14 +12,33 @@ generation peak over weights was negligible for text and single-image inputs, so
 headroom is a conservative margin for heavy multimodal (video) inputs.
 """
 
-from ._helpers.register import register
-from ._operations.handle_chat import handle_chat
-from ._settings import settings_manager
-from ._views.chat_request import ChatRequest
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._helpers.register import register
+    from ._operations.handle_chat import handle_chat
+    from ._settings import settings_manager
+    from ._views.chat_request import ChatRequest
 
 __all__ = [
-    "ChatRequest",  # ._views
-    "handle_chat",  # ._operations
-    "register",  # ._helpers
-    "settings_manager",  # ._settings
+    "ChatRequest",
+    "handle_chat",
+    "register",
+    "settings_manager",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__} has no attribute {name}")
+
+    module_map = {
+        "ChatRequest": "._views.chat_request",
+        "handle_chat": "._operations.handle_chat",
+        "register": "._helpers.register",
+        "settings_manager": "._settings",
+    }
+
+    globals()[name] = getattr(import_module(module_map[name], __name__), name)
+    return globals()[name]

@@ -63,7 +63,7 @@ def _poll(client: httpx.Client, job_id: str, timeout: float = 1800.0) -> Any:
 
 
 def main() -> None:
-    verify_dir = Path(".verify/ideogram4")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "ideogram4"
     if verify_dir.exists():
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)
