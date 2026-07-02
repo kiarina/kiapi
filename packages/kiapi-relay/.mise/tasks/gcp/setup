@@ -49,10 +49,15 @@ if [ -z "$gcloud_account" ]; then
 fi
 info "✅ gcloud account: $gcloud_account"
 
-# firebase-tools must be logged in (project listing fails otherwise).
-if ! firebase projects:list >/dev/null 2>&1; then
+# firebase-tools must have its own login credentials. Checking 'projects:list'
+# is not enough: it succeeds via the Application Default Credentials fallback
+# even when 'firebase login' was never run, and the ADC fallback then fails the
+# Realtime Database API calls with a quota-project 403. 'login:list' reports the
+# firebase-tools account directly, so it detects the missing login up front.
+if ! firebase login:list --json 2>/dev/null |
+    jq -e '(.result // []) | length > 0' >/dev/null; then
     die "firebase-tools is not logged in.
-   Run 'firebase login' first."
+   Run 'firebase login' first (a 'firebase projects:list' that works via ADC is not enough)."
 fi
 info "✅ firebase-tools is logged in"
 
@@ -140,9 +145,13 @@ else
         --location "$rtdb_location" \
         --project "$project_id"; then
         die "Failed to create the RTDB instance.
-   A named RTDB instance requires the Blaze (pay-as-you-go) billing plan.
-   Upgrade the project at https://console.firebase.google.com/project/${project_id}/usage/details
-   and re-run this task."
+   Check firebase-debug.log (in the current directory) for the underlying error.
+   Common causes:
+     - firebase-tools falling back to Application Default Credentials
+       (a quota-project 403 on firebasedatabase.googleapis.com). Run 'firebase login'.
+     - A named RTDB instance requires the Blaze (pay-as-you-go) billing plan.
+       Upgrade the project at https://console.firebase.google.com/project/${project_id}/usage/details.
+   Fix the cause and re-run this task."
     fi
     info "✅ RTDB instance created."
 fi
@@ -262,7 +271,7 @@ esac
 
 step "kiapi configuration"
 
-google_block="    relay:
+google_block="    kiapi:
       type: ${google_config_type}
       project_id: ${project_id}"
 if [ -n "$google_service_account_file" ]; then
@@ -279,17 +288,17 @@ cat <<YAML
 Add the following with 'kiapi config edit':
 
 --------------------------------------------------------------------------------
-kiapi.core.relay:
+kiapi_relay:
   default: gcp
 
-kiapi.relay.gcp:
+kiapi_relay.impl.gcp:
   database_url: ${database_url}
   bucket: ${bucket_name}
-  google_settings_key: relay
+  google_settings_key: kiapi
   manage_bucket_lifecycle: false
 
 kiarina.lib.google:
-  default: relay
+  default: kiapi
   configs:
 ${google_block}
 --------------------------------------------------------------------------------

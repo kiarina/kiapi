@@ -13,8 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   instance, and authentication for `GCPRelay`, then prints the kiapi YAML to
   paste with `kiapi config edit`. Existing buckets and RTDB instances are
   detected and left untouched, so the task is safe to re-run. It relies on the
-  project-local `firebase-tools` installed by `mise run setup`. The GCP relay
-  README was rewritten around this task.
+  project-local `firebase-tools` installed by `mise run setup`. The task
+  verifies `firebase-tools` has its own login (via `firebase login:list`)
+  instead of relying on `firebase projects:list`, which also succeeds through
+  the Application Default Credentials fallback and then fails the Realtime
+  Database calls with a quota-project 403; the RTDB creation failure message
+  now points at `firebase-debug.log` and lists both the missing-login and
+  Blaze-plan causes. The GCP relay README was rewritten around this task.
 
 - Relay participants now derive a stable `node_id` from a data directory via
   `get_or_create_node_id`, exported from `kiapi_relay`. Single-instance locking
