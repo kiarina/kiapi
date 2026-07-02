@@ -22,7 +22,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     server is already running.
   - `kiapi-proxy service` (`install`, `start`, `status`, `stop`, `uninstall`)
     manages a launchd user agent (`io.github.kiarina.kiapi-proxy`) that runs
-    `kiapi-proxy run`, independent from the kiapi service.
+    `kiapi-proxy run`, independent from the kiapi service. `install` pins the
+    `XDG_CONFIG_HOME`/`XDG_DATA_HOME` values present at install time into the
+    plist so the launchd-started service resolves the same config/data
+    directories as the interactive shell (launchd does not inherit them);
+    without this the service could not find the user settings written by
+    `config edit` and failed to resolve the relay on startup.
 - At startup the proxy resolves a persistent relay `node_id` from its user data
   directory (app name `kiapi-proxy`) and injects it into the relay, and acquires
   a single-instance lock so a second `kiapi-proxy` cannot share the same node

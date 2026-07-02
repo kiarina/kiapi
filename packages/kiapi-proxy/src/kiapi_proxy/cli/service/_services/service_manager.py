@@ -50,15 +50,31 @@ def install() -> None:
             "kiapi_proxy",
             "run",
         ],
-        "EnvironmentVariables": {
-            "PYTHONUNBUFFERED": "1",
-        },
+        "EnvironmentVariables": _build_environment_variables(),
         "RunAtLoad": True,
         "KeepAlive": True,
         "StandardOutPath": str(get_stdout_path()),
         "StandardErrorPath": str(get_stderr_path()),
     }
     plist_path.write_bytes(plistlib.dumps(plist, sort_keys=False))
+
+
+def _build_environment_variables() -> dict[str, str]:
+    env = {"PYTHONUNBUFFERED": "1"}
+
+    # launchd does not inherit the interactive shell's environment, so the XDG
+    # base-directory variables are stripped. Without them the service resolves
+    # its config/data dirs to the macOS-native paths and cannot find the user
+    # settings written by `kiapi-proxy config edit`, so relay resolution fails.
+    # Propagate each XDG var only when it is set at install time: if it is unset,
+    # the interactive shell and the service both fall back to the same native
+    # path, so there is nothing to pin.
+    for name in ("XDG_CONFIG_HOME", "XDG_DATA_HOME"):
+        value = os.environ.get(name)
+        if value:
+            env[name] = value
+
+    return env
 
 
 def start() -> None:
