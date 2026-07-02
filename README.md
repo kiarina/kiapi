@@ -161,14 +161,34 @@ kiapi service uninstall  # Remove
 **pre-requisite:**
 - Create a GCP project and enable billing
 - Create a Firebase project and upgrade it to the Blaze Plan
-- Install the `gcloud` CLI
-- Install the `firebase-tools` CLI
+- Install [gcloud](https://cloud.google.com/sdk/docs/install)
+- Install [firebase-tools](https://firebase.google.com/docs/cli)
+- Install [mise](https://mise.jdx.dev/getting-started.html)
 
 **Set up the GCP environment:**
+Interactively configures the GCS bucket, Realtime Database, and authentication.
 ```sh
+gcloud login
+firebase login
 make setup-relay-gcp
-# Interactively configures the GCS bucket, Realtime Database, and authentication
-# Paste the generated YAML text into the kiapi and kiapi-proxy config files
+```
+Paste the generated YAML text into the kiapi and kiapi-proxy config files.
+```yaml
+kiapi_relay:
+  default: gcp
+
+kiapi_relay.impl.gcp:
+  database_url: {database_url}
+  bucket: {bucket}
+  google_settings_key: relay
+  manage_bucket_lifecycle: false
+
+kiarina.lib.google:
+  default: relay
+  configs:
+    relay:
+      type: default
+      project_id: {project_id}
 ```
 
 **Set up kiapi:**
@@ -186,6 +206,8 @@ kiapi run --relay gcp  # Start with the GCP relay feature enabled
 **Set up kiapi-proxy:**
 kiapi-proxy also runs on a different machine or OS than kiapi.
 ```sh
+gcloud login
+
 python3.12 -m pip install --upgrade 'kiapi-proxy[relay-gcp]'
 uv tool install --python 3.12 'kiapi-proxy[relay-gcp]'
 
