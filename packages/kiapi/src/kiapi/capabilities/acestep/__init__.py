@@ -12,16 +12,20 @@ is an estimate (the registry value is authoritative for budgeting); load() logs
 the child's real RSS so these can be tuned on device.
 """
 
-from ._helpers.register import register
-from ._operations.handle_cover import handle_cover
-from ._operations.handle_extract import handle_extract
-from ._operations.handle_generate import handle_generate
-from ._operations.handle_repaint import handle_repaint
-from ._settings import settings_manager
-from ._views.cover_request import CoverRequest
-from ._views.extract_request import ExtractRequest
-from ._views.generate_request import GenerateRequest
-from ._views.repaint_request import RepaintRequest
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._helpers.register import register
+    from ._operations.handle_cover import handle_cover
+    from ._operations.handle_extract import handle_extract
+    from ._operations.handle_generate import handle_generate
+    from ._operations.handle_repaint import handle_repaint
+    from ._settings import settings_manager
+    from ._views.cover_request import CoverRequest
+    from ._views.extract_request import ExtractRequest
+    from ._views.generate_request import GenerateRequest
+    from ._views.repaint_request import RepaintRequest
 
 __all__ = [
     "CoverRequest",
@@ -35,3 +39,24 @@ __all__ = [
     "register",
     "settings_manager",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__} has no attribute {name}")
+
+    module_map = {
+        "CoverRequest": "._views.cover_request",
+        "ExtractRequest": "._views.extract_request",
+        "GenerateRequest": "._views.generate_request",
+        "RepaintRequest": "._views.repaint_request",
+        "handle_cover": "._operations.handle_cover",
+        "handle_extract": "._operations.handle_extract",
+        "handle_generate": "._operations.handle_generate",
+        "handle_repaint": "._operations.handle_repaint",
+        "register": "._helpers.register",
+        "settings_manager": "._settings",
+    }
+
+    globals()[name] = getattr(import_module(module_map[name], __name__), name)
+    return globals()[name]

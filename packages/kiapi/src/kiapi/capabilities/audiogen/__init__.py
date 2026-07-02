@@ -7,13 +7,17 @@ the family name (audiogen) is the AudioGen model family, distinct from the
 mlx-audiocraft library (which also hosts MusicGen).
 """
 
-from kiapi.capabilities import ValidationError
+from importlib import import_module
+from typing import TYPE_CHECKING
 
-from ._helpers.register import register
-from ._helpers.validate_generate import validate_generate
-from ._operations.handle_generate import handle_generate
-from ._settings import settings_manager
-from ._views.generate_request import GenerateRequest
+if TYPE_CHECKING:
+    from kiapi.capabilities import ValidationError
+
+    from ._helpers.register import register
+    from ._helpers.validate_generate import validate_generate
+    from ._operations.handle_generate import handle_generate
+    from ._settings import settings_manager
+    from ._views.generate_request import GenerateRequest
 
 __all__ = [
     "GenerateRequest",
@@ -23,3 +27,20 @@ __all__ = [
     "settings_manager",
     "validate_generate",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__} has no attribute {name}")
+
+    module_map = {
+        "GenerateRequest": "._views.generate_request",
+        "ValidationError": "kiapi.capabilities",
+        "handle_generate": "._operations.handle_generate",
+        "register": "._helpers.register",
+        "settings_manager": "._settings",
+        "validate_generate": "._helpers.validate_generate",
+    }
+
+    globals()[name] = getattr(import_module(module_map[name], __name__), name)
+    return globals()[name]

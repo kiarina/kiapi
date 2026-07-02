@@ -11,14 +11,33 @@ generation models, which is exactly the intended use of priority.
 estimates and reconciled with on-device measurement at load.
 """
 
-from ._helpers.register import register
-from ._operations.handle_embed import handle_embed
-from ._settings import settings_manager
-from ._views.embed_request import EmbedRequest
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._helpers.register import register
+    from ._operations.handle_embed import handle_embed
+    from ._settings import settings_manager
+    from ._views.embed_request import EmbedRequest
 
 __all__ = [
-    "EmbedRequest",  # ._views
-    "handle_embed",  # ._operations
-    "register",  # ._helpers
-    "settings_manager",  # ._settings
+    "EmbedRequest",
+    "handle_embed",
+    "register",
+    "settings_manager",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__} has no attribute {name}")
+
+    module_map = {
+        "EmbedRequest": "._views.embed_request",
+        "handle_embed": "._operations.handle_embed",
+        "register": "._helpers.register",
+        "settings_manager": "._settings",
+    }
+
+    globals()[name] = getattr(import_module(module_map[name], __name__), name)
+    return globals()[name]
