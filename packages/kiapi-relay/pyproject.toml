@@ -1,6 +1,6 @@
 [project]
 name = "kiapi-relay"
-version = "0.1.0"
+version = "0.3.0"
 description = "Shared relay transport for kiapi: request/response schemas, the relay protocol, and a client to reach a kiapi instance over a relay (local filesystem or GCP)."
 readme = "README.md"
 requires-python = ">=3.12"

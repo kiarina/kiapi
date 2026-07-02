@@ -652,7 +652,7 @@ wheels = [
 
 [[package]]
 name = "kiapi"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "packages/kiapi" }
 dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -716,7 +716,7 @@ provides-extras = ["relay-gcp"]
 
 [[package]]
 name = "kiapi-proxy"
-version = "0.1.0"
+version = "0.3.0"
 source = { editable = "packages/kiapi-proxy" }
 dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -752,7 +752,7 @@ provides-extras = ["relay-gcp"]
 
 [[package]]
 name = "kiapi-relay"
-version = "0.1.0"
+version = "0.3.0"
 source = { editable = "packages/kiapi-relay" }
 dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },

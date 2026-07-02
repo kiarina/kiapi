@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-02
+
 ### Added
 
 - Manage Node dev tooling with pnpm through a root `package.json`; `firebase-tools` is now a project-local dev dependency installed by `mise run setup` (`pnpm install`) rather than a global `npm install -g`, and mise puts it on `PATH` via `node_modules/.bin`.
