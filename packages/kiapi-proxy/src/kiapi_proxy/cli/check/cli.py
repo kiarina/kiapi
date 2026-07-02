@@ -1,14 +1,19 @@
 import asyncio
 import json
-import uuid
 
 import click
+from kiarina.utils.app import (
+    AlreadyRunningError,
+    single_instance,
+    user_directory,
+)
 
 from kiapi_relay import (
     Relay,
     RelayRequest,
     RelayRequestError,
     RelayResponse,
+    get_or_create_node_id,
     relay_registry,
 )
 
@@ -44,6 +49,8 @@ def check(
 
     Sends a single request through the relay without starting the proxy server
     and reports the response, so you can confirm the relay link to kiapi works.
+    Reuses the proxy's persistent node ID and fails if the proxy server is
+    already running (it owns that identity).
     """
     settings = settings_manager.get_settings()
 
@@ -57,24 +64,35 @@ def check(
     except Exception as exc:
         raise click.ClickException(f"Failed to resolve relay: {exc}") from exc
 
-    # A short-lived node ID just to receive this one response; the proxy service
-    # (if running) keeps its own persistent node ID untouched.
-    relay_instance.node_id = uuid.uuid4().hex[:12]
-
-    click.echo(f"checking {relay_instance.name} relay -> {path} ...")
+    # Reuse the proxy's own persistent node ID so a check leaves no throwaway node
+    # data behind. Hold the single-instance lock the same way `run` does: if the
+    # proxy server is already running it owns that identity, so fail fast instead
+    # of competing for its responses.
+    try:
+        single_instance.acquire(timeout=0.0)
+    except AlreadyRunningError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     try:
-        response = asyncio.run(
-            _request(relay_instance, path, timeout),
-        )
-    except RelayRequestError as exc:
-        raise click.ClickException(
-            f"[failed] relay error: {exc.error.code}: {exc.error.message}"
-        ) from exc
-    except TimeoutError as exc:
-        raise click.ClickException(f"[failed] {exc}") from exc
-    except Exception as exc:
-        raise click.ClickException(f"[failed] {exc}") from exc
+        node_id = get_or_create_node_id(user_directory.get_user_data_dir())
+        relay_instance.node_id = node_id
+
+        click.echo(f"checking {relay_instance.name} relay -> {path} ...")
+
+        try:
+            response = asyncio.run(
+                _request(relay_instance, path, timeout),
+            )
+        except RelayRequestError as exc:
+            raise click.ClickException(
+                f"[failed] relay error: {exc.error.code}: {exc.error.message}"
+            ) from exc
+        except TimeoutError as exc:
+            raise click.ClickException(f"[failed] {exc}") from exc
+        except Exception as exc:
+            raise click.ClickException(f"[failed] {exc}") from exc
+    finally:
+        single_instance.release()
 
     ok = 200 <= response.status < 400
     mark = "ok" if ok else "failed"

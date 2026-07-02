@@ -1,5 +1,6 @@
 import pytest
 from click.testing import CliRunner
+from kiarina.utils.app import AlreadyRunningError
 
 from kiapi_proxy.cli.check import cli as check_cli
 from kiapi_proxy.cli.cli import main
@@ -56,6 +57,31 @@ def test_check_reports_healthy_response(monkeypatch: pytest.MonkeyPatch) -> None
     assert '{"status": "ok"}' in result.output
     assert fake.node_id != ""
     assert fake.requests[0].path == "/health"
+
+
+def test_check_fails_when_proxy_already_running(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = _FakeRelay(
+        response=RelayResponse(status=200, body=RelayJsonBody(value={"status": "ok"}))
+    )
+    monkeypatch.setattr(
+        check_cli.relay_registry,
+        "resolve",
+        lambda specifier: fake,
+    )
+
+    def _already_running(*args: object, **kwargs: object) -> None:
+        raise AlreadyRunningError("another kiapi-proxy instance is already running")
+
+    monkeypatch.setattr(check_cli.single_instance, "acquire", _already_running)
+
+    result = CliRunner().invoke(main, ["check", "--relay", "local"])
+
+    assert result.exit_code != 0
+    assert "already running" in result.output
+    # The relay must not be contacted when the identity is already owned.
+    assert fake.requests == []
 
 
 def test_check_fails_when_no_live_node(monkeypatch: pytest.MonkeyPatch) -> None:

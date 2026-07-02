@@ -285,7 +285,7 @@ fi
 
 cat <<YAML
 
-Add the following with 'kiapi config edit':
+Add the following with 'kiapi config edit' on the kiapi (Apple Silicon) host:
 
 --------------------------------------------------------------------------------
 kiapi_relay:
@@ -303,9 +303,18 @@ kiarina.lib.google:
 ${google_block}
 --------------------------------------------------------------------------------
 
+On any host that runs kiapi-proxy, add the same block with
+'kiapi-proxy config edit' (the relay and Google keys are shared, so the proxy
+forwards through the same GCP relay).
+
 Then start the relay:
 
-  kiapi run --relay gcp
+  kiapi run --relay gcp          # on the kiapi host
+  kiapi-proxy run --relay gcp    # on each proxy host
+
+You can verify the proxy's link to kiapi without starting the server:
+
+  kiapi-proxy check --relay gcp
 
 YAML
 

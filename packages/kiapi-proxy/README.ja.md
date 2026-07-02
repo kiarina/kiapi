@@ -89,6 +89,8 @@ kiapi-proxy check --relay gcp
 `check` は relay 経由でリクエストを 1 回(既定は `/health`)送り、応答を表示します。
 `--path` で別のエンドポイントを、`--timeout` で待ち時間の上限を指定できます。
 `--relay` を省略すると、設定済みの proxy/relay の既定値にフォールバックします。
+proxy の永続 relay ノード ID を再利用し、single-instance ロックを取得するため、
+proxy サーバーが既に起動している場合は即座にエラーになります。
 
 ### Service (macOS)
 

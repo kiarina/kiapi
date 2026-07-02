@@ -89,7 +89,9 @@ kiapi-proxy check --relay gcp
 
 `check` sends a single request (default `/health`) through the relay and prints
 the response. Use `--path` to probe another endpoint and `--timeout` to bound the
-wait. Without `--relay` it falls back to the configured proxy/relay default.
+wait. Without `--relay` it falls back to the configured proxy/relay default. It
+reuses the proxy's persistent relay node ID and holds the single-instance lock,
+so it fails fast if the proxy server is already running.
 
 ### Service (macOS)
 

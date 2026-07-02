@@ -16,7 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `kiapi-proxy check --relay local|gcp` sends a single request (default
     `/health`, overridable with `--path`) through the relay to a live kiapi node
     and prints the response, without starting the proxy server, so relay
-    connectivity can be verified as a health check.
+    connectivity can be verified as a health check. It reuses the proxy's
+    persistent relay `node_id` (leaving no throwaway node data behind) and holds
+    the single-instance lock the same way `run` does, failing fast if the proxy
+    server is already running.
   - `kiapi-proxy service` (`install`, `start`, `status`, `stop`, `uninstall`)
     manages a launchd user agent (`io.github.kiarina.kiapi-proxy`) that runs
     `kiapi-proxy run`, independent from the kiapi service.
