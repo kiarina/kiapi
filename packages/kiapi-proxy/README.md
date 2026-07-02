@@ -44,6 +44,7 @@ Then call it as if it were kiapi:
 
 ```bash
 curl http://localhost:8080/health
+curl http://localhost:8080/openapi.json
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H 'content-type: application/json' \
   -d '{"messages":[{"role":"user","content":"hello"}],"stream":true}'
