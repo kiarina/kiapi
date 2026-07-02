@@ -51,7 +51,7 @@ ci:
 dev:
 	uv run kiapi run --host 127.0.0.1 --port 8000 --debug
 staging:
-	uv run kiapi run --host 0.0.0.0 --port 8500 --debug
+	uv run kiapi run --host 0.0.0.0 --port 8500 --relay gcp --debug
 #--------------------------------------------------
 verify:
 	mise run verify

@@ -5,3 +5,8 @@
 allowBuilds:
   protobufjs: false
   re2: false
+
+# firebase-tools pulls in uuid@9 transitively (via gaxios), which has a missing
+# buffer bounds check (GHSA, fixed in 11.1.1). Force the vulnerable range up.
+overrides:
+  uuid@<11.1.1: ">=11.1.1"
