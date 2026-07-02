@@ -1,13 +1,5 @@
 """The model registry: the catalog of servable models across all families.
 
-Public surface (unchanged from the former ``core/model.py``):
-
-  - :class:`ModelSpec` — a registry entry (variant + family/domain + repo +
-    handler module + memory/budget metadata).
-  - :class:`ModelRegistry` / the ``model_registry`` singleton — register,
-    list, group, and resolve specs.
-  - :class:`UnknownModelError` — raised by ``resolve`` on an unknown ``model``.
-
 The semantic axes are spelled out as types in :mod:`._types`
 (``ModelName`` / ``ModelFamily`` / ``ModelDomain`` / ``ModelRepo``).
 """

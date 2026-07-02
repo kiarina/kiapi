@@ -1,8 +1,5 @@
 """The single-flight worker: one dedicated thread runs every job, one at a time
 (MLX thread-affinity + sound memory budgeting). See :mod:`._services.worker`.
-
-Public surface (unchanged from the former ``core/worker.py``): :class:`Worker`,
-:data:`JobThunk`.
 """
 
 from importlib import import_module
