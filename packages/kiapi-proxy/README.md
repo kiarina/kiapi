@@ -22,7 +22,7 @@ Windows, and resource-constrained Macs. It depends only on `kiapi-relay` (not on
 pip install kiapi-proxy
 
 # With the GCP relay backend
-pip install "kiapi-proxy[gcp]"
+pip install "kiapi-proxy[relay-gcp]"
 ```
 
 ## Usage
