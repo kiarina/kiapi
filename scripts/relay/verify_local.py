@@ -19,7 +19,13 @@ import base64
 import sys
 from typing import Any
 
-from _helpers import assert_json, consume_body, relay_request, run_checks
+from _helpers import (
+    assert_json,
+    assign_verify_node_id,
+    consume_body,
+    relay_request,
+    run_checks,
+)
 
 from kiapi_relay import RelayFileBody, RelayRequest, RelayRequestError
 from kiapi_relay.impl.local import create_local_relay
@@ -30,6 +36,7 @@ UPLOAD_BYTES = b"relay multipart upload\n"
 async def main() -> int:
     fast = "--fast" in sys.argv
     client = create_local_relay()
+    assign_verify_node_id(client)
     state: dict[str, Any] = {}
 
     async def health() -> str:

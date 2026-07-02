@@ -30,6 +30,7 @@ import json
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -105,6 +106,23 @@ def service_loaded(module: str) -> bool:
         if line.startswith("Loaded:"):
             return line.split(":", 1)[1].strip() == "yes"
     return False
+
+
+def ensure_port_free(name: str, port: int) -> None:
+    """Abort if ``port`` is already served by a stray process.
+
+    The launchd services are stopped before this runs, so anything still
+    listening is an unmanaged instance. Verifying against it would be misleading
+    (health checks would pass against the wrong server), so stop and let the user
+    clear it.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        if sock.connect_ex(("127.0.0.1", port)) == 0:
+            sys.exit(
+                f"port {port} is already in use; a {name} instance appears to be "
+                f"running outside of verify. Stop it and try again."
+            )
 
 
 def start_server(
@@ -235,6 +253,7 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
                 restore.append(module)
 
         if target == "kiapi":
+            ensure_port_free("kiapi", KIAPI_PORT)
             proc, log_path = start_server("kiapi", module_cmd("kiapi", "run"), log_dir)
             procs.append(proc)
             wait_health(
@@ -254,6 +273,7 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
 
         if target == "kiapi-relay":
             assert relay is not None
+            ensure_port_free("kiapi", KIAPI_PORT)
             proc, log_path = start_server(
                 "kiapi", module_cmd("kiapi", "run", "--relay", relay), log_dir
             )
@@ -269,6 +289,8 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
         # kiapi-proxy
         assert relay is not None
         assert family is not None
+        ensure_port_free("kiapi", KIAPI_PORT)
+        ensure_port_free("kiapi-proxy", PROXY_PORT)
         kiapi_proc, kiapi_log = start_server(
             "kiapi", module_cmd("kiapi", "run", "--relay", relay), log_dir
         )

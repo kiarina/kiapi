@@ -7,6 +7,7 @@ assertion and formatting utilities the verify scripts rely on.
 from __future__ import annotations
 
 import base64
+import os
 import time
 from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
@@ -20,7 +21,20 @@ from kiapi_relay import (
     RelayJsonBody,
     RelayRequest,
     RelayResponse,
+    get_or_create_node_id,
 )
+
+
+def assign_verify_node_id(client: Relay) -> None:
+    """Give the verify client its own persistent relay node id.
+
+    The relay client must carry a ``node_id`` distinct from the server's so the
+    server can route responses back to it. The verify client is not kiapi or
+    kiapi-proxy, so it keeps its own id under the verify data directory rather
+    than borrowing either server's identity.
+    """
+    data_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "relay-node"
+    client.node_id = get_or_create_node_id(data_dir)
 
 
 def build_request(

@@ -22,6 +22,7 @@ from typing import Any
 
 from _helpers import (
     assert_json,
+    assign_verify_node_id,
     consume_body,
     ensure_relay_ready,
     relay_request,
@@ -37,6 +38,7 @@ UPLOAD_BYTES = b"relay multipart upload\n"
 async def main() -> int:
     fast = "--fast" in sys.argv
     client = create_gcp_relay()
+    assign_verify_node_id(client)
     state: dict[str, Any] = {}
 
     if not await ensure_relay_ready(client, "gcp"):
