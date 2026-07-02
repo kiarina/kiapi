@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **kiapi**: The hot-reload worker subprocess (`kiapi run --debug`) now loads the user settings file in the ASGI factory, so relays configured only in user settings (for example the GCP relay's `database_url`/`bucket`) start correctly. Previously `kiapi run --relay gcp --debug` failed at startup with "required field is not set" because the reload subprocess never ran `load_user_settings()`.
+
 ## [0.3.0] - 2026-07-02
 
 ### Added
