@@ -25,6 +25,7 @@ from _helpers import (
     assign_verify_node_id,
     consume_body,
     ensure_relay_ready,
+    load_user_settings,
     relay_request,
     run_checks,
 )
@@ -37,6 +38,7 @@ UPLOAD_BYTES = b"relay multipart upload\n"
 
 async def main() -> int:
     fast = "--fast" in sys.argv
+    load_user_settings()
     client = create_gcp_relay()
     assign_verify_node_id(client)
     state: dict[str, Any] = {}

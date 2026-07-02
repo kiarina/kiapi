@@ -25,6 +25,25 @@ from kiapi_relay import (
 )
 
 
+def load_user_settings() -> None:
+    """Load the kiapi user settings into the relay settings managers.
+
+    The relay verify scripts run standalone (``uv run python
+    scripts/relay/verify_<relay>.py``), not through the kiapi CLI, so the
+    settings that ``kiapi config edit`` writes to ``~/.config/kiapi/settings.yaml``
+    are never applied to the relay ``settings_manager`` instances. Mirror what
+    the kiapi CLI does at startup before constructing a relay client, otherwise
+    required fields (for example the GCP relay ``database_url`` / ``bucket``)
+    look unset even though the user configured them.
+    """
+    from kiarina.utils.app import configure
+
+    from kiapi.core.config import load_user_settings as _load_user_settings
+
+    configure("kiapi", "kiarina")
+    _load_user_settings()
+
+
 def assign_verify_node_id(client: Relay) -> None:
     """Give the verify client its own persistent relay node id.
 
