@@ -326,7 +326,7 @@ def main() -> None:
         ):
             target_id = arg
 
-    verify_dir = Path(".verify/acestep")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "acestep"
     if verify_dir.exists() and not target_id:
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

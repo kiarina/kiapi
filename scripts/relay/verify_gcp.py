@@ -16,7 +16,9 @@ Then run this from an environment with the same GCP settings and credentials:
 from __future__ import annotations
 
 import asyncio
+import base64
 import sys
+from typing import Any
 
 from _helpers import (
     assert_json,
@@ -29,10 +31,13 @@ from _helpers import (
 from kiapi_relay import RelayFileBody, RelayRequest, RelayRequestError
 from kiapi_relay.impl.gcp import create_gcp_relay
 
+UPLOAD_BYTES = b"relay multipart upload\n"
+
 
 async def main() -> int:
     fast = "--fast" in sys.argv
     client = create_gcp_relay()
+    state: dict[str, Any] = {}
 
     if not await ensure_relay_ready(client, "gcp"):
         await client.aclose()
@@ -95,11 +100,82 @@ async def main() -> int:
             return "invalid non-local path failed through relay"
         raise AssertionError("invalid relay request unexpectedly succeeded")
 
+    async def files_list() -> str:
+        result = await relay_request(client, "GET", "/v1/files", timeout_s=60.0)
+        body = assert_json(result)
+        assert result.status == 200, result.status
+        assert body["object"] == "list", body
+        return f"{len(body['data'])} files listed"
+
+    async def jobs_list() -> str:
+        result = await relay_request(client, "GET", "/v1/jobs", timeout_s=60.0)
+        body = assert_json(result)
+        assert result.status == 200, result.status
+        assert body["object"] == "list", body
+        return f"{len(body['data'])} jobs listed"
+
+    async def files_upload() -> str:
+        result = await relay_request(
+            client,
+            "POST",
+            "/v1/files",
+            headers={"Accept": "application/json"},
+            multipart={
+                "files": [
+                    {
+                        "field": "file",
+                        "filename": "relay-upload.txt",
+                        "content_type": "text/plain",
+                        "content_base64": base64.b64encode(UPLOAD_BYTES).decode(
+                            "ascii"
+                        ),
+                    }
+                ]
+            },
+            timeout_s=60.0,
+        )
+        body = assert_json(result)
+        assert result.status == 200, result.status
+        assert body["file_id"], body
+        assert body["filename"] == "relay-upload.txt", body
+        assert body["content_type"] == "text/plain", body
+        state["uploaded_file_id"] = body["file_id"]
+        return f"file_id={body['file_id']}"
+
+    async def file_metadata_download_delete() -> str:
+        file_id = state.get("uploaded_file_id")
+        assert file_id, "no file_id captured from earlier checks"
+        metadata = await relay_request(
+            client, "GET", f"/v1/files/{file_id}", timeout_s=60.0
+        )
+        body = assert_json(metadata)
+        assert metadata.status == 200, metadata.status
+        assert body["file_id"] == file_id, body
+
+        download = await relay_request(
+            client, "GET", f"/v1/files/{file_id}/download", timeout_s=120.0
+        )
+        assert download.status == 200, download.status
+        content = consume_body(download)
+        assert content == UPLOAD_BYTES, content
+
+        deleted = await relay_request(
+            client, "DELETE", f"/v1/files/{file_id}", timeout_s=60.0
+        )
+        deleted_body = assert_json(deleted)
+        assert deleted.status == 200, deleted.status
+        assert deleted_body["deleted"] is True, deleted_body
+        return f"metadata/download/delete {file_id}"
+
     checks = [
         ("gcp health JSON", health),
         ("gcp event-stream conversion", event_stream),
         ("gcp binary response commit", binary_body),
         ("gcp invalid request failure", invalid_request),
+        ("gcp /v1/files list", files_list),
+        ("gcp /v1/jobs list", jobs_list),
+        ("gcp /v1/files upload multipart", files_upload),
+        ("gcp /v1/files metadata/download/delete", file_metadata_download_delete),
     ]
 
     try:

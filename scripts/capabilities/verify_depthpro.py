@@ -75,7 +75,7 @@ def _upload_png(client: httpx.Client) -> str:
 
 
 def main() -> None:
-    verify_dir = Path(".verify/depthpro")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "depthpro"
     if verify_dir.exists():
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

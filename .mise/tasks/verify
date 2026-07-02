@@ -1,62 +1,16 @@
 #!/usr/bin/env bash
-#MISE description="Run E2E verification scripts (all, or a single [capability])"
-#USAGE arg "[capability]" help="Capability name, relay, relay-local, or relay-gcp"
-#USAGE flag "--fast" help="Run the light test selection"
+#MISE description="Run E2E verification (interactive, or scoped with flags)"
+#
+# All arguments are forwarded to scripts/verify.py. Run without arguments for an
+# interactive (fzf) selection, or scope it, for example:
+#
+#   mise run verify --kiapi --family embedding --fast
+#   mise run verify --kiapi-relay --relay local
+#   mise run verify --kiapi-proxy --family chat --relay gcp
+#
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$PROJECT_DIR"
 
-BASE_URL="${KIAPI_BASE_URL:-http://127.0.0.1:8000}"
-capability="${usage_capability:-}"
-fast="${usage_fast:-false}"
-
-echo "Checking if kiapi server is running at $BASE_URL ..."
-if ! curl -sf "$BASE_URL/health" >/dev/null; then
-  echo "Error: kiapi server is not running or not accessible at $BASE_URL."
-  echo "Please start the server first (e.g. 'uv run kiapi run' or 'uv run kiapi service start')."
-  exit 1
-fi
-
-echo "Server is running. Starting verification scripts..."
-
-if [ -z "$capability" ]; then
-  scripts=(scripts/capabilities/verify_*.py)
-elif [ "$capability" = "relay" ]; then
-  scripts=(scripts/relay/verify.py)
-elif [ "$capability" = "relay-local" ]; then
-  scripts=(scripts/relay/verify_local.py)
-elif [ "$capability" = "relay-gcp" ]; then
-  scripts=(scripts/relay/verify_gcp.py)
-else
-  scripts=("scripts/capabilities/verify_${capability}.py")
-fi
-
-for script in "${scripts[@]}"; do
-  if [ ! -f "$script" ]; then
-    echo "Error: verification script not found: $script" >&2
-    exit 1
-  fi
-done
-
-if [ "$fast" = "true" ]; then
-  set -- --fast
-else
-  set --
-fi
-
-for script in "${scripts[@]}"; do
-  echo
-  echo "========================================================================"
-  echo "Running $script ..."
-  echo "========================================================================"
-  case "$capability" in
-    ernie) KIAPI_VERIFY_ERNIE_TRAIN=1 uv run python "$script" "$@" ;;
-    flux2) KIAPI_VERIFY_FLUX2_TRAIN=1 uv run python "$script" "$@" ;;
-    zimage) KIAPI_VERIFY_ZIMAGE_TRAIN=1 uv run python "$script" "$@" ;;
-    *) uv run python "$script" "$@" ;;
-  esac
-done
-
-echo
-echo "All verification scripts completed successfully!"
+exec uv run python scripts/verify.py "$@"

@@ -89,7 +89,7 @@ def _upload_png(client: httpx.Client, name: str, color: tuple[int, int, int]) ->
 
 
 def main() -> None:
-    verify_dir = Path(".verify/qwen")
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "qwen"
     if verify_dir.exists():
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

@@ -128,13 +128,19 @@ make test
 
 ### 機能テスト・回帰テスト
 
-- **配置場所**: `scripts/capabilities/` ディレクトリ以下の `verify_*.py` スクリプトを使用します。
+- **配置場所**: `scripts/capabilities/` の `verify_*.py`（capability 検証）と `scripts/relay/verify_{local,gcp}.py`（relay トランスポート検証）を使用します。
 - **用途**: 実際のモデルを GPU にロードし、生成・推論のフロー全体が正常に動作することを確認します。
+- **ドライバ**: `mise run verify`（実体は `scripts/verify.py`）が、検証対象と relay の選択、kiapi / kiapi-proxy の起動・停止、成果物の出力先切り替えまでを行います。成果物の出力先は `KIAPI_VERIFY_DIR`（既定 `.verify`）で指定でき、ドライバは対象ごとに `.verify/kiapi` / `.verify/kiapi-proxy` を渡します。
 - **実行方法**:
 
 ```bash
-make verify  # 全ての capability のテストを実施
-make verify-fast  # 全て capability の 1 つのテストのみ実施
-make verify-one  # embedding capability のみ実施
-make verify-{capability}  # 指定した capability のみ実施
+make verify              # 対象・family・relay を対話選択して検証
+make verify-fast         # 対話選択 + 各スクリプトを軽量実行（--fast）
+make verify-kiapi        # kiapi 直に対する capability 検証（relay 不要）
+make verify-kiapi-relay  # relay トランスポートの検証（既定 relay: local）
+make verify-kiapi-proxy  # kiapi-proxy 経由の capability 検証（既定 relay: local）
+
+# 個別 capability やオプション指定は mise へ直接:
+mise run verify --kiapi --family embedding --fast
+mise run verify --kiapi-proxy --family chat --relay gcp
 ```
