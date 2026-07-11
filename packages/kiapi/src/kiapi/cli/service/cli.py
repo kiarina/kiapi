@@ -1,6 +1,7 @@
 import click
 
 from .install.cli import install
+from .show.cli import show
 from .start.cli import start
 from .status.cli import status
 from .stop.cli import stop
@@ -13,6 +14,7 @@ def service() -> None:
 
 
 service.add_command(install)
+service.add_command(show)
 service.add_command(start)
 service.add_command(stop)
 service.add_command(status)

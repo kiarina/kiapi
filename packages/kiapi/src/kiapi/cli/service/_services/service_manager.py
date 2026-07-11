@@ -50,15 +50,24 @@ def install() -> None:
             "kiapi",
             "run",
         ],
-        "EnvironmentVariables": {
-            "PYTHONUNBUFFERED": "1",
-        },
+        "EnvironmentVariables": _build_environment_variables(),
         "RunAtLoad": True,
         "KeepAlive": True,
         "StandardOutPath": str(get_stdout_path()),
         "StandardErrorPath": str(get_stderr_path()),
     }
     plist_path.write_bytes(plistlib.dumps(plist, sort_keys=False))
+
+
+def _build_environment_variables() -> dict[str, str]:
+    env = {"PYTHONUNBUFFERED": "1"}
+
+    for name in ("XDG_CONFIG_HOME", "XDG_DATA_HOME"):
+        value = os.environ.get(name)
+        if value:
+            env[name] = value
+
+    return env
 
 
 def start() -> None:

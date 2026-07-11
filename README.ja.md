@@ -146,6 +146,7 @@ open ~/Downloads/bgm.wav
 ```sh
 # kiapi
 kiapi service install    # 登録
+kiapi service show       # 登録されている plist を表示
 kiapi service start      # 起動
 kiapi service status     # 状態とログ末尾の確認
 kiapi service stop       # 停止
