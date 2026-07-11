@@ -64,12 +64,12 @@ def _build_environment_variables() -> dict[str, str]:
 
     # launchd does not inherit the interactive shell's environment, so the XDG
     # base-directory variables are stripped. Without them the service resolves
-    # its config/data dirs to the macOS-native paths and cannot find the user
-    # settings written by `kiapi-proxy config edit`, so relay resolution fails.
+    # its cache/config/data dirs to the macOS-native paths and cannot find the
+    # same lock, user settings, and node identity as the interactive CLI.
     # Propagate each XDG var only when it is set at install time: if it is unset,
     # the interactive shell and the service both fall back to the same native
     # path, so there is nothing to pin.
-    for name in ("XDG_CONFIG_HOME", "XDG_DATA_HOME"):
+    for name in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME"):
         value = os.environ.get(name)
         if value:
             env[name] = value

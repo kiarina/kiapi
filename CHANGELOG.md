@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-11
+
+### Fixed
+
+- **kiapi** / **kiapi-proxy**: `service install` now also pins `XDG_CACHE_HOME` in the launchd property list so the background service uses the same cache directory and single-instance lock as the interactive CLI.
+
 ## [0.4.0] - 2026-07-11
 
 ### Added

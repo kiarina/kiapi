@@ -62,7 +62,7 @@ def install() -> None:
 def _build_environment_variables() -> dict[str, str]:
     env = {"PYTHONUNBUFFERED": "1"}
 
-    for name in ("XDG_CONFIG_HOME", "XDG_DATA_HOME"):
+    for name in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME"):
         value = os.environ.get(name)
         if value:
             env[name] = value
