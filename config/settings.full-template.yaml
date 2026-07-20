@@ -192,49 +192,71 @@ kiapi_relay.impl.local:
   # liveness_ttl_s: 1800.0
 
 #--------------------------------------------------------------------------------
+# Google authentication settings.
 #--------------------------------------------------------------------------------
 kiarina.lib.google:
   # default: default
   configs:
     default:
-      # type: Literal['default', 'service_account', 'user_account', 'api_key']
+      # Authentication Type: Literal['default', 'service_account', 'user_account', 'api_key']
+      #   Authentication method to use.
       # type: default
       #--------------------------------------------------
-      # project_id: str | None
+      # Project ID: str | None
+      #   Google Cloud project ID.
       # project_id: 
       #--------------------------------------------------
-      # impersonate_service_account: str | None
+      # Service Account to Impersonate: str | None
+      #   Email address of the service account to impersonate. The source principal requires roles/iam.serviceAccountTokenCreator.
       # impersonate_service_account: 
       #--------------------------------------------------
-      # scopes: list[str]
+      # Scopes: list[str]
+      #   OAuth scopes to request.
       # scopes: []
       #--------------------------------------------------
-      # service_account_email: str | None
+      # Service Account Email: str | None
+      #   Service account email address.
       # service_account_email: 
       #--------------------------------------------------
-      # service_account_file: str | None
+      # Service Account File: str | None
+      #   Path to a service account key file.
       # service_account_file: 
       #--------------------------------------------------
-      # service_account_data: SecretStr | None
+      # Service Account Data: SecretStr | None
+      #   Service account key data as a JSON string.
       # service_account_data: 
       #--------------------------------------------------
-      # user_account_email: str | None
+      # User Account Email: str | None
+      #   User account email address.
       # user_account_email: 
       #--------------------------------------------------
-      # client_secret_file: str | None
+      # Client Secret File: str | None
+      #   Path to an OAuth client secret file.
       # client_secret_file: 
       #--------------------------------------------------
-      # client_secret_data: SecretStr | None
+      # Client Secret Data: SecretStr | None
+      #   OAuth client secret data as a JSON string.
       # client_secret_data: 
       #--------------------------------------------------
-      # authorized_user_file: str | None
+      # Authorized User File: str | None
+      #   Path to an authorized user credentials file.
       # authorized_user_file: 
       #--------------------------------------------------
-      # authorized_user_data: SecretStr | None
+      # Authorized User Data: SecretStr | None
+      #   Authorized user credentials as a JSON string.
       # authorized_user_data: 
       #--------------------------------------------------
-      # api_key: SecretStr | None
+      # API Key: SecretStr | None
+      #   API key for Google APIs.
       # api_key: 
+      #--------------------------------------------------
+      # Vertex AI: bool | None
+      #   Whether Google Gen AI clients use Vertex AI.
+      # vertexai: 
+      #--------------------------------------------------
+      # Location: str | None
+      #   Google Cloud location for Google Gen AI Vertex AI clients.
+      # location: 
   # aliases: {}
 
 #--------------------------------------------------------------------------------
