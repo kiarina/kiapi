@@ -96,6 +96,24 @@ def module_cmd(module: str, *extra: str) -> list[str]:
     return [sys.executable, "-m", module, *extra]
 
 
+def run_cmd(module: str, port: int, relay: str | None) -> list[str]:
+    """Build a server start command with explicit host/port/relay.
+
+    Everything is passed explicitly so user settings (which may bind another
+    port or enable a relay) cannot leak into the servers verify starts.
+    """
+    return module_cmd(
+        module,
+        "run",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        str(port),
+        "--relay",
+        relay if relay is not None else "none",
+    )
+
+
 def service_loaded(module: str) -> bool:
     result = subprocess.run(
         module_cmd(module, "service", "status"),
@@ -254,7 +272,9 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
 
         if target == "kiapi":
             ensure_port_free("kiapi", KIAPI_PORT)
-            proc, log_path = start_server("kiapi", module_cmd("kiapi", "run"), log_dir)
+            proc, log_path = start_server(
+                "kiapi", run_cmd("kiapi", KIAPI_PORT, None), log_dir
+            )
             procs.append(proc)
             wait_health(
                 f"http://127.0.0.1:{KIAPI_PORT}/health",
@@ -275,7 +295,7 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
             assert relay is not None
             ensure_port_free("kiapi", KIAPI_PORT)
             proc, log_path = start_server(
-                "kiapi", module_cmd("kiapi", "run", "--relay", relay), log_dir
+                "kiapi", run_cmd("kiapi", KIAPI_PORT, relay), log_dir
             )
             procs.append(proc)
             wait_health(
@@ -292,7 +312,7 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
         ensure_port_free("kiapi", KIAPI_PORT)
         ensure_port_free("kiapi-proxy", PROXY_PORT)
         kiapi_proc, kiapi_log = start_server(
-            "kiapi", module_cmd("kiapi", "run", "--relay", relay), log_dir
+            "kiapi", run_cmd("kiapi", KIAPI_PORT, relay), log_dir
         )
         procs.append(kiapi_proc)
         wait_health(
@@ -302,7 +322,7 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
             require_relay=True,
         )
         proxy_proc, proxy_log = start_server(
-            "kiapi-proxy", module_cmd("kiapi_proxy", "run", "--relay", relay), log_dir
+            "kiapi-proxy", run_cmd("kiapi_proxy", PROXY_PORT, relay), log_dir
         )
         procs.append(proxy_proc)
         wait_health(

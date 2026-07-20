@@ -13,7 +13,11 @@ from kiapi_relay import settings_manager as relay_settings_manager
 @click.command()
 @click.option("--host", type=str, help="Bind socket to this host")
 @click.option("--port", type=int, help="Bind socket to this port")
-@click.option("--relay", type=str, help="Start a relay, for example: gcp")
+@click.option(
+    "--relay",
+    type=str,
+    help="Start a relay, for example: gcp. Pass 'none' to disable the relay.",
+)
 @click.option("--debug", is_flag=True, help="Enable debug logging and hot reload")
 def run(
     host: str | None,
@@ -33,7 +37,9 @@ def run(
         api_settings_manager.cli_args = api_cli_args
 
     if relay is not None:
-        relay_settings_manager.cli_args = {"default": relay}
+        relay_settings_manager.cli_args = {
+            "default": None if relay == "none" else relay
+        }
 
     settings = api_settings_manager.get_settings()
 

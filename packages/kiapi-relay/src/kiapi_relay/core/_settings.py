@@ -10,6 +10,7 @@ from ._types.relay_specifier import RelaySpecifier
 class RelaySettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="KIAPI_RELAY_",
+        env_parse_none_str="none",
         extra="ignore",
     )
 
