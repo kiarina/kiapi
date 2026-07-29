@@ -17,6 +17,7 @@ jobs:
     env:
       MISE_GITHUB_ATTESTATIONS: "false"
     outputs:
+      packages: ${{ steps.packages.outputs.packages }}
       version: ${{ steps.parse.outputs.version }}
 
     steps:
@@ -50,6 +51,12 @@ jobs:
       - name: Build the selected packages
         run: mise run release:build "${{ steps.parse.outputs.version }}"
 
+      - name: Collect the selected packages
+        id: packages
+        run: |
+          PACKAGES=$(mise run package:list --release "${{ steps.parse.outputs.version }}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -81,12 +88,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    name: Publish to PyPI
+    name: Publish ${{ matrix.package }} to PyPI
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.build.outputs.packages) }}
     environment:
       name: pypi
-      url: https://pypi.org/user/kiarina/
+      url: https://pypi.org/project/${{ matrix.package }}/
 
     steps:
       - name: Download dist artifact
@@ -95,9 +106,20 @@ jobs:
           name: dist
           path: dist
 
+      - name: Select package distributions
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          DIST_NAME=${PACKAGE//-/_}
+          mkdir publish
+          find dist -maxdepth 1 -type f \
+            \( -name "$DIST_NAME-*.whl" -o -name "$DIST_NAME-*.tar.gz" \) \
+            -exec cp {} publish/ \;
+          test -n "$(find publish -type f -print -quit)"
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist/
+          packages-dir: publish/
           skip-existing: true
           verbose: true

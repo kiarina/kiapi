@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Publish each workspace package with its own PyPI Trusted Publishing token so a release can upload multiple projects.
+
 ## [0.5.1] - 2026-07-29
 
 ### Added
