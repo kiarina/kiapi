@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-29
+
 ### Fixed
 
 - Publish workspace distributions with separate PyPI Trusted Publishing tokens so multi-package releases complete reliably.
