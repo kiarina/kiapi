@@ -349,6 +349,8 @@ class GCPRelay(BaseRelay):
                     data_lines.append(line[5:].strip())
 
     async def _handle_event(self, event_name: str, raw_data: str) -> None:
+        if event_name in {"auth_revoked", "cancel"}:
+            raise ConnectionError(f"RTDB relay watch {event_name}: {raw_data}")
         if event_name not in {"put", "patch"}:
             return
         event = json.loads(raw_data)

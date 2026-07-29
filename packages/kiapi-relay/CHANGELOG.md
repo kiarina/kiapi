@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `KIAPI_RELAY_DEFAULT=none` (and other `KIAPI_RELAY_*` env vars set to `none`) is now parsed as unset, so the relay can be disabled via the environment.
 
+### Fixed
+
+- Reconnect the GCP RTDB request stream when Firebase reports an expired credential or canceled subscription, instead of leaving the relay unable to receive new requests.
+
 ## [0.4.0] - 2026-07-11
 
 ### Changed

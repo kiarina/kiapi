@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **kiapi**: `kiapi run --relay none` explicitly disables the relay, overriding a relay enabled in user settings.
 - **kiapi-relay**: `KIAPI_RELAY_DEFAULT=none` (and other `KIAPI_RELAY_*` env vars set to `none`) is now parsed as unset, so the relay can be disabled via the environment.
 
+### Fixed
+
+- **kiapi-relay**: Reconnect the GCP RTDB request stream when Firebase reports an expired credential or canceled subscription, instead of leaving the relay unable to receive new requests.
+
 ## [0.5.0] - 2026-07-11
 
 ### Fixed

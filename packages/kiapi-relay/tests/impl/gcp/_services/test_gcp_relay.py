@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from kiapi_relay import RelayFileBody, RelayJsonBody, RelayResponse
 from kiapi_relay.impl.gcp import GCPRelay, GCPRelaySettings
 from kiapi_relay.impl.gcp._services.gcp_relay import _GCP_SCOPES
@@ -110,6 +112,14 @@ async def test_put_event_queues_once_and_reports_queued() -> None:
 
     assert relay._queue.qsize() == 1
     assert reports[0]["status"] == "queued"
+
+
+@pytest.mark.parametrize("event_name", ["auth_revoked", "cancel"])
+async def test_terminal_event_reconnects_watch(event_name: str) -> None:
+    relay = _relay()
+
+    with pytest.raises(ConnectionError, match=event_name):
+        await relay._handle_event(event_name, '"credential expired"')
 
 
 def test_rtdb_url_uses_firebase_root_json_path() -> None:
