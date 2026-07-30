@@ -32,4 +32,8 @@ jobs:
           install: false
 
       - name: Run CI pipeline
+        env:
+          # Authenticate GitHub API calls (test-assets:download) to avoid the
+          # 60 req/h unauthenticated rate limit shared across hosted runner IPs.
+          GITHUB_TOKEN: ${{ github.token }}
         run: mise run ci
