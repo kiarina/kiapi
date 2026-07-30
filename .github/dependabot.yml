@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # package.json holds dev-only Node tooling (firebase-tools). Version updates
+  # stay disabled via open-pull-requests-limit: 0; security updates still run
+  # and are filtered by the ignore list below.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    ignore:
+      # Transitive dependencies of firebase-tools pinned by their parents, so
+      # the patched versions are unreachable and every security update fails
+      # with security_update_not_possible. Drop an entry once firebase-tools
+      # loosens the constraint.
+      - dependency-name: "brace-expansion"
+      - dependency-name: "@hono/node-server"
+      - dependency-name: "fast-uri"
