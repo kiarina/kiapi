@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "description": "Node tooling for the kiapi workspace (e.g. firebase-tools for the GCP relay setup task).",
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.24.0",
   "devDependencies": {
-    "firebase-tools": "^15.22.3"
+    "firebase-tools": "^15.28.1"
   }
 }

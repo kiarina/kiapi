@@ -18,7 +18,7 @@ def _factory_wrapper(
 
 
 relay_registry = ComponentRegistry[Relay](
-    expected_type=Relay,  # type: ignore[type-abstract]
+    expected_type=Relay,
     component_label="Relay",
     get_default=lambda: settings_manager.get_settings().default,
     get_presets=lambda: settings_manager.get_settings().presets,
