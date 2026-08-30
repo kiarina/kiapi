@@ -1,7 +1,5 @@
 # zimage
 
-**English** | [日本語](README.ja.md)
-
 [mflux Z-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/z_image/README.md) provides image generation and LoRA fine-tuning functionality.
 
 Z-Image is a relatively lightweight image generation model.

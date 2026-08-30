@@ -1,7 +1,5 @@
 # seedvr2
 
-**English** | [日本語](README.ja.md)
-
 [mflux SeedVR2](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/seedvr2/README.md) provides single-image diffusion-based super-resolution/upscaling functionality.
 SeedVR2 is an image-to-image super-resolution model that reconstructs details based on input images rather than prompt-driven image generation.
 

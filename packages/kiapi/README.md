@@ -5,8 +5,6 @@
 ![Platform](https://img.shields.io/badge/Platform-Apple%20Silicon-lightgrey.svg)
 [![API Docs](https://img.shields.io/badge/API%20Docs-GitHub%20Pages-green.svg)](https://kiarina.github.io/kiapi/)
 
-**English** | [日本語](README.ja.md)
-
 ## Summary
 
 kiapi is a local API server that uses Apple Silicon and MLX to provide generative AI capabilities for LLM agents.
@@ -15,19 +13,19 @@ kiapi is a local API server that uses Apple Silicon and MLX to provide generativ
 
 | Domain | Family | Endpoint | Description |
 |---|---|---|---|
-| chat |  | `POST /v1/chat` | [Chat API details](./kiapi/capabilities/chat/README.md) |
-| embedding |  | `POST /v1/embedding` | [Embedding API details](./kiapi/capabilities/embedding/README.md) |
-| image | zimage | `POST /v1/image/zimage` | [Z-Image API details](./kiapi/capabilities/zimage/README.md) |
-|  | flux2 | `POST /v1/image/flux2` | [FLUX.2 API details](./kiapi/capabilities/flux2/README.md) |
-|  | qwen | `POST /v1/image/qwen` | [Qwen Image API details](./kiapi/capabilities/qwen/README.md) |
-|  | ideogram4 | `POST /v1/image/ideogram4` | [Ideogram 4 API details](./kiapi/capabilities/ideogram4/README.md) |
-|  | ernie | `POST /v1/image/ernie` | [ERNIE-Image API details](./kiapi/capabilities/ernie/README.md) |
-|  | seedvr2 | `POST /v1/image/seedvr2` | [SeedVR2 API details](./kiapi/capabilities/seedvr2/README.md) |
-|  | depthpro | `POST /v1/image/depthpro` | [Depth Pro API details](./kiapi/capabilities/depthpro/README.md) |
-| audio | acestep | `POST /v1/audio/acestep` | [ACE-Step API details](./kiapi/capabilities/acestep/README.md) |
-|  | audiogen | `POST /v1/audio/audiogen` | [AudioGen API details](./kiapi/capabilities/audiogen/README.md) |
-| video | ltx2 | `POST /v1/video/ltx2` | [LTX-2 API details](./kiapi/capabilities/ltx2/README.md) |
-| web |  | `POST /v1/web` | [Web API details](./kiapi/capabilities/web/README.md) |
+| chat |  | `POST /v1/chat` | [Chat API details](./src/kiapi/capabilities/chat/README.md) |
+| embedding |  | `POST /v1/embedding` | [Embedding API details](./src/kiapi/capabilities/embedding/README.md) |
+| image | zimage | `POST /v1/image/zimage` | [Z-Image API details](./src/kiapi/capabilities/zimage/README.md) |
+|  | flux2 | `POST /v1/image/flux2` | [FLUX.2 API details](./src/kiapi/capabilities/flux2/README.md) |
+|  | qwen | `POST /v1/image/qwen` | [Qwen Image API details](./src/kiapi/capabilities/qwen/README.md) |
+|  | ideogram4 | `POST /v1/image/ideogram4` | [Ideogram 4 API details](./src/kiapi/capabilities/ideogram4/README.md) |
+|  | ernie | `POST /v1/image/ernie` | [ERNIE-Image API details](./src/kiapi/capabilities/ernie/README.md) |
+|  | seedvr2 | `POST /v1/image/seedvr2` | [SeedVR2 API details](./src/kiapi/capabilities/seedvr2/README.md) |
+|  | depthpro | `POST /v1/image/depthpro` | [Depth Pro API details](./src/kiapi/capabilities/depthpro/README.md) |
+| audio | acestep | `POST /v1/audio/acestep` | [ACE-Step API details](./src/kiapi/capabilities/acestep/README.md) |
+|  | audiogen | `POST /v1/audio/audiogen` | [AudioGen API details](./src/kiapi/capabilities/audiogen/README.md) |
+| video | ltx2 | `POST /v1/video/ltx2` | [LTX-2 API details](./src/kiapi/capabilities/ltx2/README.md) |
+| web |  | `POST /v1/web` | [Web API details](./src/kiapi/capabilities/web/README.md) |
 | core | files | `POST /v1/files` | Upload input files, LoRA adapters, and other files, then issue a `file_id`. |
 |  |  | `GET /v1/files` | Return a list of stored files. |
 |  |  | `GET /v1/files/{file_id}` | Return file metadata. |

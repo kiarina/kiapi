@@ -1,7 +1,5 @@
 # ernie
 
-**English** | [日本語](README.ja.md)
-
 [mflux ERNIE-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ernie_image/README.md) provides image generation, image editing, and LoRA fine tuning functions.
 
 - **generate**: Generate image from text

@@ -1,7 +1,5 @@
 # Relay
 
-**English** | [日本語](README.ja.md)
-
 The relay is an optional background subsystem that delivers HTTP requests to a
 kiapi instance that may not be directly reachable.
 
@@ -80,6 +78,6 @@ notification only when terminal status is committed.
 
 ## Related Concepts
 
-- [Application](../application/)
-- [Jobs and Files](../jobs-and-files/)
-- [Architecture overview](../../../ARCHITECTURE.md)
+- [Application](application.md)
+- [Jobs and Files](jobs-and-files.md)
+- [Architecture overview](../../ARCHITECTURE.md)

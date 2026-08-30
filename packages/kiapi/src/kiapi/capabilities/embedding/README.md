@@ -1,7 +1,5 @@
 # embedding
 
-**English** | [日本語](README.ja.md)
-
 [mlx-embeddings](https://github.com/Blaizzy/mlx-embeddings) provides a text/image embedding API.
 
 - **text embedding**:

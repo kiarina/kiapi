@@ -16,8 +16,8 @@
 
 あらゆるタスクを開始する前に、下記を必ず把握してください。
 
-- `README.ja.md`
-- `ARCHITECTURE.ja.md`
+- `README.md`
+- `ARCHITECTURE.md`
 - `docs/concepts/`
 - `mise.toml`
 - `pyproject.toml` とルート、および対象 `packages/<package>/pyproject.toml`
@@ -50,13 +50,12 @@ Google 認証が必要な機能を実装する場合、下記を把握してく�
 - 名前から役割を推測できる場合は、docstring を書かないでください。
 - フィールドには docstring を書かないでください。Pydantic の公開クラスでは、フィールドに `title` と `description` を設定してください。
 
-## README の運用
+## ドキュメントの運用
 
-- 常に `README.md` と `README.ja.md` の両方を作成します。
-- `README.md` と `README.ja.md` は、言語違いの完全なミラーとして維持してください。
-- README の各ファイルには、言語切り替えのためのリンクを必ず設置してください。
-- 対応箇所を見出しで追いやすくするため、`README.ja.md` の `#`, `##`, `###`, `####` などの見出しは `README.md` と同じ英語に必ず一致させてください。
-- README の内容の精査段階では、先行して `README.ja.md` を作成して、内容が確定したら `README.md` を作成するのが望ましいです。
+- ルート・各パッケージ・各実装の README、`ARCHITECTURE.md`、`docs/` 以下の技術文書は英語で記述してください。
+- `README.ja.md` など、言語別の README は作成しません。言語切り替えのリンクも置きません。
+- ユーザーとの相談と、`AGENTS.md`、`CLAUDE.md` の作業指示は日本語で構いません。
+- リポジトリの利用者や開発者が現在の仕様・手順として読む文書は、英語を正典とします。
 
 ## ドキュメントの配置
 
@@ -64,15 +63,14 @@ Google 認証が必要な機能を実装する場合、下記を把握してく�
 `docs/concepts`、`docs/playbooks`、`docs/runbooks` のいずれかに配置します。
 
 ```text
-docs/{concepts|playbooks|runbooks}/{わかりやすい-slug}/
-  README.md
-  README.ja.md
+docs/{concepts|playbooks|runbooks}/{わかりやすい-slug}.md
 ```
 
 - `concepts` には、設計思想、アーキテクチャ、主要な仕組みの説明を置きます。
 - `playbooks` には、開発や保守で繰り返し実施する作業手順を置きます。
 - `runbooks` には、運用、監視、障害対応の手順を置きます。
-- directory の slug には、内容を端的に表す英語の kebab-case を使用します。
+- slug には、内容を端的に表す英語の kebab-case を使用します。
+- 一つの主題が複数の文書に分かれる場合だけ、slug の directory を作ってその下に置きます。
 
 特定の capability に閉じた説明は、共通の `docs/` ではなく、その family の実装と
 同じ directory に配置します。
@@ -80,7 +78,6 @@ docs/{concepts|playbooks|runbooks}/{わかりやすい-slug}/
 ```text
 packages/kiapi/src/kiapi/capabilities/{family}/
   README.md
-  README.ja.md
 ```
 
 特定の relay implementation に閉じた説明も、その implementation と同じ directory
@@ -89,7 +86,6 @@ packages/kiapi/src/kiapi/capabilities/{family}/
 ```text
 packages/kiapi-relay/src/kiapi_relay/impl/{relay_name}/
   README.md
-  README.ja.md
 ```
 
 ## commit message と Pull Request タイトルの書き方

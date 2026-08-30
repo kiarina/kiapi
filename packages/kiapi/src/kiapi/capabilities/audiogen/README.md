@@ -1,7 +1,5 @@
 # audiogen
 
-**English** | [日本語](README.ja.md)
-
 [AudioGen](https://huggingface.co/facebook/audiogen-medium) provides sound effect generation functionality.
 
 ## API

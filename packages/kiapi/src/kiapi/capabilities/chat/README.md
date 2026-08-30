@@ -1,7 +1,5 @@
 # chat
 
-**English** | [日本語](README.ja.md)
-
 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) provides an OpenAI-compatible chat completion API.
 
 - **vlm** (text + image):

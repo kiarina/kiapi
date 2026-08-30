@@ -1,7 +1,5 @@
 # Jobs and Files
 
-**English** | [日本語](README.ja.md)
-
 This concept describes request execution, serialization, progress reporting,
 and artifact storage.
 
@@ -84,6 +82,6 @@ return Job JSON instead.
 
 ## Related Concepts
 
-- [Model Lifecycle](../model-lifecycle/)
-- [API](../api/)
-- [Architecture overview](../../../ARCHITECTURE.md)
+- [Model Lifecycle](model-lifecycle.md)
+- [API](api.md)
+- [Architecture overview](../../ARCHITECTURE.md)

@@ -1,7 +1,5 @@
 # GCP Relay
 
-**English** | [日本語](README.ja.md)
-
 ## Overview
 
 `GCPRelay` lets a kiapi server inside a closed network receive API requests

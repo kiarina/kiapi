@@ -1,7 +1,5 @@
 # API
 
-**English** | [日本語](README.ja.md)
-
 This concept describes the public endpoint vocabulary, capability discovery,
 and OpenAPI documentation layers.
 
@@ -55,6 +53,6 @@ docstrings and Pydantic schemas own operation-specific details.
 
 ## Related Concepts
 
-- [Application](../application/)
-- [Jobs and Files](../jobs-and-files/)
-- [Architecture overview](../../../ARCHITECTURE.md)
+- [Application](application.md)
+- [Jobs and Files](jobs-and-files.md)
+- [Architecture overview](../../ARCHITECTURE.md)

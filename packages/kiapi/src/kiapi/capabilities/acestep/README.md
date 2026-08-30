@@ -1,7 +1,5 @@
 # acestep
 
-**English** | [日本語](README.ja.md)
-
 [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) provides the following functions.
 - Music generation
 - Style conversion of existing songs
@@ -159,7 +157,7 @@ curl -sS -X POST http://localhost:${PORT:-8000}/v1/audio/acestep/extract \
 --data-binary @-
 )
 
-# 各音源をダウンロード（stems[] にターゲット名が入る）
+# Download each stem (stems[] carries the target name)
 echo "$RESP" | jq -c '.result.stems[]' | while read -r s; do
   TARGET=$(echo "$s" | jq -r .target); FID=$(echo "$s" | jq -r .file_id)
   curl -o "${TARGET}.wav" http://localhost:${PORT:-8000}/v1/files/$FID/download

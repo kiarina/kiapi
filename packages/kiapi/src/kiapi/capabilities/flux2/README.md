@@ -1,7 +1,5 @@
 # flux2
 
-**English** | [日本語](README.ja.md)
-
 [mflux FLUX.2 Klein](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/flux2/README.md) provides image generation, image editing, and LoRA learning functions.
 
 - **generate**:

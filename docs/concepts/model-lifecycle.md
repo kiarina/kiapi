@@ -1,7 +1,5 @@
 # Model Lifecycle
 
-**English** | [日本語](README.ja.md)
-
 This concept describes how kiapi prepares, resolves, loads, accounts for, and
 releases inference models and subprocess-backed capabilities.
 
@@ -85,6 +83,6 @@ over stdin/stdout. Generated artifacts pass by filesystem path.
 
 ## Related Concepts
 
-- [Application](../application/)
-- [Jobs and Files](../jobs-and-files/)
-- [Architecture overview](../../../ARCHITECTURE.md)
+- [Application](application.md)
+- [Jobs and Files](jobs-and-files.md)
+- [Architecture overview](../../ARCHITECTURE.md)

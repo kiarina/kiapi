@@ -1,7 +1,5 @@
 # ltx2
 
-**English** | [日本語](README.ja.md)
-
 [mlx-video LTX-2](https://github.com/Blaizzy/mlx-video) provides short video generation functionality.
 
 - **T2V**: Generate video from text

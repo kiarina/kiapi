@@ -1,8 +1,4 @@
-<!-- Language: **English** | [日本語](README.ja.md) -->
-
 # kiapi-relay
-
-[English](README.md) | [日本語](README.ja.md)
 
 Shared relay transport for [kiapi](https://github.com/kiarina/kiapi). It provides
 the relay protocol, the request/response schemas, the in-process request runner,

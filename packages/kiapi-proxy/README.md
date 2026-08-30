@@ -1,8 +1,4 @@
-<!-- Language: **English** | [日本語](README.ja.md) -->
-
 # kiapi-proxy
-
-[English](README.md) | [日本語](README.ja.md)
 
 `kiapi-proxy` is a proxy server that accepts HTTP requests, forwards them to a
 [kiapi](https://github.com/kiarina/kiapi) instance over a relay, and returns the

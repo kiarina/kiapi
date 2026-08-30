@@ -4,8 +4,6 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
 [![API Docs](https://img.shields.io/badge/API%20Docs-GitHub%20Pages-green.svg)](https://kiarina.github.io/kiapi/)
 
-**English** | [日本語](README.ja.md)
-
 ## Summary
 
 kiapi is an API server that uses a Mac Studio M4 Max with 128GB of memory at home to provide the following capabilities.
@@ -261,7 +259,7 @@ make verify-one   # Run only one capability
 Releases to PyPI are automated by GitHub Actions workflows.
 
 > [!NOTE]
-> See [docs/runbooks/release/](docs/runbooks/release/README.md) for the detailed release procedure.
+> See [docs/runbooks/release.md](docs/runbooks/release.md) for the detailed release procedure.
 
 ## Project Status
 

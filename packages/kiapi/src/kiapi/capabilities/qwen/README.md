@@ -1,7 +1,5 @@
 # qwen
 
-**English** | [日本語](README.ja.md)
-
 [mflux Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) provides image generation and image editing functions.
 Qwen Image is a strong model for multilingual prompts and text in images.
 

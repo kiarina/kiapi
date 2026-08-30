@@ -1,7 +1,5 @@
 # depthpro
 
-**English** | [日本語](README.ja.md)
-
 [mflux Depth Pro](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/depth_pro/README.md) estimates a depth map from a single image and produces the following:
 
 - Depth map in grayscale PNG

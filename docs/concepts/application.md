@@ -1,7 +1,5 @@
 # Application
 
-**English** | [日本語](README.ja.md)
-
 This concept describes the workspace boundary, the `kiapi` source layout, and
 application startup.
 
@@ -79,7 +77,7 @@ Settings are configured under the `kiarina.utils.app` section of the user
 
 ## Related Concepts
 
-- [Model Lifecycle](../model-lifecycle/)
-- [Jobs and Files](../jobs-and-files/)
-- [API](../api/)
-- [Architecture overview](../../../ARCHITECTURE.md)
+- [Model Lifecycle](model-lifecycle.md)
+- [Jobs and Files](jobs-and-files.md)
+- [API](api.md)
+- [Architecture overview](../../ARCHITECTURE.md)

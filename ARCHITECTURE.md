@@ -1,7 +1,5 @@
 # kiapi Architecture
 
-**English** | [日本語](ARCHITECTURE.ja.md)
-
 kiapi is a uv workspace for a local inference server, its relay transport, and
 its cross-platform proxy. This document is the map of the architecture; detailed
 design notes live under [`docs/concepts`](docs/concepts/).
@@ -22,11 +20,11 @@ design notes live under [`docs/concepts`](docs/concepts/).
 
 | Concept | Description |
 |---|---|
-| [Application](docs/concepts/application/README.md) | Workspace structure, application startup, settings, and user directories |
-| [Model Lifecycle](docs/concepts/model-lifecycle/README.md) | Setup resources, model registry, memory budget, TTL, and subprocess isolation |
-| [Jobs and Files](docs/concepts/jobs-and-files/README.md) | Processing flow, worker serialization, progress, files, and response negotiation |
-| [Relay](docs/concepts/relay/README.md) | Remote request delivery through local or GCP transports |
-| [API](docs/concepts/api/README.md) | Endpoint organization, model discovery, and two-layer OpenAPI documentation |
+| [Application](docs/concepts/application.md) | Workspace structure, application startup, settings, and user directories |
+| [Model Lifecycle](docs/concepts/model-lifecycle.md) | Setup resources, model registry, memory budget, TTL, and subprocess isolation |
+| [Jobs and Files](docs/concepts/jobs-and-files.md) | Processing flow, worker serialization, progress, files, and response negotiation |
+| [Relay](docs/concepts/relay.md) | Remote request delivery through local or GCP transports |
+| [API](docs/concepts/api.md) | Endpoint organization, model discovery, and two-layer OpenAPI documentation |
 
 ## Documentation Types
 

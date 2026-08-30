@@ -1,7 +1,5 @@
 # web
 
-**English** | [日本語](README.ja.md)
-
 **web capability** for using SearXNG and Crawl4AI from kiapi.
 
 - **search**: Search the web with SearXNG and return JSON search results.

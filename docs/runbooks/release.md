@@ -1,7 +1,5 @@
 # Release
 
-**English** | [日本語](README.ja.md)
-
 ## Prepare
 
 Add release notes to the `Unreleased` section of the root `CHANGELOG.md` and
