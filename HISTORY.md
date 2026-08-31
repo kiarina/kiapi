@@ -3,6 +3,38 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日と作業 PC 名を含めて、新しいものを上に追記します。
 
+## 2026-09-01 — relay を廃止して Tailscale 直結へ一本化（v0.6.0）
+
+作業 PC: macbook-pro-m1-max（mac-studio-m4-max へは SSH で操作）
+
+- ユーザー判断で併用評価（開始 2026-09-01）を短縮し、relay 廃止を決定。
+  スモーク確認は省略（直結は日常利用中、git で戻せるためリスク許容）
+- `packages/kiapi-relay` / `packages/kiapi-proxy`、relay runner の組み込み、
+  `kiapi run --relay`、`/health` の `relay` フィールド、`relay-gcp` extra、
+  `scripts/relay/`、`docs/concepts/relay.md` を削除（154 ファイル、約 7,300 行削減）。
+  release パイプラインは `packages/*/` を動的検出するため削除に自動追従した
+- 破壊的変更として v0.6.0 をリリース（CI / Release PyPI とも成功）。
+  PyPI の `kiapi-relay` / `kiapi-proxy` には deprecation の最終リリースを
+  出さない判断（実利用者が本人のみ。既存リリースは残置、以後更新しない）
+- mac-studio へデプロイ時の落とし穴 2 件:
+  - 削除済みパッケージの `__pycache__` 残骸が workspace glob `packages/*` に
+    マッチして `uv run` が失敗。残骸ディレクトリの削除で解消
+  - `tailscale serve --https=8500` が Tailscale IP の 8500 を掴むため、
+    kiapi の `host: 0.0.0.0` bind が再起動時に EADDRINUSE で失敗
+    （初回は kiapi が先に bind していたため共存できていた）。
+    `host: 127.0.0.1` へ変更して解消。serve は 127.0.0.1 へ proxy するので
+    tailnet 経由のアクセスは変わらず、tailnet 外への露出もなくなった
+- mac-studio の `~/.config/kiapi/settings.yaml` から relay / google セクションを
+  除去（backup: `settings.yaml.pre-relay-removal`）。lock 外の mlx-video は保全
+- macbook の kiapi-proxy launchd service は、editable install の実体が
+  削除済みで CLI が使えないため、`launchctl bootout` + plist 削除で手動
+  uninstall。`~/.config/kiapi-proxy/` も削除
+- GCP の後始末（ユーザー承認済み）: GCS bucket `kiarina-kiapi`（relay セッション
+  残骸 約 105KB のみ）を削除、Firebase RTDB インスタンス `kiarina-kiapi`
+  （asia-southeast1）を disable → 削除。ADC は relay 専用ではないため残置
+- relay を復活させる場合は git 履歴（v0.5.3 以前）と、当時の GCP 構築手順
+  （`packages/kiapi-relay/.mise/tasks/gcp/setup`、削除済み）を参照
+
 ## 2026-09-01 — relay watch ハングの修正と Tailscale 直結の開始
 
 作業 PC: macbook-pro-m1-max（mac-studio-m4-max へは SSH で操作）

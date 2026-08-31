@@ -165,4 +165,4 @@ mise run verify --kiapi --family embedding --fast
 各タスクの内容は `tasks/` のファイルだけに書き、ここはポインタ（1 ファイル 1 行）に保ちます。
 ファイルの追加・削除のたびにこの一覧を更新してください。
 
-- [relay を廃止して Tailscale 直結へ一本化する](tasks/remove-relay.md)
+（なし）
