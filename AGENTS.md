@@ -16,6 +16,7 @@
 
 あらゆるタスクを開始する前に、下記を必ず把握してください。
 
+- 下の「タスク一覧」と、着手するタスクの `tasks/` ファイル
 - `README.md`
 - `ARCHITECTURE.md`
 - `docs/concepts/`
@@ -35,6 +36,26 @@
 
 Google 認証が必要な機能を実装する場合、下記を把握してください。
 - https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google
+
+## タスク管理
+
+- `tasks/` — 未完了タスク。1 タスク 1 ファイルで、背景・やること・進捗・申し送りを
+  そのファイルに直接記載する
+- `HISTORY.md` — 完了した作業、実測値、過去の意思決定
+- 仕様・設計・手順の正典は従来どおり `docs/` と各 README
+
+運用ルール:
+
+- タスクに着手したら、進捗・未検証の懸念・踏んだ落とし穴・次の一手を該当の
+  `tasks/` ファイルへ直接追記する
+- 新しいタスク（今すぐ着手しない将来候補も含む）は `tasks/` にファイルを作り、
+  下の「タスク一覧」へ 1 行追記する
+- **タスクが完了したら、実測値・意思決定を `HISTORY.md` へ、再利用する知見を該当する
+  `docs/` へ移した上で、タスクファイルを削除し、「タスク一覧」から行を消す。**
+  削除したファイルの全文は git 履歴で辿れるため、転記は要点だけで良い
+- `HISTORY.md` に記録するときは、作業日と作業 PC 名を含める
+- `tasks/` と `HISTORY.md` は作業指示・作業記録なので日本語で構わない
+  （「ドキュメントの運用」の英語正典の対象外）
 
 ## テキストの方針
 
@@ -151,3 +172,10 @@ make verify-kiapi-proxy  # kiapi-proxy 経由の capability 検証（既定 rela
 mise run verify --kiapi --family embedding --fast
 mise run verify --kiapi-proxy --family chat --relay gcp
 ```
+
+## タスク一覧
+
+各タスクの内容は `tasks/` のファイルだけに書き、ここはポインタ（1 ファイル 1 行）に保ちます。
+ファイルの追加・削除のたびにこの一覧を更新してください。
+
+- [relay を廃止して Tailscale 直結へ一本化する](tasks/remove-relay.md)
