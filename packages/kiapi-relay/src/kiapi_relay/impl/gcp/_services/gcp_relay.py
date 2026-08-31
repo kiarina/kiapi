@@ -333,7 +333,22 @@ class GCPRelay(BaseRelay):
         headers = await self._authorized_headers("GET", url)
         headers["Accept"] = "text/event-stream"
 
-        async with self._http.stream("GET", url, headers=headers) as response:
+        # The shared client has no read timeout, so a silently dropped SSE
+        # connection would block aiter_lines forever. RTDB keep-alives arrive
+        # about every 30 seconds, so bound the gap between reads to detect
+        # dead connections and let _listen_forever reconnect.
+        timeout = httpx.Timeout(
+            connect=30.0,
+            read=self.settings.watch_read_timeout_s,
+            write=30.0,
+            pool=30.0,
+        )
+        async with self._http.stream(
+            "GET",
+            url,
+            headers=headers,
+            timeout=timeout,
+        ) as response:
             response.raise_for_status()
             event_name = ""
             data_lines: list[str] = []

@@ -400,6 +400,7 @@ additionally protects the `response.json` commit marker from duplicate creation.
 | `lifecycle_age_days` | `KIAPI_RELAY_GCP_LIFECYCLE_AGE_DAYS` | `1` | Age used by the managed GCS delete rule. |
 | `manage_bucket_lifecycle` | `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE` | `true` | Whether GCPRelay updates the bucket lifecycle at startup. |
 | `reconnect_delay_s` | `KIAPI_RELAY_GCP_RECONNECT_DELAY_S` | `1.0` | Delay before reconnecting the RTDB SSE watch. |
+| `watch_read_timeout_s` | `KIAPI_RELAY_GCP_WATCH_READ_TIMEOUT_S` | `90.0` | Maximum seconds between bytes on the RTDB SSE watch stream; RTDB sends a keep-alive about every 30 seconds, so a silently dropped connection times out and reconnects. |
 | `heartbeat_interval_s` | `KIAPI_RELAY_GCP_HEARTBEAT_INTERVAL_S` | `300.0` | How often the kiapi node refreshes its liveness entry under `liveness/{node_id}`. |
 | `liveness_ttl_s` | `KIAPI_RELAY_GCP_LIVENESS_TTL_S` | `1800.0` | A node is selectable only when its last heartbeat is newer than this; clients pick the most recent one within it. |
 

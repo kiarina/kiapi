@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 from kiapi_relay import RelayFileBody, RelayJsonBody, RelayResponse
@@ -109,6 +110,70 @@ async def test_put_event_queues_once_and_reports_queued() -> None:
 
     await relay._handle_event("put", event)
     await relay._handle_event("put", event)
+
+    assert relay._queue.qsize() == 1
+    assert reports[0]["status"] == "queued"
+
+
+async def test_listen_once_times_out_when_stream_stalls_silently() -> None:
+    relay = _relay()
+    relay.settings = GCPRelaySettings(
+        database_url="https://example.firebaseio.com",
+        bucket="relay-bucket",
+        watch_read_timeout_s=0.2,
+    )
+    events = (
+        b"event: keep-alive\n"
+        b"data: null\n"
+        b"\n"
+        b"event: put\n"
+        b'data: {"path": "/session-1", "data":'
+        b' {"session_id": "session-1", "source_node_id": "requester"}}\n'
+        b"\n"
+    )
+
+    async def handle(
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+    ) -> None:
+        await reader.readuntil(b"\r\n\r\n")
+        writer.write(
+            b"HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\n\r\n" + events
+        )
+        await writer.drain()
+        try:
+            # Stall: send nothing more until the client gives up and
+            # disconnects.
+            await reader.read()
+        finally:
+            writer.close()
+
+    server = await asyncio.start_server(handle, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    relay._rtdb_url = (  # type: ignore[method-assign]
+        lambda path: f"http://127.0.0.1:{port}/{path}.json"
+    )
+
+    async def authorized_headers(method: str, url: str) -> dict[str, str]:
+        return {}
+
+    relay._authorized_headers = authorized_headers  # type: ignore[method-assign]
+
+    reports: list[dict[str, Any]] = []
+
+    async def put_response(notification: Any, payload: dict[str, Any]) -> None:
+        reports.append(payload)
+
+    relay._put_response = put_response  # type: ignore[method-assign]
+    relay._ensure_http()
+
+    try:
+        with pytest.raises(httpx.ReadTimeout):
+            await asyncio.wait_for(relay._listen_once(), timeout=5)
+    finally:
+        await relay.aclose()
+        server.close()
+        await server.wait_closed()
 
     assert relay._queue.qsize() == 1
     assert reports[0]["status"] == "queued"

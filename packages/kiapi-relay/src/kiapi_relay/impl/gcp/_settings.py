@@ -44,6 +44,17 @@ class GCPRelaySettings(BaseSettings):
         title="RTDB reconnect delay seconds",
         description="Delay before reconnecting the RTDB SSE watch after an error.",
     )
+    watch_read_timeout_s: float = Field(
+        default=90.0,
+        gt=0,
+        title="RTDB watch read timeout seconds",
+        description=(
+            "Maximum seconds to wait between bytes on the RTDB SSE watch "
+            "stream. RTDB sends a keep-alive event about every 30 seconds, "
+            "so a silently dropped connection times out and the watch "
+            "reconnects instead of hanging forever."
+        ),
+    )
     request_poll_interval_s: float = Field(
         default=0.5,
         gt=0,

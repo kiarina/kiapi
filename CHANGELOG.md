@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **kiapi-relay**: Bound the GCP RTDB watch stream with a read timeout (`KIAPI_RELAY_GCP_WATCH_READ_TIMEOUT_S`, default 90s) so a silently dropped SSE connection reconnects instead of hanging forever while the liveness heartbeat keeps advertising the node.
+
 ## [0.5.3] - 2026-07-30
 
 ### Fixed

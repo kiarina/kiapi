@@ -19,3 +19,12 @@ def test_settings_reject_insecure_database_url() -> None:
             database_url="http://example.firebaseio.com",
             bucket="relay-bucket",
         )
+
+
+def test_settings_default_watch_read_timeout_covers_keepalive_gap() -> None:
+    settings = GCPRelaySettings(
+        database_url="https://example.firebaseio.com",
+        bucket="relay-bucket",
+    )
+
+    assert settings.watch_read_timeout_s == 90.0
