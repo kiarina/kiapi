@@ -29,9 +29,9 @@ classifiers = [
 ]
 dependencies = [
     # --- web ---
-    # FastAPI 0.137 keeps included routers lazy; build_openapi currently filters
-    # app.routes directly and needs flattened APIRoute entries.
-    "fastapi<0.137",
+    # build_openapi walks routing.iter_route_contexts, added for the lazy
+    # included routers of FastAPI 0.137+.
+    "fastapi>=0.141",
     "uvicorn[standard]",
     "click",
     "questionary",
@@ -39,9 +39,9 @@ dependencies = [
     "pyyaml",
     "python-multipart", # multipart/form-data (file uploads)
     # --- shared ---
-    # LTX-2 installs mlx-video after uv sync. Its librosa dependency pulls numba,
-    # whose current Python 3.12 wheels do not support numpy 2.5 yet.
-    "numpy<2.5",
+    # numpy>=2.5 needs numba>=0.67 in the out-of-band LTX-2 install
+    # (`kiapi activate --family ltx2` pulls mlx-video -> librosa -> numba).
+    "numpy",
     "pillow",
     "psutil", # process RSS measurement (framework-agnostic fallback)
     "httpx", # web search capability: async HTTP client for the SearXNG backend

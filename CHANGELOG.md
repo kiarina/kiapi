@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **kiapi**: Updated dependencies. FastAPI moves to `>=0.141` (`build_openapi` now walks `routing.iter_route_contexts` to handle the lazy included routers of FastAPI 0.137+; the generated OpenAPI documents are unchanged), and the `numpy<2.5` cap is lifted (numba >= 0.67 supports numpy 2.5; the out-of-band LTX-2 install needs `numba>=0.67`).
+
+### Removed
+
+- Removed the Node tooling (`package.json` / pnpm / `firebase-tools`) that existed only for the retired GCP relay setup task. This clears all open Dependabot alerts, which were transitive dependencies of `firebase-tools`.
+
 ## [0.6.0] - 2026-09-01
 
 ### Removed

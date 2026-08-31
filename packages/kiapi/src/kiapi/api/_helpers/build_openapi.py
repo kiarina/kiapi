@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, routing
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
@@ -15,12 +15,15 @@ def build_openapi(
     description: str | None = None,
     capability: CapabilitySpec | None = None,
 ) -> dict:
-    routes = [
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute)
+    # FastAPI >= 0.137 keeps included routers lazy in app.routes, so walk the
+    # route contexts (which carry the effective, prefix-composed paths).
+    route_contexts = [
+        context
+        for context in routing.iter_route_contexts(app.routes)
+        if isinstance(context.original_route, APIRoute)
+        and context.path is not None
         and _path_matches(
-            route.path,
+            context.path,
             path_prefixes=path_prefixes,
             include_paths=include_paths,
         )
@@ -29,7 +32,7 @@ def build_openapi(
         title=title,
         version=__version__,
         description=description,
-        routes=routes,
+        routes=route_contexts,
     )
 
     if capability is not None:
