@@ -1,6 +1,5 @@
 .PHONY: init list sync update upgrade format lint check test build clean ci config pages
-.PHONY: dev staging verify verify-fast
-.PHONY: verify-kiapi verify-kiapi-relay verify-kiapi-proxy
+.PHONY: dev staging verify verify-fast verify-kiapi
 .DEFAULT_GOAL := check
 #--------------------------------------------------
 init:
@@ -16,9 +15,6 @@ upgrade:
 	uv sync --inexact --upgrade --all-packages --all-extras --all-groups
 clean:
 	mise run clean
-#--------------------------------------------------
-setup-relay-gcp:
-	mise -C packages/kiapi-relay run gcp:setup
 #--------------------------------------------------
 test-settings-upload:
 	mise run test-settings:upload .env test_settings.yaml
@@ -51,7 +47,7 @@ ci:
 dev:
 	uv run kiapi run --host 127.0.0.1 --port 8000 --debug
 staging:
-	uv run kiapi run --host 0.0.0.0 --port 8500 --relay gcp --debug
+	uv run kiapi run --host 0.0.0.0 --port 8500 --debug
 #--------------------------------------------------
 verify:
 	mise run verify
@@ -59,9 +55,3 @@ verify-fast:
 	mise run verify --fast
 verify-kiapi:
 	mise run verify --kiapi
-verify-kiapi-relay:
-	mise run verify --kiapi-relay
-verify-kiapi-proxy:
-	mise run verify --kiapi-proxy
-verify-kiapi-proxy-fastest:
-	mise run verify --kiapi-proxy --family embedding

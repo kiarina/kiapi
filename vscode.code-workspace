@@ -4,12 +4,6 @@
       "path": "packages/kiapi"
     },
     {
-      "path": "packages/kiapi-relay"
-    },
-    {
-      "path": "packages/kiapi-proxy"
-    },
-    {
       "path": ".",
       "name": "root"
     }

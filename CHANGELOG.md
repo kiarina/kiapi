@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+### Removed
 
-- **kiapi-relay**: Bound the GCP RTDB watch stream with a read timeout (`KIAPI_RELAY_GCP_WATCH_READ_TIMEOUT_S`, default 90s) so a silently dropped SSE connection reconnects instead of hanging forever while the liveness heartbeat keeps advertising the node.
+- **BREAKING**: Removed the relay transport and retired the `kiapi-relay` and `kiapi-proxy` packages. `kiapi run --relay`, the `relay-gcp` extra, the `relay` field of `/health`, and the `KIAPI_RELAY_*` settings are gone. To reach kiapi from other machines, expose it over your own private network layer instead — for example, run `tailscale serve --bg --https=8500 8500` on the kiapi machine and point clients at `https://<machine>.<tailnet>.ts.net:8500`. The published `kiapi-relay` / `kiapi-proxy` distributions remain on PyPI as-is but will receive no further updates. (The unreleased GCP RTDB watch read-timeout fix was removed together with the relay.)
 
 ## [0.5.3] - 2026-07-30
 

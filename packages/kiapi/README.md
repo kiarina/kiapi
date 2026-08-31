@@ -62,69 +62,12 @@ return 503 as an insufficient memory budget error.
 model weights and Docker images. At first, it is recommended to use `kiapi activate`
 to set up only the capabilities you need.
 
-## Remote Job Relay
+## Remote Access
 
-The optional GCP relay lets a kiapi node inside a closed network receive API
-work without exposing an inbound socket. Firebase Realtime Database carries
-small notifications, while Cloud Storage carries request and response bodies.
-Install kiapi with the `relay-gcp` extra to enable it:
-
-```sh
-python3.12 -m pip install --upgrade "kiapi[relay-gcp]"
-uv tool install --python 3.12 "kiapi[relay-gcp]"
-```
-
-```sh
-export KIAPI_RELAY_GCP_DATABASE_URL="https://PROJECT.firebaseio.com"
-export KIAPI_RELAY_GCP_BUCKET="PRIVATE_RELAY_BUCKET"
-
-# Uses Application Default Credentials by default.
-kiapi run --relay gcp
-```
-
-Each node generates its own `node_id` on first start, persists it in the user
-data directory, and publishes a liveness heartbeat under `liveness`.
-A requester picks the most recently seen node and writes
-`sessions/{session_id}/request.json` in GCS, then writes a notification
-to `nodes/{node_id}/requests/{session_id}` in RTDB. The relay reports
-`queued`, `running`, and the terminal result below the requester node's
-`responses` path.
-
-- Requests are dispatched directly to the in-process FastAPI app and handled
-  one at a time by the relay.
-- JSON responses use `response.json`. Binary responses write `response.body`
-  before `response.json`.
-- `response.json` uses a GCS create-only generation precondition. A completed
-  response found after restart is reported without executing the API again.
-- The terminal RTDB response and request deletion use one atomic multi-location
-  update.
-- Startup installs a session-scoped lifecycle rule that deletes session objects
-  after one day. Set `KIAPI_RELAY_GCP_MANAGE_BUCKET_LIFECYCLE=false` when
-  infrastructure manages this rule.
-
-Use a dedicated bucket and narrowly scoped RTDB/GCS permissions. Google
-credentials are configured through
-[`kiarina-lib-google`](https://github.com/kiarina/kiarina-python/tree/main/packages/kiarina-lib-google).
-
-See [GCP Relay setup](../kiapi-relay/src/kiapi_relay/impl/gcp/README.md) for resource
-creation, IAM, authentication, configuration, and verification steps.
-
-For local relay verification without GCP, use `local`. It uses the same
-in-process dispatch path but stores notifications and payloads under a local
-directory:
-
-```sh
-export KIAPI_RELAY_LOCAL_ROOT="/tmp/kiapi/relay"
-export KIAPI_RELAY_LOCAL_PREFIX="private/kiapi"
-
-kiapi run --relay local
-```
-
-The requester writes `{root}/{prefix}/sessions/{session_id}/request.json`, then
-writes `{root}/{prefix}/nodes/{node_id}/requests/{session_id}.json` with
-`{"session_id":"...","source_node_id":"..."}`. The relay writes bridge status
-to `{root}/{prefix}/nodes/{source_node_id}/responses/{session_id}.json` and
-stores the committed response in the session directory.
+kiapi binds to `127.0.0.1` by default and does not expose an inbound socket.
+For access from other machines, put it behind your own private network layer —
+for example `tailscale serve` for a TLS endpoint reachable only inside your
+tailnet.
 
 ## Local Storage
 

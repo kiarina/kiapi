@@ -3,13 +3,9 @@ members = ["packages/*"]
 
 [tool.uv.sources]
 kiapi = { workspace = true }
-kiapi-relay = { workspace = true }
-kiapi-proxy = { workspace = true }
 
 [tool.uv]
 # The development lockfile resolves on Apple Silicon (kiapi pulls MLX wheels).
-# This only constrains the local uv.lock; the cross-platform packages
-# (kiapi-relay, kiapi-proxy) publish their own platform-agnostic metadata.
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 
 [dependency-groups]
@@ -68,4 +64,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["kiapi", "kiapi_relay", "kiapi_proxy"]
+known-first-party = ["kiapi"]

@@ -11,8 +11,6 @@ supported-markers = [
 [manifest]
 members = [
     "kiapi",
-    "kiapi-proxy",
-    "kiapi-relay",
 ]
 
 [manifest.dependency-groups]
@@ -182,19 +180,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cryptography"
-version = "50.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cffi", marker = "platform_machine == 'arm64' and platform_python_implementation != 'PyPy' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/ad/5d6702db60b1e40b41ef513b6967ff5848f307d50f8449baf1634f5908f1/cryptography-50.0.1.tar.gz", hash = "sha256:5dd9bda1c12b4162f6ff568eeb5e0ff956c28d14406e875cfe8a63a2d414ff20", size = 880381, upload-time = "2026-08-25T19:45:45.499Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/19/797e2aaac9df6a66f1550f49979dc1b1e39ecd2077501c30efa81e8d5d67/cryptography-50.0.1-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:b8f852c65863251b9e3a1b8c150ce21e59b522dbb6a7d4bc80e680d38388e986", size = 4010153, upload-time = "2026-08-25T19:44:03.155Z" },
-    { url = "https://files.pythonhosted.org/packages/84/a9/ee16a903f13755e914d1eecc482fe64d1f10761c3960e5d8fa6837377aff/cryptography-50.0.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ca83d00d9e69cd5eb63f2e69c3a5a59e0cecae5ae14c6ae0b35830fe3b37bad0", size = 4035307, upload-time = "2026-08-25T19:44:58.305Z" },
-]
-
-[[package]]
 name = "cycler"
 version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -307,127 +292,6 @@ http = [
 ]
 
 [[package]]
-name = "google-api-core"
-version = "2.34.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-auth", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "googleapis-common-protos", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "proto-plus", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "protobuf", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "requests", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/7c/9be3903e3d45415e8ca493c75f8990a0f6f579d168015d44c379350d0ab0/google_api_core-2.34.0.tar.gz", hash = "sha256:98a779fe72de956eb1c9c2f47ff4c4432a668ece1a002ec38bed07ec2698ae59", size = 187953, upload-time = "2026-08-06T06:23:58.128Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bc/c1/a8a92ae1bc4b1a8f804c776d7d3f0c771b78a62c3ad4df1be41b3fd8c767/google_api_core-2.34.0-py3-none-any.whl", hash = "sha256:cdf9c67e7ca2402d86ccbfde5f2503fc83e3cc3f58cc78456ae96cad24a6d2de", size = 180545, upload-time = "2026-08-06T06:22:47.502Z" },
-]
-
-[[package]]
-name = "google-api-python-client"
-version = "2.199.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-core", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-auth", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-auth-httplib2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "httplib2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "uritemplate", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/13/ff/c58d475046b552754a5ee24d98912506b07ea7ac7f0a434b327ad194ca32/google_api_python_client-2.199.0.tar.gz", hash = "sha256:8150816e22e01b36aa4b7523cdc1a2d2164e81c4de8a9b338785d7ecb4390ec2", size = 15394941, upload-time = "2026-08-20T21:38:39.745Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/42/c443badc33d972ee0e0adcd481c32a71f15d3e04c23a7a3d758e4018c633/google_api_python_client-2.199.0-py3-none-any.whl", hash = "sha256:1d2fa0e7f9d68f063b1a9ff7ed290d6e6c93176260487bf3a991e41534ca23a3", size = 15991965, upload-time = "2026-08-20T21:38:37.274Z" },
-]
-
-[[package]]
-name = "google-auth"
-version = "2.57.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cryptography", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pyasn1-modules", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/41/64/55f316b729f92a552d26e00aa3b1542b2e149d0a5efe2842afff0cac7af7/google_auth-2.57.0.tar.gz", hash = "sha256:9b4f96d6a1feb5f7201231f47cfb3de08d8f176f8a61f9e461555116e95a8789", size = 370794, upload-time = "2026-08-25T19:18:26.419Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/f3/8508a702c094af5f6e89773f4dfdeee74913df0f41a02c21b5e7dc3d75cd/google_auth-2.57.0-py3-none-any.whl", hash = "sha256:180dafe015cfb62193bea26b677500fab5b9fd51a1e825ebf3ad9b182047ae59", size = 259728, upload-time = "2026-08-24T21:55:08.449Z" },
-]
-
-[[package]]
-name = "google-auth-httplib2"
-version = "0.4.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-auth", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "httplib2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/74/0c8177b73734dfbd89420c162ac8754257fa0f9007fb49569493d83a17db/google_auth_httplib2-0.4.2.tar.gz", hash = "sha256:916225a6367e613c9af44d83f41688a599d3f687777846b8b91bec65085ed1f1", size = 11211, upload-time = "2026-08-25T19:18:24.611Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/33/e697a69f13bfd448d33a374231b89cbbb203dedfb4aae9d26126be6f6c72/google_auth_httplib2-0.4.2-py3-none-any.whl", hash = "sha256:4298dd6b1415972d0c464b7177e6a69a595e7aec5b972222ecdca342f6009647", size = 9529, upload-time = "2026-08-24T21:55:05.843Z" },
-]
-
-[[package]]
-name = "google-cloud-core"
-version = "2.7.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-core", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-auth", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/54/790548b190cff9cf07225c811d2668eacd8f2cbf04114475cbe3e5738752/google_cloud_core-2.7.0.tar.gz", hash = "sha256:874aaf89765db87a9b911b7a2ca7c5068554868eed9e75c7766affe342a2913d", size = 36603, upload-time = "2026-08-25T19:18:43.076Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/64/904dbc9bee128e7b87eeb60da67c8fa4d1a8acdc9a45dd2fedca67ef184d/google_cloud_core-2.7.0-py3-none-any.whl", hash = "sha256:c18a250904cfdda021eb3ae8b8238c9f9ca272a4cbbfb5cba946b3fe3022eed1", size = 31046, upload-time = "2026-08-24T21:55:28.36Z" },
-]
-
-[[package]]
-name = "google-cloud-storage"
-version = "3.13.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-core", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-auth", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-cloud-core", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-crc32c", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "google-resumable-media", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "requests", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/7e/73bb7512df1d1aad6ce3f9aed847cd40e0cd400ba4a85d86ab8eb412e9cc/google_cloud_storage-3.13.1.tar.gz", hash = "sha256:a80bf8cac2794808aa61c50c5f769ecbbe2d10331bacd0d69d30e59b14b346b2", size = 17341051, upload-time = "2026-08-06T06:24:42.229Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/6f/d69f0e185e08ddb58c323a0a935af2b492907b5de362bc08933b0a3b5644/google_cloud_storage-3.13.1-py3-none-any.whl", hash = "sha256:98208de6c21e85cecd3eb44551894efff33d98365500e178867d4305854a770a", size = 341486, upload-time = "2026-08-06T06:23:36.548Z" },
-]
-
-[[package]]
-name = "google-crc32c"
-version = "1.8.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/41/4b9c02f99e4c5fb477122cd5437403b552873f014616ac1d19ac8221a58d/google_crc32c-1.8.0.tar.gz", hash = "sha256:a428e25fb7691024de47fecfbff7ff957214da51eddded0da0ae0e0f03a2cf79", size = 14192, upload-time = "2025-12-16T00:35:25.142Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/5f/7307325b1198b59324c0fa9807cafb551afb65e831699f2ce211ad5c8240/google_crc32c-1.8.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:4b8286b659c1335172e39563ab0a768b8015e88e08329fa5321f774275fc3113", size = 31300, upload-time = "2025-12-16T00:21:56.723Z" },
-]
-
-[[package]]
-name = "google-resumable-media"
-version = "2.10.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-crc32c", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/17/4b/44e128cd7b0e72cd26da4a3052cd8a9ef1b5a890be7c611558067ea0b354/google_resumable_media-2.10.2.tar.gz", hash = "sha256:1de441703cd298d75a419bfdc0066e9fc7b0a1de630df96eea8ce8f5c759358c", size = 2164918, upload-time = "2026-08-25T19:19:11.814Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/55/30/3e976681b5319715ab022363f58f6f8e10f546a1777756fe3ebd918857e4/google_resumable_media-2.10.2-py3-none-any.whl", hash = "sha256:e3cedc827a4ea41e216582d74346f1fb9fceb625a8c3c53912f2ca1d663334d7", size = 81531, upload-time = "2026-08-25T19:18:07.193Z" },
-]
-
-[[package]]
-name = "googleapis-common-protos"
-version = "1.75.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/90/fb8f1c84537fbf210c1f53a53ae473a805f6599c5a40b93c1bbadd211f7a/googleapis_common_protos-1.75.2.tar.gz", hash = "sha256:8829a3d1e4508c5b7b9a6b9525f7fccff611f8531644579a76466c29295d4bb2", size = 154083, upload-time = "2026-08-25T19:19:13.028Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/5b/1c9e55363c3b1890a98cae813de5b4ea327845756cd8fb7ee690140c7eac/googleapis_common_protos-1.75.2-py3-none-any.whl", hash = "sha256:6b83302f554ea93a0f48409c7fc2050f954bcbcddb7e3a9c76d4a823cb22920e", size = 307002, upload-time = "2026-08-25T19:18:08.927Z" },
-]
-
-[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -478,18 +342,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/ad/f4f0e57345f1870f3e8cb624e058d7eca6e5a27d33bcc3311d9b618734cd/httpcore2-2.12.0.tar.gz", hash = "sha256:9293522bba0aa7c4c8e9e3f040c16575bd8868e155a77fa30c7a9085a5eae648", size = 67548, upload-time = "2026-08-18T13:22:08.211Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/74/d370e55600d9bcfa0d9794b0166126d49291a3d2b20c268fc98c453a4948/httpcore2-2.12.0-py3-none-any.whl", hash = "sha256:7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb", size = 83074, upload-time = "2026-08-18T13:22:05.854Z" },
-]
-
-[[package]]
-name = "httplib2"
-version = "0.32.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyparsing", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/84/f5/ccf58de92d61e3ad921119668f54ed36ca1d0cf5dcc5c1657dfb164fd78b/httplib2-0.32.0.tar.gz", hash = "sha256:48a0ef30a42db65d8f3399045e1d09ab0ba66e3b9efc360d07f80ea55d286025", size = 254283, upload-time = "2026-06-26T10:13:56.265Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/a0/550eec327e5f5c7b732531c489f5307efec41f047b0d703bd4ca1e5ad2db/httplib2-0.32.0-py3-none-any.whl", hash = "sha256:dc6705cacdf3fb0a2aba7629fa33c90fd93e30035db0c157325826be177e4816", size = 93148, upload-time = "2026-06-26T10:13:54.985Z" },
 ]
 
 [[package]]
@@ -591,7 +443,6 @@ dependencies = [
     { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-app", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mflux", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -613,18 +464,11 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 
-[package.optional-dependencies]
-relay-gcp = [
-    { name = "kiapi-relay", extra = ["gcp"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "click" },
     { name = "fastapi", specifier = "<0.137" },
     { name = "httpx" },
-    { name = "kiapi-relay", editable = "packages/kiapi-relay" },
-    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'relay-gcp'", editable = "packages/kiapi-relay" },
     { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", specifier = ">=0.18.0" },
@@ -644,89 +488,6 @@ requires-dist = [
     { name = "torchaudio" },
     { name = "torchvision" },
     { name = "uvicorn", extras = ["standard"] },
-]
-provides-extras = ["relay-gcp"]
-
-[[package]]
-name = "kiapi-proxy"
-version = "0.5.0"
-source = { editable = "packages/kiapi-proxy" }
-dependencies = [
-    { name = "click", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiapi-relay", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiarina-utils-app", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "python-multipart", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "uvicorn", extra = ["standard"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
-[package.optional-dependencies]
-relay-gcp = [
-    { name = "kiapi-relay", extra = ["gcp"], marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click" },
-    { name = "fastapi" },
-    { name = "kiapi-relay", editable = "packages/kiapi-relay" },
-    { name = "kiapi-relay", extras = ["gcp"], marker = "extra == 'relay-gcp'", editable = "packages/kiapi-relay" },
-    { name = "kiarina-utils-app", specifier = ">=2.3.0" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pydantic-settings" },
-    { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
-    { name = "python-multipart" },
-    { name = "uvicorn", extras = ["standard"] },
-]
-provides-extras = ["relay-gcp"]
-
-[[package]]
-name = "kiapi-relay"
-version = "0.5.2"
-source = { editable = "packages/kiapi-relay" }
-dependencies = [
-    { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "httpx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiarina-utils-common", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
-[package.optional-dependencies]
-gcp = [
-    { name = "google-cloud-storage", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "kiarina-lib-google", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi" },
-    { name = "google-cloud-storage", marker = "extra == 'gcp'", specifier = ">=3.7.0" },
-    { name = "httpx" },
-    { name = "kiarina-lib-google", marker = "extra == 'gcp'", specifier = ">=2.2.1" },
-    { name = "kiarina-utils-common", specifier = ">=2.2.0" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pydantic-settings" },
-    { name = "pydantic-settings-manager", specifier = ">=3.8.0" },
-]
-provides-extras = ["gcp"]
-
-[[package]]
-name = "kiarina-lib-google"
-version = "2.8.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-api-python-client", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pydantic-settings-manager", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/b1/c701233af571760fb8ef3b778d8e163d0e49de46b3bafb59ee957e1cc98d/kiarina_lib_google-2.8.0.tar.gz", hash = "sha256:bc97e65fa5a1b3fb11ad717542ebe8c196f8b087a3671f1b7b9a7190587052b8", size = 19645, upload-time = "2026-07-08T03:56:04.098Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/d5/84c92642c21bb7ad8cf2d5548e1535c9610cc3a09268d8d769f3342064cc/kiarina_lib_google-2.8.0-py3-none-any.whl", hash = "sha256:fa0139623ed697f80cb386c4e1bd4a8603e8d2a3198a364343079853ce2a0200", size = 14066, upload-time = "2026-07-08T03:55:57.633Z" },
 ]
 
 [[package]]
@@ -1199,18 +960,6 @@ wheels = [
 ]
 
 [[package]]
-name = "proto-plus"
-version = "1.28.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/40/a6/4fbadcc2044034449b3f8f0ce82dcf3005d53f37c136642103fd4836a31c/proto_plus-1.28.4.tar.gz", hash = "sha256:5ff7ecad828e032a491fcb86947801768e32237f99dd049b649965b892ae9a63", size = 58679, upload-time = "2026-08-25T19:19:15.102Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/5d/0f04b85dafdc3250ced7f2592efc17dce7f40712e941e9632202481e600d/proto_plus-1.28.4-py3-none-any.whl", hash = "sha256:4b01341272f8a348db3f003b6143109f83ab43091019d5181b3fcdf500ab32aa", size = 50797, upload-time = "2026-08-25T19:18:12.338Z" },
-]
-
-[[package]]
 name = "protobuf"
 version = "7.36.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1236,27 +985,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3d/e3/27f57f80141379d60defe6703eb50a707325706f07fedfd1312c7a751995/pyarrow-25.0.1.tar.gz", hash = "sha256:9150a83248bfed9813ea3c3af74c3856c1984d444aa28e58bf7733b9750ddf6a", size = 1201653, upload-time = "2026-08-10T12:40:53.904Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/e2/9ab15b88cbfac28e16419ce5439ec29234c5172cb8259301b4ba639bdec0/pyarrow-25.0.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:df961f2e7ae9cf496459259d798652c70625f6c080650d6952f8c04053c58ee9", size = 35861559, upload-time = "2026-08-10T12:38:02.567Z" },
-]
-
-[[package]]
-name = "pyasn1"
-version = "0.6.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/23310166d960def5897e91fe20e5b724601b02a22e84ba1f94232c0b7f67/pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", size = 151262, upload-time = "2026-07-09T01:12:33.988Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b", size = 84410, upload-time = "2026-07-09T01:12:32.92Z" },
-]
-
-[[package]]
-name = "pyasn1-modules"
-version = "0.4.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyasn1", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/e6/78ebbb10a8c8e4b61a59249394a4a594c1a7af95593dc933a349c8d00964/pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", size = 307892, upload-time = "2025-03-28T02:41:22.17Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a", size = 181259, upload-time = "2025-03-28T02:41:19.028Z" },
 ]
 
 [[package]]
@@ -1727,15 +1455,6 @@ wheels = [
 ]
 
 [[package]]
-name = "uritemplate"
-version = "4.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/98/60/f174043244c5306c9988380d2cb10009f91563fc4b31293d27e17201af56/uritemplate-4.2.0.tar.gz", hash = "sha256:480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e", size = 33267, upload-time = "2025-06-02T15:12:06.318Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl", hash = "sha256:962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686", size = 11488, upload-time = "2025-06-02T15:12:03.405Z" },
-]
-
-[[package]]
 name = "urllib3"
 version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1801,9 +1520,11 @@ wheels = [
 name = "websockets"
 version = "17.1"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/72/fba934cb3dff7a85d811820efffcd141ddd52b5a2a01637f64551373ff4d/websockets-17.1.tar.gz", hash = "sha256:acfea4c20bf54384883ea33b1240fc1db4f52e190823a4e2b334bc3e8bfca96a", size = 187520, upload-time = "2026-08-26T17:25:33.063Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/0d/098f23c4c858e5de9459ffc554fa07d5493fbcfca7f040b5800cf1cecc35/websockets-17.1-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:76dd004f59115087c7b700474cb18f01325e37250032e19396c08ae41448e4b3", size = 217015, upload-time = "2026-08-26T14:55:45.194Z" },
     { url = "https://files.pythonhosted.org/packages/8f/e7/df821761772beaa48c211ee0e234930b35c1473778470773823f56d3911b/websockets-17.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:87f0d5e77548b0c40c8464cdb6108792e7e53f487c6400028a4ec28a8afbe5ab", size = 214959, upload-time = "2026-08-26T14:55:47.885Z" },
+    { url = "https://files.pythonhosted.org/packages/41/63/23572870e01836a98346075b9e17a8bc24a6ddd9800a3204ceee58677f3c/websockets-17.1-py3-none-any.whl", hash = "sha256:f221081107b8c48184d99f7019604486376e7ef826037e70aad6b02540732c23", size = 211134, upload-time = "2026-08-26T17:25:31.397Z" },
 ]
 
 [[package]]

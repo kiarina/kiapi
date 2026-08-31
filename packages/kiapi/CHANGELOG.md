@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- **BREAKING**: Removed the relay transport. `kiapi run --relay`, the `relay-gcp` extra, the `relay` field of `/health`, and the `KIAPI_RELAY_*` settings are gone, and kiapi no longer depends on `kiapi-relay`. To reach kiapi from other machines, expose it over your own private network layer instead — for example, run `tailscale serve --bg --https=8500 8500` on the kiapi machine and point clients at `https://<machine>.<tailnet>.ts.net:8500`. Remove any `kiapi_relay*` and relay-related `kiarina.lib.google` sections from your `settings.yaml`.
+
 ## [0.5.3] - 2026-07-30
 
 ### Fixed

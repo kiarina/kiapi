@@ -78,31 +78,23 @@ Always review the upstream license to confirm the terms and whether commercial u
 
 **Provide secure external access to kiapi inside a closed network:**
 
-- **Relay:**
-  - Provide a pluggable shared transport for reaching the kiapi server (watch / request)
-  - Provide the [gcp](packages/kiapi-relay/src/kiapi_relay/impl/gcp/README.md) implementation backed by Firebase Realtime Database and Google Cloud Storage
-- **Proxy server:**
-  - A proxy server that forwards HTTP requests to kiapi over the relay and returns the results
-  - The proxy is lightweight and runs on any OS
+- kiapi binds to `127.0.0.1` by default and never exposes an inbound socket by itself
+- For access from other machines, put it behind your own private network layer, for example `tailscale serve`
 
 > [!NOTE]
 > See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Packages
 
-This project publishes the following three packages on PyPI.
+This project publishes the following package on PyPI.
 
 | Package | Description | Runs on |
 | --- | --- | --- |
 | [kiapi](packages/kiapi/README.md) | Local API server that uses Apple Silicon and MLX to provide generative AI capabilities.<br>Provides the `kiapi` command for managing and starting kiapi. | Apple Silicon (macOS) |
-| [kiapi-relay](packages/kiapi-relay/README.md) | Library that implements the relay functionality.<br>Used by both kiapi and kiapi-proxy. | Any platform |
-| [kiapi-proxy](packages/kiapi-proxy/README.md) | Proxy server that relays requests to kiapi.<br>Runs on low-spec machines regardless of OS. | Linux / Windows / macOS |
 
-See each package README linked above for usage instructions.
+See the package README linked above for usage instructions.
 
 ## Quick Start
-
-### kiapi
 
 **Set up kiapi:**
 ```sh
@@ -155,84 +147,13 @@ kiapi service stop       # Stop
 kiapi service uninstall  # Remove
 ```
 
-### kiapi[relay-gcp] + kiapi-proxy
+**Access from other machines:**
+kiapi binds to `127.0.0.1` by default. To reach it from other machines, expose
+it over your own private network layer. For example, with
+[Tailscale](https://tailscale.com/) on the kiapi machine:
 
-**pre-requisite:**
-- Create a GCP project and enable billing
-- Create a Firebase project and upgrade it to the Blaze Plan
-- Install [gcloud](https://cloud.google.com/sdk/docs/install)
-- Install [firebase-tools](https://firebase.google.com/docs/cli)
-- Install [mise](https://mise.jdx.dev/getting-started.html)
-
-**Set up the GCP environment:**
-Interactively configures the GCS bucket, Realtime Database, and authentication.
-For authentication, you can choose from the following three methods.
-- ADC
-- Service Account Key
-- ADC + Impersonation
-This example uses the ADC method.
 ```sh
-gcloud login  # Log in to gcloud for GCS bucket and permission setup
-firebase login  # Log in to firebase to create the RTDB
-
-make setup-relay-gcp  # Interactively set up the GCP environment
-```
-Paste the generated YAML text into the kiapi and kiapi-proxy config files.
-```yaml
-kiapi_relay:
-  default: gcp
-
-kiapi_relay.impl.gcp:
-  database_url: {database_url}
-  bucket: {bucket}
-  google_settings_key: relay
-  manage_bucket_lifecycle: false
-
-kiarina.lib.google:
-  default: relay
-  configs:
-    relay:
-      type: default
-      project_id: {project_id}
-```
-
-**Set up kiapi:**
-```sh
-python3.12 -m pip install --upgrade 'kiapi[relay-gcp]'  # If you cannot use uv
-uv tool install --python 3.12 'kiapi[relay-gcp]'        # If you can use uv
-
-kiapi config init  # Create the config file
-kiapi config edit  # Edit the config file in your editor
-# Paste the content printed by setup
-
-kiapi run --relay gcp  # Start with the GCP relay feature enabled
-```
-
-**Set up kiapi-proxy:**
-kiapi-proxy also runs on a different machine or OS than kiapi.
-```sh
-gcloud auth application-default login  # Create credentials for kiapi-proxy to access GCP
-
-python3.12 -m pip install --upgrade 'kiapi-proxy[relay-gcp]'
-uv tool install --python 3.12 'kiapi-proxy[relay-gcp]'
-
-kiapi-proxy config init  # Create the config file
-kiapi-proxy config edit  # Edit the config file in your editor
-# Paste the content printed by setup
-
-kiapi-proxy run --relay gcp  # Start with the GCP relay feature enabled
-```
-
-**Example of working with an agent**
-Run the following on the machine where kiapi-proxy is running.
-```sh
-codex e "
-Read http://localhost:8080/openapi.json.
-Using the music generation API, generate a 20-second BGM on the theme of \"a person walking in the rain\" to ~/Downloads/bgm.wav.
-"
-
-# Check the generated file
-open ~/Downloads/bgm.wav
+tailscale serve --bg --https=8500 8500  # TLS endpoint reachable only inside your tailnet
 ```
 
 ## Development
@@ -249,9 +170,9 @@ make test  # Unit tests
 make dev   # Start the development server with auto-reload
 
 # GPU-backed functional and regression tests
-make verify       # Run everything
-make verify-fast  # Run only the light tests for every capability
-make verify-one   # Run only one capability
+make verify        # Choose the capability family interactively
+make verify-fast   # Interactive choice, light tests only
+make verify-kiapi  # Run every capability non-interactively
 ```
 
 ## Release

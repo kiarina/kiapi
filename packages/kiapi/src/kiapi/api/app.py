@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
-from kiarina.utils.app import single_instance, user_directory
+from kiarina.utils.app import single_instance
 
 from kiapi.api import build_openapi
 from kiapi.core.app import AppContext
@@ -13,12 +13,6 @@ from kiapi.core.capability import capability_spec_registry
 from kiapi.core.logging import setup_logger
 from kiapi.core.model import model_registry
 from kiapi.core.worker import create_worker
-from kiapi_relay import (
-    RelayRunner,
-    get_or_create_node_id,
-    relay_registry,
-)
-from kiapi_relay import settings_manager as relay_settings_manager
 
 from .audio.acestep.router import router as acestep_router
 from .audio.audiogen.router import router as audiogen_router
@@ -65,11 +59,7 @@ async def lifespan(app: FastAPI):  # type: ignore
             "Start the server with `kiapi run` instead of importing the ASGI app directly."
         )
 
-    # Prevent a second kiapi from sharing this node identity and double-consuming
-    # relay requests, then resolve the persistent node ID for this data dir.
     single_instance.acquire()
-    data_dir = user_directory.get_user_data_dir()
-    node_id = get_or_create_node_id(data_dir)
 
     ctx = AppContext.create()
     worker = create_worker(ctx)
@@ -80,19 +70,7 @@ async def lifespan(app: FastAPI):  # type: ignore
     worker.start()
     asyncio.create_task(worker.warmup())  # noqa: RUF006
 
-    relay_runner: RelayRunner | None = None
-
-    if relay_settings_manager.get_settings().default is not None:
-        relay = relay_registry.resolve()
-        relay.node_id = node_id
-        relay_runner = RelayRunner(relay, app)
-        relay_runner.start()
-        app.state.relay_runner = relay_runner
-
     yield
-
-    if relay_runner is not None:
-        await relay_runner.stop()
 
     await worker.stop()
     single_instance.release()

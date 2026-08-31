@@ -1,25 +1,14 @@
 """Driver for ``mise run verify``.
 
-Selects a verification target (kiapi / kiapi-relay / kiapi-proxy), starts the
-servers it needs (with the chosen relay), runs the matching verification
-scripts, then tears the servers back down.
+Starts ``kiapi run``, runs the selected capability verification scripts against
+it, then tears the server back down.
 
-Targets:
+With no flags the family is picked interactively with fzf. Pass ``--kiapi`` to
+skip the prompt and fall back to the default (family=all).
 
-- ``kiapi``       start ``kiapi run`` and verify capabilities directly (no relay).
-- ``kiapi-relay`` start ``kiapi run --relay <relay>`` and verify the relay
-                  transport itself.
-- ``kiapi-proxy`` start ``kiapi run --relay <relay>`` plus
-                  ``kiapi-proxy run --relay <relay>`` and verify capabilities
-                  through the proxy.
-
-With no target flag the three choices (target, family, relay) are picked
-interactively with fzf. Pass a target flag to skip the prompts and fall back to
-the defaults (family=all, relay=local).
-
-If kiapi / kiapi-proxy are already running as launchd services they are stopped
-before verification and restarted afterwards. If they are running some other way
-the servers this script starts will fail on the single-instance guard; that is
+If kiapi is already running as a launchd service it is stopped before
+verification and restarted afterwards. If it is running some other way the
+server this script starts will fail on the single-instance guard; that is
 surfaced so the user can stop the stray process.
 """
 
@@ -43,13 +32,8 @@ from types import FrameType
 HERE = Path(__file__).resolve().parent
 PROJECT_DIR = HERE.parent
 CAPABILITIES_DIR = HERE / "capabilities"
-RELAY_DIR = HERE / "relay"
 
 KIAPI_PORT = int(os.environ.get("KIAPI_PORT", "8000"))
-PROXY_PORT = int(os.environ.get("KIAPI_PROXY_PORT", "8080"))
-
-TARGETS = ("kiapi", "kiapi-relay", "kiapi-proxy")
-RELAYS = ("local", "gcp")
 
 # Capability scripts that expect their "train" flag set (ported from the old
 # mise task, which special-cased these three).
@@ -76,10 +60,7 @@ def discover_families() -> dict[str, list[Path]]:
 
 def fzf_select(options: list[str], prompt: str) -> str:
     if not shutil.which("fzf"):
-        sys.exit(
-            "fzf is required for interactive selection; "
-            "pass a target flag (e.g. --kiapi) instead."
-        )
+        sys.exit("fzf is required for interactive selection; pass --kiapi instead.")
     result = subprocess.run(
         ["fzf", f"--prompt={prompt}> ", "--height=40%", "--border"],
         input="\n".join(options),
@@ -96,11 +77,11 @@ def module_cmd(module: str, *extra: str) -> list[str]:
     return [sys.executable, "-m", module, *extra]
 
 
-def run_cmd(module: str, port: int, relay: str | None) -> list[str]:
-    """Build a server start command with explicit host/port/relay.
+def run_cmd(module: str, port: int) -> list[str]:
+    """Build a server start command with explicit host/port.
 
     Everything is passed explicitly so user settings (which may bind another
-    port or enable a relay) cannot leak into the servers verify starts.
+    port) cannot leak into the server verify starts.
     """
     return module_cmd(
         module,
@@ -109,8 +90,6 @@ def run_cmd(module: str, port: int, relay: str | None) -> list[str]:
         "127.0.0.1",
         "--port",
         str(port),
-        "--relay",
-        relay if relay is not None else "none",
     )
 
 
@@ -129,7 +108,7 @@ def service_loaded(module: str) -> bool:
 def ensure_port_free(name: str, port: int) -> None:
     """Abort if ``port`` is already served by a stray process.
 
-    The launchd services are stopped before this runs, so anything still
+    The launchd service is stopped before this runs, so anything still
     listening is an unmanaged instance. Verifying against it would be misleading
     (health checks would pass against the wrong server), so stop and let the user
     clear it.
@@ -163,7 +142,6 @@ def wait_health(
     proc: subprocess.Popen[bytes],
     log_path: Path,
     *,
-    require_relay: bool,
     timeout_s: float = 120.0,
 ) -> None:
     print(f"Waiting for {url} ...")
@@ -176,16 +154,11 @@ def wait_health(
                 f"Another instance may already be running.\n{tail}"
             )
         try:
-            with urllib.request.urlopen(url, timeout=2.0) as response:
-                body = json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(url, timeout=2.0):
+                pass
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
             time.sleep(0.5)
             continue
-        if require_relay:
-            relay = body.get("relay") or {}
-            if not relay.get("running"):
-                time.sleep(0.5)
-                continue
         print(f"  ready: {url}")
         return
     sys.exit(f"{url}: not healthy within {timeout_s:.0f}s")
@@ -237,105 +210,31 @@ def run_capabilities(
     return status
 
 
-def run_relay(relay: str, *, fast: bool) -> int:
-    script = RELAY_DIR / f"verify_{relay}.py"
-    if not script.exists():
-        sys.exit(f"relay verification script not found: {script}")
-    cmd = [sys.executable, str(script)]
-    if fast:
-        cmd.append("--fast")
-    print()
-    print("=" * 72)
-    print(f"Running {script.relative_to(PROJECT_DIR)} ({relay} relay)")
-    print("=" * 72)
-    return subprocess.run(cmd, cwd=PROJECT_DIR).returncode
-
-
-def verify(target: str, family: str | None, relay: str | None, *, fast: bool) -> int:
+def verify(family: str, *, fast: bool) -> int:
     families = discover_families()
     log_dir = Path(tempfile.mkdtemp(prefix="kiapi-verify-"))
     procs: list[subprocess.Popen[bytes]] = []
     restore: list[str] = []
 
-    service_modules = ["kiapi"]
-    if target == "kiapi-proxy":
-        service_modules.append("kiapi_proxy")
-
     try:
-        for module in service_modules:
-            if service_loaded(module):
-                print(
-                    f"Stopping running {module} service (will restart afterwards) ..."
-                )
-                subprocess.run(module_cmd(module, "service", "stop"), check=True)
-                restore.append(module)
+        if service_loaded("kiapi"):
+            print("Stopping running kiapi service (will restart afterwards) ...")
+            subprocess.run(module_cmd("kiapi", "service", "stop"), check=True)
+            restore.append("kiapi")
 
-        if target == "kiapi":
-            ensure_port_free("kiapi", KIAPI_PORT)
-            proc, log_path = start_server(
-                "kiapi", run_cmd("kiapi", KIAPI_PORT, None), log_dir
-            )
-            procs.append(proc)
-            wait_health(
-                f"http://127.0.0.1:{KIAPI_PORT}/health",
-                proc,
-                log_path,
-                require_relay=False,
-            )
-            assert family is not None
-            return run_capabilities(
-                family,
-                families,
-                base_url=f"http://127.0.0.1:{KIAPI_PORT}",
-                verify_dir=".verify/kiapi",
-                fast=fast,
-            )
-
-        if target == "kiapi-relay":
-            assert relay is not None
-            ensure_port_free("kiapi", KIAPI_PORT)
-            proc, log_path = start_server(
-                "kiapi", run_cmd("kiapi", KIAPI_PORT, relay), log_dir
-            )
-            procs.append(proc)
-            wait_health(
-                f"http://127.0.0.1:{KIAPI_PORT}/health",
-                proc,
-                log_path,
-                require_relay=True,
-            )
-            return run_relay(relay, fast=fast)
-
-        # kiapi-proxy
-        assert relay is not None
-        assert family is not None
         ensure_port_free("kiapi", KIAPI_PORT)
-        ensure_port_free("kiapi-proxy", PROXY_PORT)
-        kiapi_proc, kiapi_log = start_server(
-            "kiapi", run_cmd("kiapi", KIAPI_PORT, relay), log_dir
-        )
-        procs.append(kiapi_proc)
+        proc, log_path = start_server("kiapi", run_cmd("kiapi", KIAPI_PORT), log_dir)
+        procs.append(proc)
         wait_health(
             f"http://127.0.0.1:{KIAPI_PORT}/health",
-            kiapi_proc,
-            kiapi_log,
-            require_relay=True,
-        )
-        proxy_proc, proxy_log = start_server(
-            "kiapi-proxy", run_cmd("kiapi_proxy", PROXY_PORT, relay), log_dir
-        )
-        procs.append(proxy_proc)
-        wait_health(
-            f"http://127.0.0.1:{PROXY_PORT}/health",
-            proxy_proc,
-            proxy_log,
-            require_relay=False,
+            proc,
+            log_path,
         )
         return run_capabilities(
             family,
             families,
-            base_url=f"http://127.0.0.1:{PROXY_PORT}",
-            verify_dir=".verify/kiapi-proxy",
+            base_url=f"http://127.0.0.1:{KIAPI_PORT}",
+            verify_dir=".verify/kiapi",
             fast=fast,
         )
     finally:
@@ -349,66 +248,32 @@ def verify(target: str, family: str | None, relay: str | None, *, fast: bool) ->
                 print(f"  warning: failed to restart {module} service: {exc}")
 
 
-def resolve_selection(args: argparse.Namespace) -> tuple[str, str | None, str | None]:
-    interactive = args.target is None
+def resolve_family(args: argparse.Namespace) -> str:
+    interactive = not args.kiapi
     families = discover_families()
 
-    target = args.target or fzf_select(list(TARGETS), "Target")
-
-    family: str | None = None
-    if target in ("kiapi", "kiapi-proxy"):
-        if args.family is not None:
-            family = args.family
-        elif interactive:
-            family = fzf_select(["all", *sorted(families)], "Family")
-        else:
-            family = "all"
-        if family != "all" and family not in families:
-            sys.exit(
-                f"unknown family: {family} "
-                f"(choose from: all, {', '.join(sorted(families))})"
-            )
-
-    relay: str | None = None
-    if target in ("kiapi-relay", "kiapi-proxy"):
-        if args.relay is not None:
-            relay = args.relay
-        elif interactive:
-            relay = fzf_select(list(RELAYS), "Relay")
-        else:
-            relay = "local"
-        if relay not in RELAYS:
-            sys.exit(f"unknown relay: {relay} (choose from: {', '.join(RELAYS)})")
-
-    return target, family, relay
+    if args.family is not None:
+        family = str(args.family)
+    elif interactive:
+        family = fzf_select(["all", *sorted(families)], "Family")
+    else:
+        family = "all"
+    if family != "all" and family not in families:
+        sys.exit(
+            f"unknown family: {family} "
+            f"(choose from: all, {', '.join(sorted(families))})"
+        )
+    return family
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run kiapi verification scripts.")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    parser.add_argument(
         "--kiapi",
-        dest="target",
-        action="store_const",
-        const="kiapi",
-        help="Verify capabilities against kiapi directly.",
-    )
-    group.add_argument(
-        "--kiapi-relay",
-        dest="target",
-        action="store_const",
-        const="kiapi-relay",
-        help="Verify the relay transport.",
-    )
-    group.add_argument(
-        "--kiapi-proxy",
-        dest="target",
-        action="store_const",
-        const="kiapi-proxy",
-        help="Verify capabilities through kiapi-proxy.",
+        action="store_true",
+        help="Skip the interactive prompt and use the defaults.",
     )
     parser.add_argument("--family", help="Capability family (default: all).")
-    parser.add_argument("--relay", help="Relay to use (default: local).")
     parser.add_argument(
         "--fast", action="store_true", help="Pass --fast to the verify scripts."
     )
@@ -422,13 +287,9 @@ def _raise_keyboard_interrupt(signum: int, frame: FrameType | None) -> None:
 def main() -> int:
     signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
     args = parse_args()
-    target, family, relay = resolve_selection(args)
-    print(
-        f"Target: {target}"
-        + (f" | family: {family}" if family is not None else "")
-        + (f" | relay: {relay}" if relay is not None else "")
-    )
-    return verify(target, family, relay, fast=args.fast)
+    family = resolve_family(args)
+    print(f"Target: kiapi | family: {family}")
+    return verify(family, fast=args.fast)
 
 
 if __name__ == "__main__":

@@ -28,7 +28,8 @@ relay（GCS + Firebase RTDB）は、直接届かない kiapi へ HTTP を届け�
 ## やること
 
 - [x] 評価完了と廃止の決定をユーザーと確認してから着手する（2026-09-01）
-- [ ] Phase 1: コード削除
+- [x] Phase 1: コード削除（2026-09-01 macbook-pro-m1-max。lint / mypy / 276 unit tests /
+      `mise run ci`（build 含む）まで確認済み。`package:list` は kiapi 単体に自動追従）
   - kiapi 本体から relay 組み込みを除去。対象は `packages/kiapi/src/kiapi/` の
     `cli/run/cli.py`（`--relay`）、`api/app.py`、`api/_helpers/get_relay_runner.py`、
     `api/health/router.py`、`api/health/_views/health_response.py`、

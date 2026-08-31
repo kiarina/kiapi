@@ -5,8 +5,6 @@
 # interactive (fzf) selection, or scope it, for example:
 #
 #   mise run verify --kiapi --family embedding --fast
-#   mise run verify --kiapi-relay --relay local
-#   mise run verify --kiapi-proxy --family chat --relay gcp
 #
 set -euo pipefail
 

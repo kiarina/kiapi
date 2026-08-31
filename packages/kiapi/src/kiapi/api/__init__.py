@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from ._helpers.build_train_responses import build_train_responses
     from ._helpers.get_accept import get_accept
     from ._helpers.get_ctx import get_ctx
-    from ._helpers.get_relay_runner import get_relay_runner
     from ._helpers.get_worker import get_worker
     from ._helpers.register_capability_endpoints import register_capability_endpoints
     from ._helpers.submit_and_maybe_wait import submit_and_maybe_wait
@@ -21,7 +20,6 @@ __all__ = [
     "build_train_responses",
     "get_accept",
     "get_ctx",
-    "get_relay_runner",
     "get_worker",
     "register_capability_endpoints",
     "settings_manager",
@@ -40,7 +38,6 @@ def __getattr__(name: str) -> object:
         "build_train_responses": "._helpers.build_train_responses",
         "get_accept": "._helpers.get_accept",
         "get_ctx": "._helpers.get_ctx",
-        "get_relay_runner": "._helpers.get_relay_runner",
         "get_worker": "._helpers.get_worker",
         "register_capability_endpoints": "._helpers.register_capability_endpoints",
         "settings_manager": "._settings",

@@ -5,17 +5,12 @@ application startup.
 
 ## Workspace
 
-The repository is a uv workspace with three packages:
+The repository is a uv workspace with a single package:
 
 ```text
 packages/
-  kiapi/        # Apple Silicon / MLX inference API server
-  kiapi-relay/  # platform-independent relay transport
-  kiapi-proxy/  # cross-platform HTTP proxy over the relay
+  kiapi/  # Apple Silicon / MLX inference API server
 ```
-
-`kiapi` and `kiapi-proxy` both depend on `kiapi-relay`. `kiapi-proxy` does not
-depend on `kiapi`, so it installs and runs without MLX.
 
 ## Source Layout
 

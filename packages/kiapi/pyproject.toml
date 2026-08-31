@@ -47,8 +47,6 @@ dependencies = [
     "httpx", # web search capability: async HTTP client for the SearXNG backend
     "kiarina-utils-common>=2.2.0",
     "kiarina-utils-app>=2.3.0", # user directory resolution (replaces core/app internals)
-    # --- relay (shared request/response transport, split into its own package) ---
-    "kiapi-relay",
     # --- embedding capability (mlx-embeddings) ---
     "mlx-embeddings>=0.1.0",
     # --- sound-effect capability (mlx-audiocraft / AudioGen) ---
@@ -70,11 +68,6 @@ dependencies = [
     "torchaudio",
     "mflux>=0.18.0",
     "pydantic-settings-manager>=3.8.0",
-]
-
-[project.optional-dependencies]
-relay-gcp = [
-    "kiapi-relay[gcp]",
 ]
 
 [project.scripts]
