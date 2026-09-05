@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the GitHub Actions used by CI, the PyPI release, and the Pages deploy
   to their current majors. `upload-pages-artifact` now sets
   `include-hidden-files: true` so `public/.nojekyll` keeps being published.
+- Raised the mise pinned in CI and the release workflow from 2026.5.0 to 2026.9.1,
+  the version `mise run ci` is verified against locally.
 - Replaced the Dependabot configuration: the npm ecosystem entry pointed at the
   `package.json` removed in 0.6.0, so it is dropped in favour of the `uv` and
   `github-actions` ecosystems. `mlx-vlm` is ignored there for the same reason it

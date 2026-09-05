@@ -28,6 +28,8 @@
 - `packages/kiapi/pyproject.toml` の mlx-vlm コメントが存在しない
   `docs/mlx-vlm.md` を指していたので、実体の
   `src/kiapi/capabilities/chat/README.md` へ修正
+- CI / release workflow が pin する mise を 2026.5.0 → 2026.9.1 へ更新。
+  開発機の mise が 2026.9.1 で、その環境で `mise run ci` が通ることを確認済み
 - 検証は開発機で `mise run ci`（lint + mypy 571 files + 276 tests + config/pages
   再生成 + build）を通し、生成物に差分が出ないことを確認。push 後の CI も success
 
