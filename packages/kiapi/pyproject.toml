@@ -59,7 +59,7 @@ dependencies = [
     # mlx-vlm 0.6.3 supports BOTH model_types we use in one install:
     #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6-27B).
     # 0.6.3's get_rope_index rewrite let us drop the Omni prefill_step_size
-    # workaround (verified end-to-end); remaining workarounds tracked in docs/mlx-vlm.md.
+    # workaround (verified end-to-end); remaining workarounds tracked in src/kiapi/capabilities/chat/README.md.
     "mlx-vlm==0.6.3",
     # transformers' Qwen processors need torch/torchvision (video/image) and
     # torchaudio; mlx-vlm itself does not pull them in.

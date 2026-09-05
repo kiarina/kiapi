@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **kiapi**: Updated dependencies. FastAPI moves to `>=0.141` (`build_openapi` now walks `routing.iter_route_contexts` to handle the lazy included routers of FastAPI 0.137+; the generated OpenAPI documents are unchanged), and the `numpy<2.5` cap is lifted (numba >= 0.67 supports numpy 2.5; the out-of-band LTX-2 install needs `numba>=0.67`).
+- **kiapi**: Refreshed the locked dependencies: torch 2.14, torchvision 0.29,
+  huggingface-hub 1.30, tokenizers 0.23.2, anyio 4.15, and ruff 0.16.6.
+  `mlx-vlm` stays pinned at 0.6.3 because the chat capability ships patches
+  against it.
+- Updated the GitHub Actions used by CI, the PyPI release, and the Pages deploy
+  to their current majors. `upload-pages-artifact` now sets
+  `include-hidden-files: true` so `public/.nojekyll` keeps being published.
+- Replaced the Dependabot configuration: the npm ecosystem entry pointed at the
+  `package.json` removed in 0.6.0, so it is dropped in favour of the `uv` and
+  `github-actions` ecosystems. `mlx-vlm` is ignored there for the same reason it
+  is pinned.
 
 ### Removed
 

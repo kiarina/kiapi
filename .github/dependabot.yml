@@ -1,19 +1,20 @@
 version: 2
 
 updates:
-  # package.json holds dev-only Node tooling (firebase-tools). Version updates
-  # stay disabled via open-pull-requests-limit: 0; security updates still run
-  # and are filtered by the ignore list below.
-  - package-ecosystem: "npm"
+  # Python dependencies are declared in pyproject.toml and pinned in uv.lock.
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 0
     ignore:
-      # Transitive dependencies of firebase-tools pinned by their parents, so
-      # the patched versions are unreachable and every security update fails
-      # with security_update_not_possible. Drop an entry once firebase-tools
-      # loosens the constraint.
-      - dependency-name: "brace-expansion"
-      - dependency-name: "@hono/node-server"
-      - dependency-name: "fast-uri"
+      # mlx-vlm is deliberately pinned to an exact version because the chat
+      # capability ships patches against it. Raising it requires re-auditing
+      # every patch in packages/kiapi/src/kiapi/capabilities/chat/README.md and
+      # re-verifying both the omni and vlm models, so it is never an automatic
+      # update.
+      - dependency-name: "mlx-vlm"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
