@@ -3,6 +3,34 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-05 — 依存・Actions・Dependabot 設定の定期保守
+
+- open alert 0 件・CI success の状態から、lockfile を `uv lock --upgrade` で更新。
+  torch 2.13→2.14、torchvision 0.28→0.29、huggingface-hub 1.29→1.30、
+  tokenizers 0.23.1→0.23.2、anyio 4.14.2→4.15.0、ruff 0.16.5→0.16.6 ほか計 10 件。
+  `mlx-vlm==0.6.3` は chat のパッチ前提の意図的 pin なので据え置き
+- torch は kiapi 本体から直接 import せず、transformers の Qwen processor 用に
+  入れているだけなので、unit test では上げても差が出ない。開発機（Apple Silicon）で
+  torch / torchvision / torchaudio の実 import と MPS 利用可否、`torchaudio.functional.resample`、
+  `torchvision.transforms.v2.Resize` の実行まで確認した。torchaudio は 2.11.0 のまま
+  torch 2.14 と共存する。**実モデル推論での検証は未実施**
+- GitHub Actions を現行 major へ更新（checkout v6/v4→v7、configure-pages v5→v6、
+  upload-pages-artifact v3→v5、deploy-pages v4→v5、upload-artifact v4→v7、
+  download-artifact v4→v8）。落とし穴として、upload-pages-artifact は v4 以降
+  dotfile を既定で除外するため、`public/.nojekyll` が黙って落ちる。
+  `include-hidden-files: true` を明示して回避し、deploy 後に公開 URL の
+  `.nojekyll` が 200 で返ることを確認した
+- `.github/dependabot.yml` が陳腐化していた。npm ecosystem の記述は v0.6.0 で
+  削除した root の `package.json` を指しており、どの manifest にも一致しない
+  設定が残っていた。`uv` と `github-actions` の 2 ecosystem に置き換え、
+  pin の理由が同じ `mlx-vlm` を ignore に入れた。push 後、両 ecosystem の
+  Dependabot run が success で PR 0 件（＝現時点で追従漏れなし）を確認
+- `packages/kiapi/pyproject.toml` の mlx-vlm コメントが存在しない
+  `docs/mlx-vlm.md` を指していたので、実体の
+  `src/kiapi/capabilities/chat/README.md` へ修正
+- 検証は開発機で `mise run ci`（lint + mypy 571 files + 276 tests + config/pages
+  再生成 + build）を通し、生成物に差分が出ないことを確認。push 後の CI も success
+
 ## 2026-09-01 — relay を廃止して Tailscale 直結へ一本化（v0.6.0）
 
 - ユーザー判断で併用評価（開始 2026-09-01）を短縮し、relay 廃止を決定。
