@@ -19,8 +19,14 @@
   package matrix をやめて kiapi 1 つを直接公開する
 - sdist は `only-include = ["src"]` にして、ルートの docs / scripts / public などを
   含めないようにした（中身は src と README / LICENSE / pyproject のみ）
-- 開発機で `make`、`mise run test`（276 passed）、`mise run build` を確認。
+- サーバー機で `make`、`mise run test`（276 passed）、`mise run build` を確認。
   **release workflow 自体は次回リリースまで未実行**
+- サーバー機で `mise run verify --kiapi --fast` を実行し、13 family 中 12 が通過。
+  seedvr2 は mflux 0.19.1 と mlx 0.32.2 の非互換で失敗（移行とは無関係、
+  `tasks/seedvr2-mflux-repeat-error.md`）
+- 落とし穴: サーバー機では launchd サービスがこの checkout の `.venv` から動いている。
+  移行作業中の `uv sync` で稼働中プロセスの依存が入れ替わり、anyio の import 失敗で
+  全リクエストが 500 になった。verify がサービスを停止・再起動したことで復旧
 
 ## 2026-09-05 — 依存・Actions・Dependabot 設定の定期保守
 

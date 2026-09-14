@@ -171,4 +171,4 @@ mise run verify --kiapi --family embedding --fast
 各タスクの内容は `tasks/` のファイルだけに書き、ここはポインタ（1 ファイル 1 行）に保ちます。
 ファイルの追加・削除のたびにこの一覧を更新してください。
 
-（なし）
+- [seedvr2 の upscale が mflux 0.19.1 + mlx 0.32.2 で失敗する](tasks/seedvr2-mflux-repeat-error.md)
