@@ -25,9 +25,6 @@ mlx-vlm 0.7.1 の Qwen3-Omni は、chunked prefill で deepstack の入力を ch
 
 ## 申し送り
 
-- **kiapi の patch C には #2257 の 2 点目と同じ誤りがある**（`_ensure_mlx_compat` の `mx.scatter` shim が
-  上流の `mx.take(vid_embed, video_indices)` をそのまま使う）。0.7.1 で deepstack が効くようになったため、
-  Omni の image + video 同時入力では video 側の deepstack 行がずれている。落ちはせず回答は妥当だが、
-  #2257 のリリースを待たずに kiapi 側でも直すか判断する
+- kiapi の patch C は 2026-09-15 に #2257 と同じ処理へ置き換え済み（`ensure_omni_image_video_join.py`）
 - patch A（音声をパスで渡すと落ちる）は 0.7.1 では再現しない。ただし kiapi は B の回避のため自前で
   mono 化・resample した配列を渡しているので、A と B は #2258 のリリース後にまとめて外せる

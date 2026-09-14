@@ -30,7 +30,11 @@
 - 続けて kiapi の patch B / C に当たる上流の不具合も PR にした: image + video の deepstack 結合
   [#2257](https://github.com/Blaizzy/mlx-vlm/pull/2257)、stereo 音声の resample [#2258](https://github.com/Blaizzy/mlx-vlm/pull/2258)。
   どちらも回帰テスト付きで、実機で確認した（歌詞の引用が「Shh, don't you shh」168.6 秒 → 正しい歌詞 1.2 秒）。
-  patch A は 0.7.1 では不要と確認。kiapi の patch C に同じ誤りがあることを `tasks/mlx-vlm-omni-deepstack-upstream.md` に記録
+  patch A は 0.7.1 では不要と確認
+- kiapi の patch C にも #2257 と同じ誤り（video の deepstack 行を範囲外から読む）があったので直した。
+  `Thinker.get_input_embeddings` の該当ブロックだけを #2257 と同じ処理に差し替える形にし、旧 shim
+  （`mx.where` / `mx.scatter` の追加）は削除。上流のブロックが変わると何もせず、unit test が失敗する。
+  worktree で chat の full verify（66 ケース + stream 8 件）が通過
 - 落とし穴: 検証は本番 checkout ではなく git worktree で行った（kiapi は editable install なので、
   本番 checkout に WIP を置くとサービス再起動時に未検証コードが載る）。worktree には git 管理外の
   `tests/assets/` が無いので、本体の `tests/assets` を symlink しないと verify が画像で止まる

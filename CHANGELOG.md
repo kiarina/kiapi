@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chat: Qwen3-Omni video input no longer decodes garbage or crashes the server
   with a Metal GPU address fault on mlx-vlm 0.7.1. The deepstack mask and
   features are now windowed to each prefill chunk (patch H, upstream #2099).
+- chat: Qwen3-Omni placed the video deepstack rows at the wrong positions when a
+  prompt had both an image and a video. Patch C now rewrites that join as in
+  upstream PR #2257 instead of grafting `mx.where` / `mx.scatter` onto mlx.
 
 ### Changed
 

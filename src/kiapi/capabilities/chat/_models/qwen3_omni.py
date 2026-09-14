@@ -8,8 +8,6 @@ module:
     requested). The parse itself is shared (``parse_json_tool_calls``) because
     Qwen3.6's Hermes parser falls back to it. (Qwen3.6 uses a different, Hermes/XML
     prefill — see ``qwen3_5``.)
-  - the mlx 0.31.x compat shim (:func:`_ensure_mlx_compat`), needed only on the
-    **image + video** simultaneous-input path.
 
 Other Omni-specific workarounds (distilled from the test-qwen3-omni investigation):
   (A) audio must be passed as float32 arrays, not paths — mlx-vlm crashes on raw
@@ -38,6 +36,7 @@ from kiapi.core.workdir import create_work_dir
 from .._operations.apply_template import apply_template
 from .._operations.emit_streaming_response import emit_streaming_response
 from .._operations.ensure_omni_deepstack_window import ensure_omni_deepstack_window
+from .._operations.ensure_omni_image_video_join import ensure_omni_image_video_join
 from .._operations.format_response import format_response
 from .._operations.parse_json_tool_calls import parse_json_tool_calls
 from .._operations.parse_messages import parse_messages
@@ -66,7 +65,7 @@ def run(  # type: ignore
 ) -> dict[str, Any]:
     from mlx_vlm import generate, stream_generate
 
-    _ensure_mlx_compat()  # needed for the image+video path
+    ensure_omni_image_video_join()  # needed for image + video input
     ensure_omni_deepstack_window()  # needed for long image/video prompts
 
     model, processor = payload.model, payload.processor
@@ -189,52 +188,3 @@ def _build_prompt(  # type: ignore
         prefill = f'<tool_call>\n{{"name": "{name}", "arguments": {{'
 
     return prompt + prefill, prefill
-
-
-_PATCH_FLAG = "_qwen3_omni_compat_patched"
-
-
-def _ensure_mlx_compat() -> None:
-    """Graft mlx 0.31.x-compatible ``mx.where`` / ``mx.scatter`` onto ``mlx.core``.
-
-    mlx-vlm 0.6.1's qwen3_omni_moe/thinker.py uses, in the **image + video**
-    simultaneous-input path (the visual_embeds_multiscale / deepstack join), a
-    couple of mlx APIs missing on mlx 0.31.x (image-only and video-only take a
-    different code path and work fine):
-
-      - ``mx.where(mask)[0]``            — 1-arg form returning True indices → TypeError
-      - ``mx.scatter(a, idx, vals, ax)`` — free-function scatter → AttributeError
-
-    Rather than editing site-packages, we add compatible implementations. Idempotent
-    and additive: 3-arg ``mx.where`` is delegated unchanged, and ``mx.scatter`` is
-    only added if absent — so other code paths (and qwen3_5) are unaffected. Drop
-    this once upstream mlx-vlm handles the version difference.
-    """
-    import mlx.core as mx
-
-    if getattr(mx, _PATCH_FLAG, False):
-        return
-
-    import numpy as np
-
-    # mx.where: 1-arg (condition only) → indices of True elements (numpy-compatible
-    # tuple return so ``[0]`` works). 3-arg mx.where(cond, x, y) is delegated.
-    _orig_where = mx.where
-
-    def _where(*args, **kwargs):  # type: ignore
-        if len(args) == 1 and not kwargs:
-            return (mx.array(np.where(np.array(args[0]))[0]),)
-        return _orig_where(*args, **kwargs)
-
-    mx.where = _where
-
-    # mx.scatter(a, indices, updates, axis=0) ≡ a[indices] = updates
-    if not hasattr(mx, "scatter"):
-
-        def _scatter(a, indices, updates, axis=0):  # type: ignore
-            a[indices] = updates
-            return a
-
-        mx.scatter = _scatter  # type: ignore
-
-    setattr(mx, _PATCH_FLAG, True)

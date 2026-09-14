@@ -63,7 +63,7 @@ Details are in the docstring.
 |---|------|------|------------|
 | A | Pass audio as a float32 array instead of a path | `_models/qwen3_omni.py` | omni |
 | B | Avoid stereo audio resampling inconsistency by loading it yourself | `_utils/load_audio_mono.py` | omni |
-| C | `mx.where` / `mx.scatter` shim for mlx 0.31.x | `_models/qwen3_omni.py` `_ensure_mlx_compat` | omni (image+video simultaneously) |
+| C | Join the image and video deepstack rows by position | `_operations/ensure_omni_image_video_join.py` | omni (image+video simultaneously) |
 | F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 (stream) |
 | H | Window the deepstack inputs per prefill chunk | `_operations/ensure_omni_deepstack_window.py` | omni (image / video) |
 
@@ -91,16 +91,16 @@ Details are in the docstring.
 To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   Resample/downmix itself does not occur and does not fall under the bug condition.
 
-**C. mlx 0.31.x compatible shim (`mx.where` / `mx.scatter`):**
-- **Location**: `_ensure_mlx_compat` in `_models/qwen3_omni.py` (called at the beginning of `run`)
-- **Reason**: `qwen3_omni_moe/thinker.py` of mlx-vlm does not support **image + video at the same time.
-  Input route** (visual_embeds_multiscale / deepstack join), present in mlx 0.31.x
-  Use APIs that do not:
-  - 1 argument format `mx.where(mask)[0]` (get index of True) → TypeError
-  - Free function `mx.scatter(a, idx, vals, ax)` → AttributeError
-
-  There is no problem with image alone/video alone using a different route. Do not rewrite site-packages and provide a compatible implementation.
-  Avoid by grafting (idempotent/additive, no effect on other routes).
+**C. Join the image and video deepstack rows by position:**
+- **Location**: `_operations/ensure_omni_image_video_join.py` (called at the beginning of `run` in `_models/qwen3_omni.py`)
+- **Reason**: With an image and a video in one prompt, `Thinker.get_input_embeddings` of mlx-vlm 0.7.1 joins the two
+  deepstack feature sets with the one-argument `mx.where(mask)[0]` and a free-function `mx.scatter`, which mlx does not
+  provide (`TypeError`). It also `take`s rows from each modality's embeds using positions in the joint sequence, so the
+  video rows are read from the wrong offsets. (The earlier version of this patch grafted `mx.where` / `mx.scatter` onto
+  `mlx.core` and so kept that second bug.) Upstream fix: [Blaizzy/mlx-vlm#2257](https://github.com/Blaizzy/mlx-vlm/pull/2257).
+- **Workaround**: Replace only that block of the method with the #2257 version, which assigns each modality's embeds whole
+  at its own positions, as the reference implementation does. The patch changes nothing if the upstream block no longer
+  matches; the unit test fails in that case so the pin cannot move silently.
 - **Trigger**: Only when image and video are passed to omni **at the same time**.
 
 **F. Text recovery from token ID (qwen3.6 stream):**
