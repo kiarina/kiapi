@@ -5,6 +5,7 @@ POST OpenAI Chat Completions to `/v1/chat/completions`.
 ## Upstream docs
 - [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) — the multimodal MLX engine kiapi runs
 - [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) — `qwen3-omni` weights
+- [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) — `qwen3.8-27b` weights
 - [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) — `qwen3.6-27b` weights
 
 ## Choosing A Model
@@ -15,6 +16,8 @@ choose by what you send:
   audio/video input. On video with a sound track, the audio is auto-demuxed and
   also fed as audio, so the model both sees and hears the clip.
   there is no audio/speech output (Qwen3-Omni's Talker is not exposed).
+- **qwen3.8-27b** — text + image only. The newer 27B model; same modalities and
+  request options as qwen3.6-27b.
 - **qwen3.6-27b** — text + image only. Lighter on memory for text/image work;
   sending audio or video to it returns HTTP 400.
 

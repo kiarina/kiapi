@@ -40,6 +40,7 @@ from .._operations.emit_streaming_response import emit_streaming_response
 from .._operations.ensure_streaming_detokenizer_compat import (
     ensure_streaming_detokenizer_compat,
 )
+from .._operations.ensure_vision_repeat_compat import ensure_vision_repeat_compat
 from .._operations.format_response import format_response
 from .._operations.parse_json_tool_calls import parse_json_tool_calls
 from .._operations.parse_messages import parse_messages
@@ -69,6 +70,7 @@ def run(  # type: ignore
     from mlx_vlm import generate, stream_generate  # type: ignore
 
     _ensure_mlx_compat()  # needed for the image+video path
+    ensure_vision_repeat_compat()  # needed for the image/video path
 
     model, processor = payload.model, payload.processor
     tmp_dir = create_work_dir("chat/qwen3_omni")

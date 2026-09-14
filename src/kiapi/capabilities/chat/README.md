@@ -3,6 +3,7 @@
 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) provides an OpenAI-compatible chat completion API.
 
 - **vlm** (text + image):
+  - Qwen3.8-27B-4bit
   - Qwen3.6-27B-4bit
 - **omni** (text + image + audio + video):
   - Qwen3-Omni-30B-A3B-Instruct-4bit
@@ -43,6 +44,7 @@ It supports the following functions.
 | Model | License | Terms | Size | Mem | Description |
 |---|---|---|---:|---:|---|
 | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (default). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
+| [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b`. Same handler as `qwen3.6-27b` (`model_type: qwen3_5`): text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~19 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 
 - **HTTP 400** when sending a part of a modality that is not supported by the selected model.
@@ -63,6 +65,7 @@ Details are in the docstring.
 | C | `mx.where` / `mx.scatter` shim for mlx 0.31.x | `_models/qwen3_omni.py` `_ensure_mlx_compat` | omni (image+video simultaneously) |
 | E | UTF-8 decoding relaxation for streaming detokenizer | `_operations/ensure_streaming_detokenizer_compat.py` | Both models (stream) |
 | F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 (stream) |
+| G | `mx.repeat` int count for the vision towers on mlx 0.32+ | `_operations/ensure_vision_repeat_compat.py` | All models (image / video) |
 
 **A. Pass the audio as a float32 array:**
 - **Location**: `run`(`audio_arrays = [load_audio_mono(p, sr=sr) ...]`) in `_models/qwen3_omni.py`
@@ -114,6 +117,16 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
 - **Reason**: More of a compatibility wrapper than a bug avoidance. `_ServerTokenStreamer` / in mlx-vlm
   If `make_streaming_detokenizer` is available, it will extract the text from the token ID.
   Restore. If it is not available, pass through (`yield from chunks`).
+
+**G. `mx.repeat` int count for the vision towers:**
+- **Location**: `_operations/ensure_vision_repeat_compat.py` (called at the beginning of `run` in both models)
+- **Reason**: The `qwen3_vl` and `qwen3_omni_moe` vision towers of mlx-vlm 0.6.3 call
+  `mx.repeat(seq_len, grid_thw[i, 0])` with an array count. mlx 0.32 accepts only `int`,
+  so every image/video request fails with `TypeError: repeat(): incompatible function arguments`.
+  mlx-vlm 0.7.1 fixes it with `int(...)`.
+- **Workaround**: Replace `mx` only in those two modules with a proxy whose `repeat` casts a
+  scalar array count to `int`. Everything else is delegated to `mlx.core`, which is left untouched.
+- **Trigger**: Any image or video input.
 
 ## Quickstart
 ```bash

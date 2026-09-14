@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- chat: added the `qwen3.8-27b` model (`mlx-community/Qwen3.8-27B-4bit`, aliases
+  `qwen3.8`, `qwen3_5`, `qwen3-vl`, `vlm`). The last three moved from
+  `qwen3.6-27b`, which keeps only `qwen3.6`. It runs on the existing `qwen3_5`
+  handler (text + image, Hermes/XML tool calls, reasoning off by default).
+
+### Fixed
+
+- chat: image and video input failed on every model with
+  `TypeError: repeat(): incompatible function arguments` since mlx 0.32. The
+  mlx-vlm 0.6.3 vision towers now get an `mx.repeat` that casts the array count
+  to `int` (patch G), matching the fix in mlx-vlm 0.7.1.
+
 ### Changed
 
 - Restructured the repository from a uv workspace (`packages/kiapi`) into a

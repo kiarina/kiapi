@@ -3,6 +3,25 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-15 — chat に Qwen3.8-27B を追加し、画像入力の mlx 0.32 非互換を修正
+
+- `qwen3.8-27b`（`mlx-community/Qwen3.8-27B-4bit`、16.1 GB）を追加。MLX 版の
+  `model_type` は Qwen3.6 と同じ `qwen3_5` で、chat template も Hermes/XML の tool call と
+  `enable_thinking` を持つため、既存の `qwen3_5` handler をそのまま使う
+- `vlm` / `qwen3-vl` / `qwen3_5` の alias を 3.6 から 3.8 へ移した。3.6 は `qwen3.6` だけ残す
+- verify 中に、chat の画像入力が **全モデル（omni / 3.6 / 3.8）で 500** になっていたことが判明。
+  mlx-vlm 0.6.3 の `qwen3_vl` / `qwen3_omni_moe` vision が `mx.repeat` に配列の回数を渡し、
+  mlx 0.32.2 がこれを拒否する。mlx 0.32.2 は 2026-08-27 の lock 更新（`990cca7`）で入った。
+  以後の verify は fast（text の 1 ケースだけ）だったため検出できなかった
+- 修正は patch G（`_operations/ensure_vision_repeat_compat.py`）。該当 2 module の `mx` だけを、
+  スカラー配列の回数を `int` にする proxy へ差し替える。mlx-vlm 0.7.1 の上流修正と同等。
+  seedvr2 の失敗（mflux、回数が複数要素の配列）は別件で、この patch では直らない
+- サーバー機で `mise run verify --kiapi --family chat` を full で実行し、3.8 / 3.6 / omni の
+  全 66 ケース（stream 有無、omni の audio / video を含む）と stream 検証が通過。
+  `make`、`make test`（277 passed）も通過
+- 落とし穴: モデルを追加したら `kiapi activate --repo ...` で重みを取得するまで 503
+  （not activated）になる。verify は取得しない
+
 ## 2026-09-15 — モノレポ構成をやめて単一パッケージ構成へ移行
 
 - v0.6.0 で kiapi-relay / kiapi-proxy を削除して以降、workspace には kiapi しか

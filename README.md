@@ -34,6 +34,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 | Domain | Family | Resource | Kind | Upstream license | Notes |
 |---|---|---|---|---|---|
 | chat | [chat](src/kiapi/capabilities/chat/README.md) | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | model weights | Apache-2.0 | MLX-converted Qwen3 Omni model. |
+|  |  | [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | model weights | Apache-2.0 | MLX-converted Qwen3.8 model. |
 |  |  | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | model weights | Apache-2.0 | MLX-converted Qwen3.6 model. |
 | embedding | [embedding](src/kiapi/capabilities/embedding/README.md) | [mlx-community/Qwen3-Embedding-8B-mxfp8](https://huggingface.co/mlx-community/Qwen3-Embedding-8B-mxfp8) | model weights | Apache-2.0 | Text embedding model. |
 |  |  | [mlx-community/Qwen3-VL-Embedding-2B-mxfp8](https://huggingface.co/mlx-community/Qwen3-VL-Embedding-2B-mxfp8) | model weights | Apache-2.0 | Text + image embedding model. |
