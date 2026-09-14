@@ -27,6 +27,10 @@
 - 同じ修正を上流へ PR [Blaizzy/mlx-vlm#2256](https://github.com/Blaizzy/mlx-vlm/pull/2256) として出し、
   issue #2099 に原因をコメントした。上流版は batch の行ごとの offset にも対応し、回帰テストを追加した
   （修正前の main で失敗、修正後に通過）。実機でも動画・画像・動画+音声・画像+動画の 4 通りを確認
+- 続けて kiapi の patch B / C に当たる上流の不具合も PR にした: image + video の deepstack 結合
+  [#2257](https://github.com/Blaizzy/mlx-vlm/pull/2257)、stereo 音声の resample [#2258](https://github.com/Blaizzy/mlx-vlm/pull/2258)。
+  どちらも回帰テスト付きで、実機で確認した（歌詞の引用が「Shh, don't you shh」168.6 秒 → 正しい歌詞 1.2 秒）。
+  patch A は 0.7.1 では不要と確認。kiapi の patch C に同じ誤りがあることを `tasks/mlx-vlm-omni-deepstack-upstream.md` に記録
 - 落とし穴: 検証は本番 checkout ではなく git worktree で行った（kiapi は editable install なので、
   本番 checkout に WIP を置くとサービス再起動時に未検証コードが載る）。worktree には git 管理外の
   `tests/assets/` が無いので、本体の `tests/assets` を symlink しないと verify が画像で止まる
