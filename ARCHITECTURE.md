@@ -1,6 +1,6 @@
 # kiapi Architecture
 
-kiapi is a uv workspace for a local inference server. This document is the map
+kiapi is a single-package Python project for a local inference server. This document is the map
 of the architecture; detailed design notes live under
 [`docs/concepts`](docs/concepts/).
 
@@ -19,7 +19,7 @@ of the architecture; detailed design notes live under
 
 | Concept | Description |
 |---|---|
-| [Application](docs/concepts/application.md) | Workspace structure, application startup, settings, and user directories |
+| [Application](docs/concepts/application.md) | Repository layout, application startup, settings, and user directories |
 | [Model Lifecycle](docs/concepts/model-lifecycle.md) | Setup resources, model registry, memory budget, TTL, and subprocess isolation |
 | [Jobs and Files](docs/concepts/jobs-and-files.md) | Processing flow, worker serialization, progress, files, and response negotiation |
 | [API](docs/concepts/api.md) | Endpoint organization, model discovery, and two-layer OpenAPI documentation |

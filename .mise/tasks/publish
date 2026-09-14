@@ -1,28 +1,11 @@
 #!/usr/bin/env bash
-#MISE description="Publish packages to PyPI (all, or a single [package])"
-#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
+#MISE description="Publish the built kiapi distributions in dist/ to PyPI"
 #USAGE flag "-t --test" help="Publish to TestPyPI instead of PyPI"
 
 set -euo pipefail
 
-target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
 test_pypi="${usage_test:-false}"
 
-if [ "$target" = "all" ]; then
-    while IFS= read -r package; do
-        args=("$package")
-        [ "$test_pypi" = "true" ] && args+=(--test)
-        mise run publish "${args[@]}"
-    done < <(mise run package:list)
-    exit 0
-fi
-
-if [ ! -f "packages/$target/pyproject.toml" ]; then
-    echo "❌ Package not found: $target" >&2
-    exit 1
-fi
-
-cd "packages/$target"
 if [ "$test_pypi" = "true" ]; then
     uv publish --repository testpypi
 else

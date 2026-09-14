@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Move the root and selected package CHANGELOG.md Unreleased notes into a bumped version entry"
+#MISE description="Move the CHANGELOG.md Unreleased notes into a bumped version entry"
 #USAGE arg "<version>" help="Version to add (e.g. '0.3.0')"
 
 set -euo pipefail
@@ -105,31 +105,10 @@ update_changelog() {
     echo "  ✅ $display_name"
 }
 
-release_packages=()
-while IFS= read -r package; do
-    release_packages+=("$package")
-done < <(mise run package:list --release "$version")
-
-echo "🔍 Validating selected CHANGELOG.md files..."
 if ! has_unreleased_changes "CHANGELOG.md"; then
-    echo "❌ root Unreleased section has no changes" >&2
+    echo "❌ Unreleased section has no changes" >&2
     exit 1
 fi
 
-for package in "${release_packages[@]}"; do
-    changelog_file="packages/$package/CHANGELOG.md"
-    if ! has_unreleased_changes "$changelog_file"; then
-        echo "❌ $package Unreleased section has no changes" >&2
-        exit 1
-    fi
-done
-
-echo ""
-echo "📄 Updating selected CHANGELOG.md files for version $version ($current_date)..."
-update_changelog "CHANGELOG.md" "root"
-for package in "${release_packages[@]}"; do
-    update_changelog "packages/$package/CHANGELOG.md" "$package"
-done
-
-echo ""
-echo "✅ CHANGELOG update completed!"
+echo "📄 Updating CHANGELOG.md for version $version ($current_date)..."
+update_changelog "CHANGELOG.md" "CHANGELOG.md"

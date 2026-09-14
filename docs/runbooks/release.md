@@ -2,8 +2,7 @@
 
 ## Prepare
 
-Add release notes to the `Unreleased` section of the root `CHANGELOG.md` and
-each changed package's `CHANGELOG.md`.
+Add release notes to the `Unreleased` section of `CHANGELOG.md`.
 
 Then prepare the release:
 
@@ -12,24 +11,25 @@ mise run release:bump-version <version>
 mise run ci --no-setup
 ```
 
-Review the changes. Only packages with unreleased changes are bumped and
-released.
+This updates the `version` in `pyproject.toml`, `uv.lock`, and moves the
+`Unreleased` notes into a new version entry. Review the changes.
 
 ## Publish
 
-Commit the prepared release, then create and push the shared version tag:
+Commit the prepared release, then create and push the version tag:
 
 ```bash
-git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock
+git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "chore(release): prepare v<version>"
 git tag v<version>
 git push origin main --tags
 ```
 
-The tag starts the release workflow, which creates a GitHub Release and
-publishes the selected packages to PyPI.
+The tag starts the release workflow, which checks that the tag matches the
+`pyproject.toml` version, creates a GitHub Release, and publishes `kiapi` to
+PyPI.
 
 ## Verify
 
 Confirm that the `Release PyPI` workflow succeeded, then check the GitHub
-Release and the released packages on PyPI.
+Release and the released package on PyPI.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Bump the repository to a new version: update VERSION, changed pyproject.toml and CHANGELOG.md files"
+#MISE description="Bump the repository to a new version: update pyproject.toml, uv.lock, and CHANGELOG.md"
 #USAGE arg "<version>" help="New version (e.g. '0.3.0', '1.0.0-alpha.1')"
 
 set -euo pipefail
@@ -20,6 +20,6 @@ echo "Version bump prepared for $version."
 echo ""
 echo "Next steps:"
 echo "  1. mise run ci --no-setup"
-echo "  2. git add VERSION CHANGELOG.md packages/*/pyproject.toml packages/*/CHANGELOG.md uv.lock"
+echo "  2. git add pyproject.toml CHANGELOG.md uv.lock"
 echo "  3. git commit -m 'chore(release): prepare v$version'"
 echo "  4. git tag v$version && git push origin main --tags"

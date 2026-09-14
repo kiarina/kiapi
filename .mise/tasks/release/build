@@ -1,22 +1,18 @@
 #!/usr/bin/env bash
-#MISE description="Build the packages selected for a release"
+#MISE description="Build the release artifacts after checking the version"
 #USAGE arg "<version>" help="Release version (e.g. '0.3.0')"
 
 set -euo pipefail
 
 version="$usage_version"
+project_version="$(awk -F'"' '/^version = "/ { print $2; exit }' pyproject.toml)"
 
-rm -rf dist
-mkdir -p dist
-
-while IFS= read -r package; do
-    echo "🏗️  Building $package $version..."
-    uv build "packages/$package" --out-dir dist
-done < <(mise run package:list --release "$version")
-
-if ! find dist -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print -quit | grep -q .; then
-    echo "❌ No release artifacts were built" >&2
+if [ "$project_version" != "$version" ]; then
+    echo "❌ pyproject.toml version $project_version does not match release version $version" >&2
     exit 1
 fi
 
+rm -rf dist
+echo "🏗️  Building kiapi $version..."
+uv build --out-dir dist
 echo "✅ Release artifacts built in dist/"

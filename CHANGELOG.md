@@ -2,8 +2,8 @@
 
 All notable changes to the kiapi project will be documented in this file.
 
-This file contains the overall project changes. For package-specific changes,
-see the `CHANGELOG.md` in each package directory under `packages/`.
+Entries before the single-package restructure prefix package-specific notes with
+the package name (e.g. `**kiapi**:`).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,8 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **kiapi**: Updated dependencies. FastAPI moves to `>=0.141` (`build_openapi` now walks `routing.iter_route_contexts` to handle the lazy included routers of FastAPI 0.137+; the generated OpenAPI documents are unchanged), and the `numpy<2.5` cap is lifted (numba >= 0.67 supports numpy 2.5; the out-of-band LTX-2 install needs `numba>=0.67`).
-- **kiapi**: Refreshed the locked dependencies: torch 2.14, torchvision 0.29,
+- Restructured the repository from a uv workspace (`packages/kiapi`) into a
+  single package: the source now lives in `src/kiapi/`, the tests in `tests/`,
+  and the release workflow builds and publishes `kiapi` directly. The package
+  README and CHANGELOG are merged into the root ones, and the root `VERSION`
+  file is replaced by the `version` in `pyproject.toml`.
+- Updated dependencies. FastAPI moves to `>=0.141` (`build_openapi` now walks `routing.iter_route_contexts` to handle the lazy included routers of FastAPI 0.137+; the generated OpenAPI documents are unchanged), and the `numpy<2.5` cap is lifted (numba >= 0.67 supports numpy 2.5; the out-of-band LTX-2 install needs `numba>=0.67`).
+- Refreshed the locked dependencies: torch 2.14, torchvision 0.29,
   huggingface-hub 1.30, tokenizers 0.23.2, anyio 4.15, and ruff 0.16.6.
   `mlx-vlm` stays pinned at 0.6.3 because the chat capability ships patches
   against it.

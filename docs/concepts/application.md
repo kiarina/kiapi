@@ -1,15 +1,16 @@
 # Application
 
-This concept describes the workspace boundary, the `kiapi` source layout, and
+This concept describes the repository layout, the `kiapi` source layout, and
 application startup.
 
-## Workspace
+## Repository Layout
 
-The repository is a uv workspace with a single package:
+The repository is a single Python package:
 
 ```text
-packages/
-  kiapi/  # Apple Silicon / MLX inference API server
+src/kiapi/  # Apple Silicon / MLX inference API server
+tests/      # CPU-only unit tests mirroring src/kiapi/
+scripts/    # GPU-backed verification and API docs generation
 ```
 
 ## Source Layout

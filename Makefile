@@ -7,12 +7,12 @@ init:
 list:
 	uv pip list
 sync:
-	uv sync --all-packages --all-extras --all-groups
+	uv sync --all-extras --all-groups
 update:
-	uv sync --inexact --all-packages --all-extras --all-groups
+	uv sync --inexact --all-extras --all-groups
 	uv pip list --outdated
 upgrade:
-	uv sync --inexact --upgrade --all-packages --all-extras --all-groups
+	uv sync --inexact --upgrade --all-extras --all-groups
 clean:
 	mise run clean
 #--------------------------------------------------

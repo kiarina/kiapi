@@ -43,7 +43,7 @@ fi
 cd "$repository_root"
 
 # Build the find name expression from the requested names so that each name is
-# searched for across the whole repository (e.g. packages/*/​.env).
+# searched for across the whole repository (e.g. .env).
 find_name_expr=()
 for name in "${names[@]}"; do
     if [ "${#find_name_expr[@]}" -gt 0 ]; then

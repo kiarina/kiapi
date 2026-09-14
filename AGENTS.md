@@ -4,11 +4,13 @@
 
 ## リポジトリ構成
 
-このリポジトリは uv workspace で、パッケージを `packages/` 以下に持ちます。
+このリポジトリは単一の Python パッケージ `kiapi`（推論 API サーバー本体、Apple Silicon / MLX 専用）です。
 
-- `packages/kiapi` … 推論 API サーバー本体（Apple Silicon / MLX 専用）。
+- `src/kiapi/` … パッケージのソース
+- `tests/` … 単体テスト
+- `scripts/` … GPU を使う検証スクリプトと API ドキュメント生成
 
-ワークスペース全体で単一のバージョンを共有し、ルートの `VERSION` ファイルで一元管理します。`bump-version` は CHANGELOG に未リリースの変更があるパッケージを自動検出し、それらだけを新バージョンへ bump・ビルド・PyPI 公開します（変更のないパッケージは据え置き）。リリースタグは `v<version>` 形式の単一タグで、これが GitHub Release と PyPI 公開を起動します。CHANGELOG はプロジェクト全体を記すルートの `CHANGELOG.md` と、各 `packages/<package>/CHANGELOG.md` の両方を持ちます。ルートの `pyproject.toml` は workspace 設定と共有の lint/test 設定のみを持ちます。
+バージョンは `pyproject.toml` の `version` で管理します。リリースタグは `v<version>` 形式で、これが GitHub Release と PyPI 公開を起動します。CHANGELOG はルートの `CHANGELOG.md` だけを持ちます。
 
 ## 作業前に読むもの
 
@@ -19,7 +21,7 @@
 - `ARCHITECTURE.md`
 - `docs/concepts/`
 - `mise.toml`
-- `pyproject.toml` とルート、および対象 `packages/<package>/pyproject.toml`
+- `pyproject.toml`
 - `.mise/tasks`
 - `Makefile`
 - `.github/workflows/`
@@ -75,14 +77,14 @@ Google 認証が必要な機能を実装する場合、下記を把握してく�
 
 ## ドキュメントの運用
 
-- ルート・各パッケージ・各実装の README、`ARCHITECTURE.md`、`docs/` 以下の技術文書は英語で記述してください。
+- ルート・各実装の README、`ARCHITECTURE.md`、`docs/` 以下の技術文書は英語で記述してください。
 - `README.ja.md` など、言語別の README は作成しません。言語切り替えのリンクも置きません。
 - ユーザーとの相談と、`AGENTS.md`、`CLAUDE.md` の作業指示は日本語で構いません。
 - リポジトリの利用者や開発者が現在の仕様・手順として読む文書は、英語を正典とします。
 
 ## ドキュメントの配置
 
-リポジトリ全体や複数のパッケージにまたがるドキュメントは、内容に応じて
+リポジトリ全体にまたがるドキュメントは、内容に応じて
 `docs/concepts`、`docs/playbooks`、`docs/runbooks` のいずれかに配置します。
 
 ```text
@@ -99,7 +101,7 @@ docs/{concepts|playbooks|runbooks}/{わかりやすい-slug}.md
 同じ directory に配置します。
 
 ```text
-packages/kiapi/src/kiapi/capabilities/{family}/
+src/kiapi/capabilities/{family}/
   README.md
 ```
 
@@ -107,14 +109,14 @@ packages/kiapi/src/kiapi/capabilities/{family}/
 
 - commit message も、英語で `type(scope): subject` の Conventional Commits 形式で記述してください。
 - Pull Request タイトルは、英語で `type(scope): subject` の Conventional Commits 形式で記述してください。
-- scope には、family やサブパッケージ名を指定してください。
+- scope には、family 名などを指定してください。
 - scope が複数ある場合は、カンマ区切りで指定してください。
 - scope は省略可能ですが、できるだけ明示してください。
 
 ## CHANGELOG の運用
 
 - 依存パッケージの更新、機能追加・変更、デプロイパイプラインに関わる変更を行った場合は、`CHANGELOG.md` の `Unreleased` セクションに追記してください。
-- 変更したパッケージの `packages/<package>/CHANGELOG.md` と、ルートの `CHANGELOG.md` の両方に追記してください。ルート側はパッケージ名（例: `**kiapi**: ...`）を接頭辞に付け、リポジトリ全体に関わる変更は接頭辞なしで記載します。リリースノートはルートの `CHANGELOG.md` から生成されます。
+- リリースノートは `CHANGELOG.md` から生成されます。
 - ドキュメントのみの更新、フォーマット・スタイルのみの変更、コメントや内部整理など利用者向けの挙動に影響しない変更は、`CHANGELOG.md` に追記しなくて構いません。
 
 ## 変更後の確認
@@ -135,13 +137,13 @@ kiapi のテストは、実行速度の観点から下記を明確に分離し�
 ### 単体テスト
 
 - **フレームワーク**: `pytest` を使用します。
-- **配置場所**: 各パッケージの `packages/<package>/tests/` ディレクトリ以下に配置します。
-- **構造**: そのパッケージの `src/<package>/` ディレクトリの構造をそのままミラーリングします。
-  - 例: `packages/kiapi/src/kiapi/api/chat/router.py` のテストは `packages/kiapi/tests/api/chat/test_router.py` に配置します。
+- **配置場所**: `tests/` ディレクトリ以下に配置します。
+- **構造**: `src/kiapi/` ディレクトリの構造をそのままミラーリングします。
+  - 例: `src/kiapi/api/chat/router.py` のテストは `tests/api/chat/test_router.py` に配置します。
 - **命名規則**:
   - 各ディレクトリには `__init__.py` を配置し、同名のテストファイル（例: `test_common.py`）が衝突しないようにします。
   - テストコードはクラス（`unittest.TestCase`）ではなく、関数（`def test_...():`）ベースで記述します。
-- **制約**: GPU を使う処理（モデルのロードや推論実行など）は、`packages/*/tests/` 以下には含めないでください。
+- **制約**: GPU を使う処理（モデルのロードや推論実行など）は、`tests/` 以下には含めないでください。
 - **実行方法**:
 
 ```bash

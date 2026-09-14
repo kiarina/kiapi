@@ -3,6 +3,25 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-15 — モノレポ構成をやめて単一パッケージ構成へ移行
+
+- v0.6.0 で kiapi-relay / kiapi-proxy を削除して以降、workspace には kiapi しか
+  残っていなかったため、uv workspace（`packages/kiapi`）をやめてリポジトリ直下を
+  kiapi パッケージにした。今後も kiapi 単体しか扱わない前提
+- ソースは `src/kiapi/`、単体テストは `tests/`（test-assets の `tests/assets/` と同居）へ移動。
+  パッケージの `pyproject.toml` とルートの workspace / lint 設定を 1 つに統合
+- パッケージ側の README（API 一覧、Requirements、Local Storage、Security）をルート
+  README へ統合し、PyPI の readme もルート README になった。CHANGELOG はルートだけにし、
+  既存エントリの `**kiapi**:` 接頭辞は過去の記録としてそのまま残した
+- ルートの `VERSION` を廃止し、`pyproject.toml` の `version` を唯一のバージョンにした。
+  `release:build` はタグと `pyproject.toml` の version が一致しない場合に失敗する
+- mise タスクから `package:*` と package 引数を削除。release workflow の publish は
+  package matrix をやめて kiapi 1 つを直接公開する
+- sdist は `only-include = ["src"]` にして、ルートの docs / scripts / public などを
+  含めないようにした（中身は src と README / LICENSE / pyproject のみ）
+- 開発機で `make`、`mise run test`（276 passed）、`mise run build` を確認。
+  **release workflow 自体は次回リリースまで未実行**
+
 ## 2026-09-05 — 依存・Actions・Dependabot 設定の定期保守
 
 - open alert 0 件・CI success の状態から、lockfile を `uv lock --upgrade` で更新。

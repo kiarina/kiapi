@@ -9,7 +9,7 @@ updates:
     ignore:
       # mlx-vlm is deliberately pinned to an exact version because the chat
       # capability ships patches against it. Raising it requires re-auditing
-      # every patch in packages/kiapi/src/kiapi/capabilities/chat/README.md and
+      # every patch in src/kiapi/capabilities/chat/README.md and
       # re-verifying both the omni and vlm models, so it is never an automatic
       # update.
       - dependency-name: "mlx-vlm"

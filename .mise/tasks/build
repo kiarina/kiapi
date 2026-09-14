@@ -1,23 +1,8 @@
 #!/usr/bin/env bash
-#MISE description="Build packages (all, or a single [package])"
-#USAGE arg "[package]" help="Package name (default: current package, or all at repo root)"
+#MISE description="Build the kiapi package"
 
 set -euo pipefail
 
-target="${usage_package:-$(cd "${MISE_ORIGINAL_CWD:-$PWD}" && mise run package:current)}"
-
-if [ "$target" = "all" ]; then
-    while IFS= read -r package; do
-        mise run build "$package"
-    done < <(mise run package:list)
-    exit 0
-fi
-
-if [ ! -f "packages/$target/pyproject.toml" ]; then
-    echo "❌ Package not found: $target" >&2
-    exit 1
-fi
-
-echo "🏗️  Building $target..."
-uv build "packages/$target"
-echo "✅ $target built successfully in packages/$target/dist/"
+echo "🏗️  Building kiapi..."
+uv build
+echo "✅ kiapi built successfully in dist/"

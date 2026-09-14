@@ -21,7 +21,7 @@ afterward to restore them.
 
 ## Tests
 
-Unit tests live under `tests/` and should mirror the `kiapi/` package structure.
+Unit tests live under `tests/` and should mirror the `src/kiapi/` package structure.
 Keep GPU-heavy model loading and inference out of `tests/`.
 
 ```sh
@@ -72,11 +72,9 @@ ci: run release-quality checks on pull requests
 
 ## Changelog
 
-Update the `Unreleased` section of both the changed package's
-`packages/<package>/CHANGELOG.md` and the root `CHANGELOG.md` when a change
-affects user-visible behavior, dependencies, features, or deployment/release
-pipelines. In the root changelog, prefix package-specific notes with the package
-name (e.g. `**kiapi**: ...`); release notes are generated from it.
+Update the `Unreleased` section of `CHANGELOG.md` when a change affects
+user-visible behavior, dependencies, features, or deployment/release pipelines.
+Release notes are generated from it.
 
 Documentation-only changes, formatting-only changes, comments, and internal
 cleanup do not need a changelog entry unless they affect users.

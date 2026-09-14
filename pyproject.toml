@@ -1,8 +1,97 @@
-[tool.uv.workspace]
-members = ["packages/*"]
+[project]
+name = "kiapi"
+version = "0.6.0"
+description = "Unified local inference API server for LLM agents on Apple Silicon (MLX): chat, embedding, image, music, sound-effect, and video — one process, one global memory budget, one single-flight queue, unified jobs and files."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+authors = [{ name = "kiarina", email = "kiarinadawa@gmail.com" }]
+keywords = [
+    "agent",
+    "api",
+    "apple-silicon",
+    "fastapi",
+    "local-inference",
+    "mlx",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    # --- web ---
+    # build_openapi walks routing.iter_route_contexts, added for the lazy
+    # included routers of FastAPI 0.137+.
+    "fastapi>=0.141",
+    "uvicorn[standard]",
+    "click",
+    "questionary",
+    "pydantic>=2",
+    "pyyaml",
+    "python-multipart", # multipart/form-data (file uploads)
+    # --- shared ---
+    # numpy>=2.5 needs numba>=0.67 in the out-of-band LTX-2 install
+    # (`kiapi activate --family ltx2` pulls mlx-video -> librosa -> numba).
+    "numpy",
+    "pillow",
+    "psutil", # process RSS measurement (framework-agnostic fallback)
+    "httpx", # web search capability: async HTTP client for the SearXNG backend
+    "kiarina-utils-common>=2.2.0",
+    "kiarina-utils-app>=2.3.0", # user directory resolution (replaces core/app internals)
+    # --- embedding capability (mlx-embeddings) ---
+    "mlx-embeddings>=0.1.0",
+    # --- sound-effect capability (mlx-audiocraft / AudioGen) ---
+    "mlx-audiocraft>=0.1.0",
+    "soundfile>=0.13.1",
+    # --- video capability (mlx-video / LTX-2 distilled) ---
+    # GitHub-only upstream is installed by `kiapi activate --family ltx2`
+    # as a PythonPackageResource to keep PyPI metadata free of direct URLs.
+    # --- chat capability (mlx-vlm) ---
+    # mlx-vlm 0.6.3 supports BOTH model_types we use in one install:
+    #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6-27B).
+    # 0.6.3's get_rope_index rewrite let us drop the Omni prefill_step_size
+    # workaround (verified end-to-end); remaining workarounds tracked in src/kiapi/capabilities/chat/README.md.
+    "mlx-vlm==0.6.3",
+    # transformers' Qwen processors need torch/torchvision (video/image) and
+    # torchaudio; mlx-vlm itself does not pull them in.
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "mflux>=0.18.0",
+    "pydantic-settings-manager>=3.8.0",
+]
 
-[tool.uv.sources]
-kiapi = { workspace = true }
+[project.scripts]
+kiapi = "kiapi.cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/kiarina/kiapi"
+Repository = "https://github.com/kiarina/kiapi"
+Documentation = "https://kiarina.github.io/kiapi/"
+Changelog = "https://github.com/kiarina/kiapi/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kiapi"]
+artifacts = ["src/kiapi/capabilities/web/resources/searxng/settings.yml"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.uv]
 # The development lockfile resolves on Apple Silicon (kiapi pulls MLX wheels).
