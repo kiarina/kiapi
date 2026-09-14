@@ -24,6 +24,9 @@
   4 通りとも deepstack を適用したまま正しく答えた
 - サーバー機で `mise run verify --kiapi --family chat` を full で実行し、66 ケースと stream 検査
   8 件が通過。embedding の fast verify も通過。`make test` 280 passed
+- 同じ修正を上流へ PR [Blaizzy/mlx-vlm#2256](https://github.com/Blaizzy/mlx-vlm/pull/2256) として出し、
+  issue #2099 に原因をコメントした。上流版は batch の行ごとの offset にも対応し、回帰テストを追加した
+  （修正前の main で失敗、修正後に通過）。実機でも動画・画像・動画+音声・画像+動画の 4 通りを確認
 - 落とし穴: 検証は本番 checkout ではなく git worktree で行った（kiapi は editable install なので、
   本番 checkout に WIP を置くとサービス再起動時に未検証コードが載る）。worktree には git 管理外の
   `tests/assets/` が無いので、本体の `tests/assets` を symlink しないと verify が画像で止まる

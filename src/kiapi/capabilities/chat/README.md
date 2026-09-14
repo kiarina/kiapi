@@ -115,7 +115,8 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   prefill chunk (2048 tokens by default) and to the final one-token step. Omni's `_deepstack_process` scatters at
   full-prompt positions into the shorter chunk and writes past the end of the GPU buffer. A 28-frame video
   (3611 prompt tokens) decodes `!!!!…` or aborts the server with
-  `[METAL] Command buffer execution failed: Caused GPU Address Fault Error` (upstream issue #2099).
+  `[METAL] Command buffer execution failed: Caused GPU Address Fault Error` (upstream issue #2099,
+  fix proposed in [Blaizzy/mlx-vlm#2256](https://github.com/Blaizzy/mlx-vlm/pull/2256)).
   Short image prompts overrun by one row and usually survive.
 - **Workaround**: Wrap Omni's decoder (`Qwen3VLMoEModel.__call__`) and slice the mask to the current window and
   the embeds to the visual tokens in that window, the same way the Qwen3-VL language model already does.
