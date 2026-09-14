@@ -54,7 +54,8 @@ It supports the following functions.
 Chat is implemented using **mlx-vlm**, but some patches have been added to avoid bugs.
 Please be aware that this patch may break with updates to **mlx-vlm**.
 
-**mlx-vlm** is fixed to `mlx-vlm==0.6.3`.
+**mlx-vlm** is fixed to `mlx-vlm==0.7.1`.
+Patches E (streaming UTF-8) and G (`mx.repeat` count) were removed at 0.7.1, where upstream fixed both.
 When updating, please reconfirm the contents of the patch below and make corrections as necessary.
 Details are in the docstring.
 
@@ -63,9 +64,8 @@ Details are in the docstring.
 | A | Pass audio as a float32 array instead of a path | `_models/qwen3_omni.py` | omni |
 | B | Avoid stereo audio resampling inconsistency by loading it yourself | `_utils/load_audio_mono.py` | omni |
 | C | `mx.where` / `mx.scatter` shim for mlx 0.31.x | `_models/qwen3_omni.py` `_ensure_mlx_compat` | omni (image+video simultaneously) |
-| E | UTF-8 decoding relaxation for streaming detokenizer | `_operations/ensure_streaming_detokenizer_compat.py` | Both models (stream) |
 | F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 (stream) |
-| G | `mx.repeat` int count for the vision towers on mlx 0.32+ | `_operations/ensure_vision_repeat_compat.py` | All models (image / video) |
+| H | Window the deepstack inputs per prefill chunk | `_operations/ensure_omni_deepstack_window.py` | omni (image / video) |
 
 **A. Pass the audio as a float32 array:**
 - **Location**: `run`(`audio_arrays = [load_audio_mono(p, sr=sr) ...]`) in `_models/qwen3_omni.py`
@@ -103,30 +103,25 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   Avoid by grafting (idempotent/additive, no effect on other routes).
 - **Trigger**: Only when image and video are passed to omni **at the same time**.
 
-**E. UTF-8 decoding relaxation for streaming detokenizer:**
-- **Location**: `_operations/ensure_streaming_detokenizer_compat.py` (called via stream route)
-- **Reason**: `BPEStreamingDetokenizer.add_token` of mlx-vlm is
-  Decode bytes using **strict UTF-8**. Invalid UTF-8 at flash boundaries
-  Byte token string causes streaming response to crash. On the `finalize` side,
-  The streaming route is also `errors="replace"` because it handles the same decoding tolerantly.
-  Equivalently mitigate.
-- **Trigger**: `stream=true` for both models.
-
 **F. Text recovery from token ID (qwen3.6 stream):**
 - **Location**: `_operations/stream_text_from_tokens.py`
 - **Reason**: More of a compatibility wrapper than a bug avoidance. `_ServerTokenStreamer` / in mlx-vlm
   If `make_streaming_detokenizer` is available, it will extract the text from the token ID.
   Restore. If it is not available, pass through (`yield from chunks`).
 
-**G. `mx.repeat` int count for the vision towers:**
-- **Location**: `_operations/ensure_vision_repeat_compat.py` (called at the beginning of `run` in both models)
-- **Reason**: The `qwen3_vl` and `qwen3_omni_moe` vision towers of mlx-vlm 0.6.3 call
-  `mx.repeat(seq_len, grid_thw[i, 0])` with an array count. mlx 0.32 accepts only `int`,
-  so every image/video request fails with `TypeError: repeat(): incompatible function arguments`.
-  mlx-vlm 0.7.1 fixes it with `int(...)`.
-- **Workaround**: Replace `mx` only in those two modules with a proxy whose `repeat` casts a
-  scalar array count to `int`. Everything else is delegated to `mlx.core`, which is left untouched.
-- **Trigger**: Any image or video input.
+**H. Window the deepstack inputs per prefill chunk:**
+- **Location**: `_operations/ensure_omni_deepstack_window.py` (called at the beginning of `run` in `_models/qwen3_omni.py`)
+- **Reason**: mlx-vlm 0.7.1 passes the full-prompt `visual_pos_masks` and `deepstack_visual_embeds` to every
+  prefill chunk (2048 tokens by default) and to the final one-token step. Omni's `_deepstack_process` scatters at
+  full-prompt positions into the shorter chunk and writes past the end of the GPU buffer. A 28-frame video
+  (3611 prompt tokens) decodes `!!!!…` or aborts the server with
+  `[METAL] Command buffer execution failed: Caused GPU Address Fault Error` (upstream issue #2099).
+  Short image prompts overrun by one row and usually survive.
+- **Workaround**: Wrap Omni's decoder (`Qwen3VLMoEModel.__call__`) and slice the mask to the current window and
+  the embeds to the visual tokens in that window, the same way the Qwen3-VL language model already does.
+  Batched generation with per-row offsets skips deepstack instead.
+- **Trigger**: Any Omni image or video input (harmful once the prompt exceeds one prefill chunk).
+
 
 ## Quickstart
 ```bash

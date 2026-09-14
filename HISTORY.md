@@ -3,6 +3,31 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-15 — mlx-vlm を 0.7.1 へ更新し、Omni の動画クラッシュを patch H で修正
+
+- 目的は Qwen3-Omni の deepstack 修正（上流 #1635）。0.6.3 は vision の deepstack 特徴量を
+  decoder の手前で捨てていた。0.7.1 で画像の回答が改善した（例: 「ピンクのツインテールの
+  キャラクター」→「ピンク色の猫と赤いリボンが特徴の、ピクセルアートスタイルのキャラクター」）
+- patch E（streaming UTF-8）と G（`mx.repeat`）は上流修正済みで削除。B / C / F は継続
+- mlx-vlm 0.7 は mlx-lm を依存に持たなくなった。mlx-embeddings の qwen3_vl model が mlx-lm を
+  top-level で import するため、kiapi で `mlx-lm>=0.31.3` を直接宣言した
+- 0.7.1 では Omni に動画を送ると server が `[METAL] ... GPU Address Fault Error` で SIGABRT した
+  （上流 issue #2099 と同じ）。原因は chunked prefill: full-prompt の `visual_pos_masks` と
+  `deepstack_visual_embeds` が各 chunk（既定 2048 token）と最後の 1 token にそのまま渡り、
+  `_deepstack_process` が chunk より長い位置へ scatter して GPU バッファの外に書く。
+  動画（3611 token）は落ちるか `!!!!…` を出し、画像（84 token）は 1 行はみ出すだけで表に出ない
+- 修正は patch H（`_operations/ensure_omni_deepstack_window.py`）。cache offset から mask と
+  embeds を chunk の窓へ切り出す。上流の Qwen3-VL language model が既に行っている方式と同じ。
+  Qwen3.6 / 3.8（qwen3_5）は deepstack が config で無効なので対象外
+- 切り分け: deepstack を無効にすると動画は正しく答える → 呼び出しごとの形を記録すると
+  hidden 2048 / 1562 / 1 に対して mask は常に 3611 → 窓を切ると動画・画像・動画+音声・画像+動画の
+  4 通りとも deepstack を適用したまま正しく答えた
+- サーバー機で `mise run verify --kiapi --family chat` を full で実行し、66 ケースと stream 検査
+  8 件が通過。embedding の fast verify も通過。`make test` 280 passed
+- 落とし穴: 検証は本番 checkout ではなく git worktree で行った（kiapi は editable install なので、
+  本番 checkout に WIP を置くとサービス再起動時に未検証コードが載る）。worktree には git 管理外の
+  `tests/assets/` が無いので、本体の `tests/assets` を symlink しないと verify が画像で止まる
+
 ## 2026-09-15 — chat に Qwen3.8-27B を追加し、画像入力の mlx 0.32 非互換を修正
 
 - `qwen3.8-27b`（`mlx-community/Qwen3.8-27B-4bit`、16.1 GB）を追加。MLX 版の

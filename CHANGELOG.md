@@ -20,12 +20,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - chat: image and video input failed on every model with
-  `TypeError: repeat(): incompatible function arguments` since mlx 0.32. The
-  mlx-vlm 0.6.3 vision towers now get an `mx.repeat` that casts the array count
-  to `int` (patch G), matching the fix in mlx-vlm 0.7.1.
+  `TypeError: repeat(): incompatible function arguments` since mlx 0.32. Fixed by
+  updating mlx-vlm (below).
+- chat: Qwen3-Omni now receives its deepstack visual features. mlx-vlm 0.6.3
+  computed them but dropped them before the decoder, so image/video input used
+  less of the vision tower than intended.
+- chat: Qwen3-Omni video input no longer decodes garbage or crashes the server
+  with a Metal GPU address fault on mlx-vlm 0.7.1. The deepstack mask and
+  features are now windowed to each prefill chunk (patch H, upstream #2099).
 
 ### Changed
 
+- chat: updated `mlx-vlm` from 0.6.3 to 0.7.1 (still pinned exactly). The
+  streaming UTF-8 and `mx.repeat` patches are removed because upstream fixed
+  both; the stereo-audio, `mx.where`/`mx.scatter`, and stream-text patches stay.
+  `mlx-lm` is now declared directly because mlx-embeddings' Qwen3-VL model
+  imports it and mlx-vlm no longer pulls it in.
 - Restructured the repository from a uv workspace (`packages/kiapi`) into a
   single package: the source now lives in `src/kiapi/`, the tests in `tests/`,
   and the release workflow builds and publishes `kiapi` directly. The package
@@ -34,8 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated dependencies. FastAPI moves to `>=0.141` (`build_openapi` now walks `routing.iter_route_contexts` to handle the lazy included routers of FastAPI 0.137+; the generated OpenAPI documents are unchanged), and the `numpy<2.5` cap is lifted (numba >= 0.67 supports numpy 2.5; the out-of-band LTX-2 install needs `numba>=0.67`).
 - Refreshed the locked dependencies: torch 2.14, torchvision 0.29,
   huggingface-hub 1.30, tokenizers 0.23.2, anyio 4.15, and ruff 0.16.6.
-  `mlx-vlm` stays pinned at 0.6.3 because the chat capability ships patches
-  against it.
 - Updated the GitHub Actions used by CI, the PyPI release, and the Pages deploy
   to their current majors. `upload-pages-artifact` now sets
   `include-hidden-files: true` so `public/.nojekyll` keeps being published.

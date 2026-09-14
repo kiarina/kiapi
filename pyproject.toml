@@ -49,6 +49,9 @@ dependencies = [
     "kiarina-utils-app>=2.3.0", # user directory resolution (replaces core/app internals)
     # --- embedding capability (mlx-embeddings) ---
     "mlx-embeddings>=0.1.0",
+    # mlx-embeddings' qwen3_vl model (and mlx-video's LTX-2 text encoder) import
+    # mlx-lm without declaring it; mlx-vlm stopped pulling it in at 0.7.
+    "mlx-lm>=0.31.3",
     # --- sound-effect capability (mlx-audiocraft / AudioGen) ---
     "mlx-audiocraft>=0.1.0",
     "soundfile>=0.13.1",
@@ -56,11 +59,11 @@ dependencies = [
     # GitHub-only upstream is installed by `kiapi activate --family ltx2`
     # as a PythonPackageResource to keep PyPI metadata free of direct URLs.
     # --- chat capability (mlx-vlm) ---
-    # mlx-vlm 0.6.3 supports BOTH model_types we use in one install:
-    #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6-27B).
-    # 0.6.3's get_rope_index rewrite let us drop the Omni prefill_step_size
-    # workaround (verified end-to-end); remaining workarounds tracked in src/kiapi/capabilities/chat/README.md.
-    "mlx-vlm==0.6.3",
+    # mlx-vlm supports BOTH model_types we use in one install:
+    #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6 / Qwen3.8-27B).
+    # Pinned exactly because the chat capability patches its internals;
+    # remaining workarounds tracked in src/kiapi/capabilities/chat/README.md.
+    "mlx-vlm==0.7.1",
     # transformers' Qwen processors need torch/torchvision (video/image) and
     # torchaudio; mlx-vlm itself does not pull them in.
     "torch",

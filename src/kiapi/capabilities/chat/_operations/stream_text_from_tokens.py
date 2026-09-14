@@ -5,7 +5,7 @@ from copy import copy
 def stream_text_from_tokens(processor, chunks: Iterable) -> Iterator:  # type: ignore
     """Yield chunks whose text is decoded from token ids when mlx-vlm supports it."""
     try:
-        from mlx_vlm.tokenizer_utils import (  # type: ignore
+        from mlx_vlm.tokenizer_utils import (
             _ServerTokenStreamer,
             make_streaming_detokenizer,
         )
