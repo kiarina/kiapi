@@ -166,6 +166,9 @@ make verify-kiapi  # 全 capability を非対話で検証
 mise run verify --kiapi --family embedding --fast
 ```
 
+`--fast` は各スクリプトの最初のケース（多くは text）だけを実行します。依存やパッチを変更したときは、
+影響する family を full で検証してください。手順は `docs/playbooks/dependency-upgrades.md` を参照。
+
 ## タスク一覧
 
 各タスクの内容は `tasks/` のファイルだけに書き、ここはポインタ（1 ファイル 1 行）に保ちます。

@@ -1,13 +1,13 @@
-"""Handler for Qwen3.6-27B (``model_type: qwen3_5``, ``Qwen3_5ForConditionalGeneration``).
+"""Handler for Qwen3.6 / Qwen3.8 27B (``model_type: qwen3_5``, ``Qwen3_5ForConditionalGeneration``).
 
 A text + image vision-language model (the config also defines video tokens; we
 keep v1 to image and can add video later). No audio. Owns its own generate flow;
 shares the media / template / response operations with the Omni handler.
 
-Everything Qwen3.6-specific lives here, kept private to this module:
+Everything specific to this model type lives here, kept private to this module:
 
   - the **Hermes/XML** tool-call *prefill* in :func:`_build_prompt` (how a Hermes
-    call is requested; Qwen3.6 emits
+    call is requested; these models emit
     ``<tool_call><function=NAME><parameter=p>v</parameter></function></tool_call>``,
     not the JSON style Qwen3-Omni uses). The parse itself is a shared operation
     (``parse_hermes_tool_calls``).
@@ -69,7 +69,7 @@ def run(  # type: ignore
             params.messages, tmp_dir, allow=FEATURES
         )
 
-        # Qwen3.6 emits Hermes/XML tool calls (not JSON) — use that format's
+        # Qwen3.6 / 3.8 emit Hermes/XML tool calls (not JSON) — use that format's
         # prefill + parser.
         prompt, prefill = _build_prompt(
             processor,

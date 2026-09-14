@@ -10,9 +10,9 @@ module:
     prefill — see ``qwen3_5``.)
 
 Other Omni-specific workarounds (distilled from the test-qwen3-omni investigation):
-  (A) audio must be passed as float32 arrays, not paths — mlx-vlm crashes on raw
-      audio *paths* in its qwen3-omni branch (``could not convert string to
-      float``). We pre-load with ``load_audio`` into ndarrays.
+  (A) audio is passed as float32 arrays loaded by ``load_audio_mono``, not as
+      paths: mlx-vlm's own ``load_audio`` resamples stereo along the channel
+      axis (patch B in the README; upstream Blaizzy/mlx-vlm#2258).
 
 Workaround (D) — disabling chunked prefill (``prefill_step_size=None``) on vision
 prompts over 2048 tokens to dodge a ``get_rope_index`` bug — was removed after

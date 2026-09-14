@@ -64,14 +64,14 @@ Details are in the docstring.
 | A | Pass audio as a float32 array instead of a path | `_models/qwen3_omni.py` | omni |
 | B | Avoid stereo audio resampling inconsistency by loading it yourself | `_utils/load_audio_mono.py` | omni |
 | C | Join the image and video deepstack rows by position | `_operations/ensure_omni_image_video_join.py` | omni (image+video simultaneously) |
-| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 (stream) |
+| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 / qwen3.8 (stream) |
 | H | Window the deepstack inputs per prefill chunk | `_operations/ensure_omni_deepstack_window.py` | omni (image / video) |
 
 **A. Pass the audio as a float32 array:**
 - **Location**: `run`(`audio_arrays = [load_audio_mono(p, sr=sr) ...]`) in `_models/qwen3_omni.py`
-- **Reason**: The qwen3-omni branch of mlx-vlm fails when it receives the raw audio **path**
-  Crash with `could not convert string to float`. `generate(audio=...)` has
-  You need to pass ndarray.
+- **Reason**: Audio is loaded by kiapi (`load_audio_mono`, see B) and passed as arrays. mlx-vlm 0.6.x crashed
+  on raw audio paths (`could not convert string to float`); 0.7.1 accepts paths but loads them through the
+  buggy `load_audio` of B, so arrays are still required.
 - **Trigger**: All cases where omni has audio input.
 
 **B. Stereo audio resample mismatch:**
@@ -90,6 +90,8 @@ Details are in the docstring.
 - **Impact on audio in video**: None. `_extract_audio` in `_operations/parse_messages.py`
 To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   Resample/downmix itself does not occur and does not fall under the bug condition.
+- **Upstream fix**: [Blaizzy/mlx-vlm#2258](https://github.com/Blaizzy/mlx-vlm/pull/2258) downmixes before
+  resampling. Once it ships, A and B can be dropped together.
 
 **C. Join the image and video deepstack rows by position:**
 - **Location**: `_operations/ensure_omni_image_video_join.py` (called at the beginning of `run` in `_models/qwen3_omni.py`)
@@ -103,7 +105,7 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   matches; the unit test fails in that case so the pin cannot move silently.
 - **Trigger**: Only when image and video are passed to omni **at the same time**.
 
-**F. Text recovery from token ID (qwen3.6 stream):**
+**F. Text recovery from token ID (qwen3.6 / qwen3.8 stream):**
 - **Location**: `_operations/stream_text_from_tokens.py`
 - **Reason**: More of a compatibility wrapper than a bug avoidance. `_ServerTokenStreamer` / in mlx-vlm
   If `make_streaming_detokenizer` is available, it will extract the text from the token ID.
@@ -126,6 +128,7 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
 
 ## Quickstart
 ```bash
+MODEL=qwen3.8-27b
 MODEL=qwen3.6-27b
 MODEL=qwen3-omni
 ```
