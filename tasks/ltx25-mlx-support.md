@@ -5,6 +5,80 @@
 kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい distilled pipeline を
 利用できるようにする。
 
+## 現在の引き継ぎ（2026-09-15）
+
+この節が現在状態と次の作業順の正典。下の「実行計画」と「進捗」は調査・判断の経緯を残したものなので、
+着手時はまずこの節を使う。
+
+### 現在状態
+
+- upstream PR: [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52)
+  `feat(ltx2): add LTX-2.5 distilled generation support`
+- PR は open / mergeable、status check なし。`main` 向け、head は
+  `kiarina:ltx-2.5-local-port`
+- `mlx-video` checkout: `~/src/github.com/Blaizzy/mlx-video`
+- 作業 branch: `ltx-2.5-local-port`。fork の同名 branch を追跡し、working tree は clean
+- kiapi はまだ LTX-2.5 を取り込んでいない。production pin は
+  `87db56a51758fefb748a359b90a5283bb8ba4837` のまま
+- kiapi capability の技術知見は `src/kiapi/capabilities/ltx2/README.md` の
+  「LTX-2.5 upstream development status」に反映済み
+
+### PR #52 の commit 構成
+
+| Commit | 内容 |
+|---|---|
+| `a956b3a` | split checkpoint、Gemma 4 Unified encode、22B Transformer、conv VAE、T2V / I2V |
+| `b73e6a8` | 必要 component だけの download、README、model-path tests |
+| `73d919b` | LTX-2.5 ancestral Euler と sampler tests |
+| `3ca6fef` | generated audio、A2V、A2V + I2V、audio VAE / vocoder、mux frame truncation 修正 |
+| `c8000e1` | DurationHead と `num_frames` 自動予測 |
+| `7d8b2f0` | 別 Gemma 4 E2B-it による T2V / I2V prompt enhancement |
+
+各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
+使って後から PR を分ける。新しい PR を先に増やさない。
+
+### ローカル resource と成果物
+
+- LTX-2.5 split weights: `~/src/github.com/Blaizzy/mlx-video/models/LTX-2.5/`
+  （safetensors は checkout の ignore 対象）
+- Prompt enhancer: `~/.cache/kiarina/ltx25/gemma-4-e2b-it-bf16/`
+- 動画、WAV、contact sheet、ffprobe JSON:
+  `~/src/github.com/kiarina/kiapi/.verify/ltx25-mlx-video/`
+- 代表成果物:
+  - `ltx25-t2v-768x512-121.mp4`
+  - `ltx25-i2v-768x512-121-final.mp4`
+  - `ltx25-audio-768x512-121.mp4`
+  - `ltx25-a2v-768x512-121.mp4`
+  - `ltx25-auto-duration.mp4`
+  - `ltx25-enhance-auto.mp4`
+
+### 検証状態と既知の問題
+
+- LTX-2.5 T2V / I2V / generated audio / A2V / A2V + I2V / auto-duration /
+  T2V enhancement / I2V enhancement は実 checkpoint で end-to-end 完走
+- 関連 tests は 55 passed。fresh Python 3.12 install / CLI import も成功
+- 旧 LTX-2 は変更後も生成でき、`num_frames` 省略時の 33-frame default を維持
+- upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
+  `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
+  `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
+  torch 未導入環境で失敗
+- PR #52 への本文更新・maintainer返信など外部へ送る文章は、送信前に日本語訳でユーザーへ
+  提示し承認を取る。issue #51 はユーザーしか返信していないため、細かな進捗を逐次追記しない
+
+### 次の作業順
+
+1. **Multishotを先に実測する。** LTX-2.5 native能力なので、まず現在のpipelineへ複数cutを明示した
+   promptを渡し、人物・環境・照明・声・styleがcut間で維持されるか確認する。専用primitiveを
+   先に実装しない。必要ならprompt example、verify、READMEを独立commitにする
+2. **conv VAE限定のDFRを実装する。** generated keyframe slots、detailing IC-LoRA、reference latent
+   conditioning、spatial refinementを最小範囲とする。temporal upscalerと高度なtilingは後段
+3. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
+   attention用の専用Metal kernelが必要。先に未完成コードを置かない
+4. Multishot / DFRの各commitをpushした後、PR本文のcommit guide・対応範囲・実測を更新する。
+   更新文は日本語訳でユーザー承認後に送信
+5. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
+   headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
+
 ## 2026-09-15 調査
 
 ### 現在の kiapi

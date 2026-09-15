@@ -65,6 +65,90 @@ Key defaults and limits:
 `duration = num_frames / fps`. At 24 fps, `97` takes about 4 seconds, `161` takes about 6.7 seconds,
 `241` takes about 10 seconds, `481` takes about 20 seconds, and `721` takes about 30 seconds.
 
+## LTX-2.5 upstream development status
+
+> [!IMPORTANT]
+> LTX-2.5 is not part of the current kiapi capability. The installed `mlx-video`
+> pin and the `distilled` model above remain the production implementation until
+> the upstream work is merged, pinned, and verified through kiapi.
+
+LTX-2.5 support is being developed upstream in
+[Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52). The PR
+keeps the existing `mlx_video.models.ltx_2` pipeline and legacy model layouts,
+and separates each feature into its own commit for review.
+
+### Architecture and resources
+
+LTX-2.5 is not a model-repository swap for the current 19B checkpoint:
+
+- The video/audio transformer has 22B parameters and uses a fixed distilled
+  schedule with ancestral Euler sampling in stage 1.
+- The encode path requires the LTX-specific Gemma 4 Unified 12B checkpoint and
+  its embedded tokenizer and projections.
+- Official weights are split into transformer, text encoder, video VAE, audio
+  VAE/vocoder, spatial upscaler, and optional duration-head files.
+- Prompt enhancement cannot use the encode-only Gemma 4 Unified checkpoint.
+  It uses a separate generative Gemma 4 E2B-it checkpoint.
+- The LTX-2.5 weights use the LTX-2.x Community License. Access requires
+  accepting the model terms on Hugging Face.
+
+The upstream PR currently verifies these paths on Apple Silicon:
+
+- T2V and I2V, including first/last-frame conditioning
+- synchronized audio-video generation, A2V, and A2V + I2V
+- prompt-based automatic duration prediction on the `8k+1` frame grid
+- T2V prompt enhancement and reference-image-aware I2V prompt enhancement
+- the lighter convolutional video VAE
+
+### Measurements
+
+The following measurements used a Mac Studio M4 Max with 128GB unified memory,
+768x512 output, 121 frames, and 24 fps. They measure direct `mlx-video`
+generation, not kiapi request overhead.
+
+| Mode | LTX-2.5 | Current LTX-2 | Difference |
+|---|---:|---:|---:|
+| T2V | 108.7s / 37.81GB peak | 96.9s / 37.48GB peak | LTX-2.5 was about 12% slower |
+| I2V | 120.8s / 39.54GB peak | 101.7s / 39.35GB peak | LTX-2.5 was about 19% slower |
+| Generated audio | 118.1s / 37.81GB peak | — | 48kHz stereo AAC |
+| A2V | 106.4s / 37.81GB peak | — | input audio preserved as 16kHz stereo AAC |
+
+All representative outputs contained 121 H.264 frames. Image checks found no
+NaNs, gray-frame output, or static output; audio checks found no NaNs or
+infinities. In the tested ocean scene, LTX-2.5 produced more natural color,
+finer wave/reflection detail, and better temporal consistency than the current
+LTX-2 model.
+
+Automatic duration prediction also completed end to end: a short prompt
+predicted 4.72 seconds / 113 frames, and the generated MP4 contained exactly
+113 frames. Prompt enhancement can feed the expanded caption into this duration
+prediction before generation.
+
+### Diffusion video VAE boundary
+
+The high-quality diffusion video decoder is not implemented in MLX yet. Its
+final stage uses eight blocks of 11x11x11 3D neighborhood attention. At
+768x512 / 121 frames, the final stage contains 694,272 query positions and
+about 924 million query-neighbor pairs per block before head/channel work.
+
+The official CUDA implementation uses a fused NATTEN kernel for production and
+describes its eager fallback as compatibility-only. A practical Apple Silicon
+port therefore needs a dedicated tiled Metal kernel with online softmax,
+boundary-window shifting, and integrated RoPE. Building the decoder around an
+unfused MLX gather would create prohibitive temporary tensors and runtime.
+
+### Remaining adoption work
+
+1. Verify native multishot behavior through the existing distilled pipeline;
+   it is primarily a model/prompt capability and may require only tests and docs.
+2. Implement DFR first with the convolutional VAE, generated keyframe slots,
+   detailing IC-LoRA, and spatial refinement.
+3. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
+   even if its commit remains in the same upstream PR branch.
+4. After upstream review stabilizes, pin the accepted `mlx-video` commit in
+   kiapi, update setup resources and API fields, and run full kiapi regression
+   verification before changing the default model.
+
 ## Notes
 
 - **transient model**:
