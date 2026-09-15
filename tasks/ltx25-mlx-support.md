@@ -329,8 +329,8 @@ fork へはまだ push していない。
 - issue #51 へ、#52 が Audio / A2V を含む正典 PR になったことを追記
 
 次の一手: Duration predictor と Gemma 4 prompt enhancement はそれぞれ独立 commit として
-PR #52 branch へ追加する。Diffusion video VAE、DFR、multishot は実装量とレビュー境界が
-大きいため別 PR に保つ。
+PR #52 branch へ追加する。その後の Diffusion video VAE、DFR、multishot も同 branch へ
+機能別 commit で追加し、PR 本文の commit guide でレビュー境界を示す。
 
 ### 2026-09-15: Duration predictor を追加
 
@@ -404,3 +404,15 @@ PR #52 本文は Duration / Prompt enhancement の 2 commits をまとめて追�
 - PR #52 は 6 commits / 24 files、open / mergeable、status check なし
 
 issue #51 は更新していない。
+
+### PR の分割方針
+
+2026-09-15 にユーザーと再検討し、LTX-2.5 対応は原則として PR #52 の同一 branch へ
+機能別 commit で積み上げると決定した。checkpoint path、loader、pipeline、検証が共有される
+ため、先行して複数 PR へ分けると、相互依存の説明、rebase、正典の判別がかえって
+複雑になる。
+
+- 機能単位で commit を分ける
+- PR 本文の commit guide で各機能のレビュー境界を明示する
+- maintainer から PR の分割を要求された場合に限り、commit 境界を使って後から分ける
+- 独立 PR を先に増やさない
