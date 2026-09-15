@@ -34,6 +34,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `c8000e1` | DurationHead と `num_frames` 自動予測 |
 | `7d8b2f0` | 別 Gemma 4 E2B-it による T2V / I2V prompt enhancement |
 | `fae541a` | prompt-driven Multishot の検証済み example と制約の文書化 |
+| `5f008b8` | conv VAE限定DFR、generated keyframe slots、IC-LoRA detailing、tests / docs |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -43,6 +44,8 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 - LTX-2.5 split weights: `~/src/github.com/Blaizzy/mlx-video/models/LTX-2.5/`
   （safetensors は checkout の ignore 対象）
 - Prompt enhancer: `~/.cache/kiarina/ltx25/gemma-4-e2b-it-bf16/`
+- DFR detailing IC-LoRA:
+  `~/src/github.com/Blaizzy/mlx-video/models/LTX-2.5-detailing-lora/`
 - 動画、WAV、contact sheet、ffprobe JSON:
   `~/src/github.com/kiarina/kiapi/.verify/ltx25-mlx-video/`
 - 代表成果物:
@@ -54,6 +57,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   - `ltx25-enhance-auto.mp4`
   - `ltx25-multishot-direct-768x512-241.mp4`
   - `ltx2-multishot-direct-768x512-241.mp4`
+  - `ltx25-dfr-fixed-768x512-121.mp4`
+  - `ltx25-dfr-baseline-768x512-121.mp4`
+  - `ltx25-dfr-fixed-768x512-121-comparison.png`
 
 ### 検証状態と既知の問題
 
@@ -64,6 +70,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 - 同一 prompt / seed / 768x512 / 241 frames / generated audio で Multishot を新旧比較した。
   LTX-2.5 は中景、close-up、暖色の店先へのwide shotを描き分け、人物と衣装も維持した。
   旧LTX-2も画角変更と人物維持はできたが、3-shot指示と店へ入る展開への追従は弱かった
+- conv VAE限定DFRは実checkpointで256x256 / 25 framesと768x512 / 121 framesを完走。
+  代表設定は179.6秒・41.25 GB、同一prompt / seedの通常distilledは103.4秒・37.81 GB。
+  DFRは毛並み、輪郭、草の微細構造と時間方向の被写体形状が改善した
 - upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
   `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
   `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
@@ -73,13 +82,11 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **conv VAE限定のDFRを実装する。** generated keyframe slots、detailing IC-LoRA、reference latent
-   conditioning、spatial refinementを最小範囲とする。temporal upscalerと高度なtilingは後段
+1. **DFRのPR本文を更新する。** 日本語訳をユーザーに提示し、承認後にcommit guide、対応範囲、
+   実測と初期対応の制約をPR #52へ反映する
 2. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
    attention用の専用Metal kernelが必要。先に未完成コードを置かない
-3. Multishot / DFRの各commitをpushした後、PR本文のcommit guide・対応範囲・実測を更新する。
-   更新文は日本語訳でユーザー承認後に送信
-4. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
+3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
 ## 2026-09-15 調査
@@ -533,3 +540,32 @@ Multishotは専用checkpointや追加の推論経路を必要とせず、通常�
 `mlx-video` READMEへ追加した。commit `fae541a` をPR #52と同じbranchへpush済み。
 日本語案をユーザーが承認後、PR #52本文のcommit guide、対応範囲、実装説明、検証結果を更新し、
 未対応欄からMultishotを削除した。Issue #51は更新していない。次の実装はconv VAE限定DFR。
+
+### 2026-09-15: conv VAE限定DFR
+
+公式LTX-2 repositoryのcommit `a95ab856bf29407b6b066ede0abe1846050db56c` を基準に、
+temporal upscalingとDiffVAE decodeを除いた最初のDFR vertical sliceを実装した。
+
+- 24 / 32-frame segment gridとcanvas padding
+- single-pixel-frame RoPE positionを持つgenerated keyframe slots
+- 第1段階でvideo / audio / slotをrectified-flow ancestral Eulerで同時denoise
+- videoとslotを既存latent spatial upscalerでx2
+- detailing IC-LoRA metadataの`reference_downscale_factor=2`を読み、低解像度videoを
+  clean reference tokensとして第2段階へ連結
+- 480 LoRA pairsを既定strength 0.5でmergeし、3-step spatial detailing
+- padded canvasを要求frame数へtrim。generated audioも要求durationへtrim
+- CLI `--pipeline dfr`、`--detailing-lora`、`--detailing-lora-strength`
+
+detailing adapterは327.3 MB、rank 32。別gated repo
+`Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler`から取得する。
+
+初回実装では一般的なsigma-space ancestral Eulerを誤って使い、出力が黄緑へ強く飽和した。
+既存LTX-2.5経路で検証済みのrectified-flow ancestral Eulerへ統一すると解消した。この式は
+通常のEuler ancestralと置換可能ではない。
+
+検証はDFR関連を含むselected suite 22 passed。実checkpoint E2Eは256x256 / 25 framesと
+768x512 / 121 framesで完走した。代表設定のDFRは179.6秒・41.25 GB、通常distilledは
+103.4秒・37.81 GB。DFRは毛並み、輪郭、草の細部と被写体形状の時間的一貫性が改善した。
+
+commit `5f008b8` をPR #52 branchへpush済み。初期対応はT2Vと任意のgenerated audio。
+I2V、A2V、streaming、temporal upscaling、DiffVAE decodeは未対応。

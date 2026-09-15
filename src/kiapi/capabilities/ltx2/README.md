@@ -148,11 +148,19 @@ structure less closely. Since no separate inference path is required,
 `mlx-video` documents the prompt pattern and limitations instead of adding a
 new structured API.
 
-1. Implement DFR first with the convolutional VAE, generated keyframe slots,
-   detailing IC-LoRA, and spatial refinement.
-2. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
+An initial convolutional-VAE DFR path is implemented in the upstream branch. It
+generates keyframe slots on the official 24/32-frame segment grid, spatially
+upsamples the base video and slots, and performs a second pass using the
+half-resolution video as an in-context reference with the official detailing
+IC-LoRA. At 768x512 / 121 frames it took 179.6 seconds and 41.25 GB peak memory,
+compared with 103.4 seconds and 37.81 GB for the regular distilled path. The DFR
+output showed finer fur, edge, and grass detail and more stable subject shape.
+This initial path supports T2V and optional generated audio; I2V, A2V, temporal
+upscaling, streaming, and diffusion-VAE decoding remain out of scope.
+
+1. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
    even if its commit remains in the same upstream PR branch.
-3. After upstream review stabilizes, pin the accepted `mlx-video` commit in
+2. After upstream review stabilizes, pin the accepted `mlx-video` commit in
    kiapi, update setup resources and API fields, and run full kiapi regression
    verification before changing the default model.
 
