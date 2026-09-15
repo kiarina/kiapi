@@ -531,4 +531,5 @@ LTX-2.5と旧LTX-2 distilledを比較した。
 Multishotは専用checkpointや追加の推論経路を必要とせず、通常のT2V promptで新旧とも機能する。
 このため独自の構造化APIは追加せず、検証済みprompt example、同一性を保つ書き方、制約を
 `mlx-video` READMEへ追加した。commit `fae541a` をPR #52と同じbranchへpush済み。
-次の実装はconv VAE限定DFR。PR本文のMultishot追記は日本語案をユーザー承認後に反映する。
+日本語案をユーザーが承認後、PR #52本文のcommit guide、対応範囲、実装説明、検証結果を更新し、
+未対応欄からMultishotを削除した。Issue #51は更新していない。次の実装はconv VAE限定DFR。
