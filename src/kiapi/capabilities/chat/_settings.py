@@ -19,9 +19,13 @@ class ChatSettings(BaseSettings):
     )
 
     default_max_tokens: int = Field(
-        default=512,
+        default=1024,
         title="Default maximum generated tokens",
-        description="Generation token limit used when a request omits max_tokens.",
+        description=(
+            "Generation token limit used when a request omits max_completion_tokens.\n"
+            "Generation also stops when the prompt plus the output fills the "
+            "model's context window."
+        ),
     )
 
     default_temperature: float = Field(
@@ -58,15 +62,6 @@ class ChatSettings(BaseSettings):
         description=(
             "When true, audio tracks in video files are demuxed and passed to "
             "the model as audio input."
-        ),
-    )
-
-    max_tokens_cap: int = Field(
-        default=4096,
-        title="Maximum generated token cap",
-        description=(
-            "Server-side upper limit for max_tokens accepted in a request.\n"
-            "This protects the single worker queue from being blocked for a long time."
         ),
     )
 

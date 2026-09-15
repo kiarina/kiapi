@@ -1,7 +1,8 @@
 """Merge a chat request with settings defaults into the complete ChatParams.
 
-Resolves and caps the sampling knobs and fills multimodal defaults once, here,
-so the per-model ``run`` works purely from :class:`ChatParams`. Model-specific
+Resolves the sampling knobs and fills multimodal defaults once, here, so the
+per-model ``run`` works purely from :class:`ChatParams`. ``max_tokens`` is not
+capped here; the model's ``run`` stops at its context window. Model-specific
 template switches (e.g. Qwen3.6's ``enable_thinking`` default) stay in the model;
 this only passes ``chat_template_kwargs`` through verbatim.
 """
@@ -17,10 +18,11 @@ def resolve_chat_params(
     *,
     variant: str,
 ) -> ChatParams:
-    requested_max_tokens = req.max_completion_tokens
-    if requested_max_tokens is None:
-        requested_max_tokens = settings.default_max_tokens
-    max_tokens = min(requested_max_tokens, settings.max_tokens_cap)
+    max_tokens = (
+        req.max_completion_tokens
+        if req.max_completion_tokens is not None
+        else settings.default_max_tokens
+    )
 
     temperature = (
         req.temperature if req.temperature is not None else settings.default_temperature

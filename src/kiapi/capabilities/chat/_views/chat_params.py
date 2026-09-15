@@ -2,8 +2,8 @@
 
 Built from settings + request by ``resolve_chat_params``; a model's ``run`` needs
 nothing else (no ``req`` / ``settings``) to generate the completion. ``model`` is
-the canonical model name to echo back; sampling knobs are already resolved and
-capped. ``messages`` / ``tools`` / ``tool_choice`` are the request's raw OpenAI
+the canonical model name to echo back; sampling knobs are already resolved.
+``messages`` / ``tools`` / ``tool_choice`` are the request's raw OpenAI
 shapes (parsed per-model via ``parse_messages`` + each model's tool format).
 """
 
@@ -20,7 +20,7 @@ class ChatParams(BaseModel):
     tool_choice: Any | None
     parallel_tool_calls: bool
 
-    # Resolved + capped sampling knobs.
+    # Resolved sampling knobs.
     max_tokens: int
     temperature: float
     top_p: float

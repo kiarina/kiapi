@@ -59,13 +59,16 @@ Aliases accepting the same source string directly:
 ## Defaults When Omitted
 Fields left unset fall back to server-side defaults, not the `null` shown in the
 schema:
-- `max_completion_tokens`: 512 (capped at 4096)
+- `max_completion_tokens`: 1024
 - `temperature`: 0.7
 - `top_p`: 1.0
 - `fps`: 1.0 (video frame sampling)
 - `use_audio_in_video`: true
 
 ## Limits
+- Output has no server-side cap. Generation stops at `max_completion_tokens` or
+  when the prompt plus the output fills the model's context window (`context_window`
+  in GET /v1/models), whichever comes first; both end with `finish_reason: "length"`.
 - The selected model must fit the global memory budget; if it can't even after
   evicting everything else, the request returns HTTP 503.
 - Large/long videos cost a lot of tokens and memory; keep them short and/or lower

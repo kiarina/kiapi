@@ -2,6 +2,7 @@ import time
 
 from fastapi import APIRouter
 
+from kiapi.capabilities.chat import read_context_window
 from kiapi.core.model import model_registry
 
 from ._schemas.openai_model_spec import OpenAIModelSpec
@@ -23,7 +24,11 @@ async def list_openai_compatible_chat_models() -> ModelListResponse:
     /v1/{domain}/{family}/models.
     """
     data = [
-        OpenAIModelSpec(id=spec.name, created=_CREATED)
+        OpenAIModelSpec(
+            id=spec.name,
+            created=_CREATED,
+            context_window=read_context_window(spec),
+        )
         for spec in model_registry.list_specs("chat")
     ]
     return ModelListResponse(data=data)

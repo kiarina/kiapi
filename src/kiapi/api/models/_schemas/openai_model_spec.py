@@ -24,3 +24,11 @@ class OpenAIModelSpec(BaseModel):
         description="Owner marker for OpenAI-compatible model lists.",
         examples=["kiapi"],
     )
+    context_window: int | None = Field(
+        default=None,
+        description=(
+            "Maximum prompt plus output tokens, read from the model's config. "
+            "Null until the model is set up."
+        ),
+        examples=[262144],
+    )

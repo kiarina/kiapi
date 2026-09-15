@@ -15,6 +15,7 @@ import uuid
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from .format_response import text_finish_reason
 from .strip_tool_calls import strip_tool_calls
 
 _TOOL_CALL_TAG = "<tool_call>"
@@ -185,7 +186,7 @@ def emit_streaming_response(
             _format_stream_chunk(
                 model_name=model_name,
                 delta={},
-                finish_reason="stop",
+                finish_reason=text_finish_reason(last),
                 chunk_id=stream_id,
                 created=created,
             )

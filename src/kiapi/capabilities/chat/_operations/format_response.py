@@ -27,7 +27,7 @@ def format_response(  # type: ignore
     ``full_text`` is the assistant text including any prefill (so a prefilled tool
     call is reconstructed). ``tool_calls`` is the model's parsed list of
     ``{"name", "arguments"}`` (``arguments`` already a JSON string). ``result`` is
-    whatever ``generate`` returned (used only for token counts).
+    the last generation chunk (token counts and ``finish_reason``).
     """
     message: dict = {"role": "assistant"}
     if tool_calls:
@@ -44,7 +44,7 @@ def format_response(  # type: ignore
         finish_reason = "tool_calls"
     else:
         message["content"] = full_text
-        finish_reason = "stop"
+        finish_reason = text_finish_reason(result)
 
     prompt_tokens = _int_attr(result, "prompt_tokens", "prompt_token_count")
     completion_tokens = _int_attr(result, "generation_tokens", "completion_token_count")
@@ -62,6 +62,11 @@ def format_response(  # type: ignore
         },
         "timings": {"total_s": round(elapsed, 2)},
     }
+
+
+def text_finish_reason(result) -> str:  # type: ignore
+    """``length`` when generation hit ``max_tokens`` or the context window."""
+    return "length" if getattr(result, "finish_reason", None) == "length" else "stop"
 
 
 def _int_attr(obj, *names: str) -> int:  # type: ignore

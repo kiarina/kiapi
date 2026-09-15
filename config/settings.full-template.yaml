@@ -115,8 +115,9 @@ kiapi.core.net:
 #--------------------------------------------------------------------------------
 kiapi.capabilities.chat:
   # Default maximum generated tokens: int
-  #   Generation token limit used when a request omits max_tokens.
-  # default_max_tokens: 512
+  #   Generation token limit used when a request omits max_completion_tokens.
+  #   Generation also stops when the prompt plus the output fills the model's context window.
+  # default_max_tokens: 1024
   #--------------------------------------------------
   # Default temperature: float
   #   Sampling temperature used when a request omits temperature.
@@ -136,11 +137,6 @@ kiapi.capabilities.chat:
   # Use audio in video: bool
   #   When true, audio tracks in video files are demuxed and passed to the model as audio input.
   # use_audio_in_video: true
-  #--------------------------------------------------
-  # Maximum generated token cap: int
-  #   Server-side upper limit for max_tokens accepted in a request.
-  #   This protects the single worker queue from being blocked for a long time.
-  # max_tokens_cap: 4096
 
 #--------------------------------------------------------------------------------
 # Settings for Embedding input length limits.

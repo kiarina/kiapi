@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- chat: `GET /v1/models` returns each model's `context_window`, read from the
+  model's `config.json` (`null` until the model is set up).
+
+### Changed
+
+- **BREAKING**: chat: removed the `max_tokens_cap` setting
+  (`KIAPI_CHAT_MAX_TOKENS_CAP`, 4096). `max_completion_tokens` is no longer
+  capped by the server; generation stops at `max_completion_tokens` or when the
+  prompt plus the output fills the model's context window, whichever comes first.
+- chat: the default `max_completion_tokens` is now 1024 (was 512).
+- chat: non-streaming requests now run through `stream_generate` like streaming
+  ones, so the context window bound applies to both.
+
+### Fixed
+
+- chat: `finish_reason` is now `"length"` when generation stops at
+  `max_completion_tokens` or the context window. It was always `"stop"`.
+
 ## [0.7.0] - 2026-09-16
 
 ### Added

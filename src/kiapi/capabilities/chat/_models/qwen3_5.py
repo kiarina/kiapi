@@ -30,11 +30,13 @@ from kiapi.core.model import ModelSpec
 from kiapi.core.workdir import create_work_dir
 
 from .._operations.apply_template import apply_template
+from .._operations.collect_generation import collect_generation
 from .._operations.completed_hermes_tool_call_text import (
     completed_hermes_tool_call_text,
 )
 from .._operations.emit_streaming_response import emit_streaming_response
 from .._operations.format_response import format_response
+from .._operations.limit_to_context import limit_to_context
 from .._operations.parse_hermes_tool_calls import parse_hermes_tool_calls
 from .._operations.parse_messages import parse_messages
 from .._operations.stream_text_from_tokens import stream_text_from_tokens
@@ -45,6 +47,7 @@ from .._utils.warmup_params import warmup_params
 from .._views.chat_params import ChatParams
 
 FEATURES = {"text", "image", "tools"}
+CONTEXT_WINDOW_KEYS = ("text_config", "max_position_embeddings")
 
 
 def load(spec: ModelSpec) -> SimpleNamespace:
@@ -60,7 +63,7 @@ def run(  # type: ignore
     params: ChatParams,
     emit=None,
 ) -> dict[str, Any]:
-    from mlx_vlm import generate, stream_generate
+    from mlx_vlm import stream_generate
 
     model, processor = payload.model, payload.processor
     tmp_dir = create_work_dir("chat/qwen3_5")
@@ -80,7 +83,16 @@ def run(  # type: ignore
         )
 
         apply_seed(params.seed)
-        gen_kwargs = _sampling_kwargs(params)
+        chunks = limit_to_context(
+            stream_generate(
+                model,
+                processor,
+                prompt,
+                image=image_paths or None,
+                **_sampling_kwargs(params),
+            ),
+            payload.context_window,
+        )
 
         if emit is not None:
             buffer_for_tools = bool(
@@ -89,16 +101,7 @@ def run(  # type: ignore
             full, elapsed, last, tool_calls = emit_streaming_response(
                 model_name=params.model,
                 prefill=prefill,
-                chunks=stream_text_from_tokens(
-                    processor,
-                    stream_generate(
-                        model,
-                        processor,
-                        prompt,
-                        image=image_paths or None,
-                        **gen_kwargs,
-                    ),
-                ),
+                chunks=stream_text_from_tokens(processor, chunks),
                 emit=emit,
                 parse_tool_calls=lambda full: apply_parallel_tool_call_policy(
                     parse_hermes_tool_calls(full), params.parallel_tool_calls
@@ -116,17 +119,10 @@ def run(  # type: ignore
             )
 
         t0 = time.time()
-        result = generate(
-            model,
-            processor,
-            prompt,
-            image=image_paths or None,
-            **gen_kwargs,
-        )
+        text, last = collect_generation(processor, chunks)
         elapsed = time.time() - t0
 
-        text = getattr(result, "text", result)
-        full = prefill + str(text or "")
+        full = prefill + text
         tool_calls = apply_parallel_tool_call_policy(
             parse_hermes_tool_calls(full), params.parallel_tool_calls
         )
@@ -134,7 +130,7 @@ def run(  # type: ignore
             model_name=params.model,
             full_text=full,
             elapsed=elapsed,
-            result=result,
+            result=last or SimpleNamespace(),
             tool_calls=tool_calls,  # Hermes/XML format
         )
     finally:

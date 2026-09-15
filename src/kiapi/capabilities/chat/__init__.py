@@ -19,11 +19,13 @@ if TYPE_CHECKING:
     from ._helpers.register import register
     from ._operations.handle_chat import handle_chat
     from ._settings import settings_manager
+    from ._utils.read_context_window import read_context_window
     from ._views.chat_request import ChatRequest
 
 __all__ = [
     "ChatRequest",
     "handle_chat",
+    "read_context_window",
     "register",
     "settings_manager",
 ]
@@ -36,6 +38,7 @@ def __getattr__(name: str) -> object:
     module_map = {
         "ChatRequest": "._views.chat_request",
         "handle_chat": "._operations.handle_chat",
+        "read_context_window": "._utils.read_context_window",
         "register": "._helpers.register",
         "settings_manager": "._settings",
     }
