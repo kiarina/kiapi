@@ -597,3 +597,7 @@ fresh Python 3.12環境へinstallし、DFR module importとCLI optionsを確認�
 fresh install検証で、model README全体が使う`uv run mlx_video.generate`に対応するproject scriptが
 無い既存不整合を発見した。既存の`mlx_video.ltx_2.generate`を維持しつつ同じentry pointへのaliasを
 追加し、実際に`--help`が起動することを確認。commit `1e071c7`をPR branchへpush済み。
+
+日本語案をユーザーが承認後、DFR generated audio / padding / trim、旧LTX-2 regression、fresh
+install、CLI aliasをPR #52本文へ追記した。PRは9 commits、open / mergeable、checkなし、
+review required。Issue #51は更新していない。DFR残検証は完了。
