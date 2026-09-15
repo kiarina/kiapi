@@ -416,3 +416,25 @@ issue #51 は更新していない。
 - PR 本文の commit guide で各機能のレビュー境界を明示する
 - maintainer から PR の分割を要求された場合に限り、commit 境界を使って後から分ける
 - 独立 PR を先に増やさない
+
+### 2026-09-15: Diffusion video VAE の実装境界
+
+LTX-2.5 の `ltx-2.5-video-vae-bf16.safetensors` を取得し、公式 `DiffusionVideoDecoder`、
+checkpoint config、396 tensors を解析した。encoder は既存 conv VAE とほぼ共通だが、
+decoder は 5-stage の 3D neighborhood-attention backbone で、最終段に 11x11x11 の局所 attention を
+8 blocks 持つ。
+
+768x512 / 121 frames の latent から段階的に展開すると、最終段は
+`113x64x96 = 694,272` query positions、1 query あたり `11^3 = 1,331` neighbors になり、
+1 block あたり約 9.24 億 neighborhood pairs。head / channel 内積と 8 blocks を含めると、
+素朴な MLX gather + SDPA 実装は巨大な一時 tensor と数十億〜数兆規模の演算になる。
+
+公式実装も CUDA では NATTEN fused kernel を production path とし、無い環境の
+eager implementation は compatibility-only と明記する。Apple Silicon 向けに同等の実用性を
+得るには、`mx.fast.metal_kernel` 等による 3D neighborhood attention 専用 Metal kernel、
+query tiling、online softmax、boundary window shift、RoPE の統合が必要。これは他の追加機能と
+比べて独立した GPU-kernel 開発になる。
+
+現時点で PR #52 branch は clean で、DiffVAE の未完成コードは追加していない。
+次はユーザーと、(1) 専用 Metal kernel 開発として続行、(2) 先に DFR / multishot を
+conv VAE 経路で実装し DiffVAE を後回し、の優先順を決める。
