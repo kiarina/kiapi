@@ -156,7 +156,15 @@ representative run took 149.2 seconds with a 51.33 GB peak, compared with 103.4
 seconds and 37.81 GB for the convolutional decoder. The output contained all
 121 finite, non-static frames. The convolutional decoder remains the default;
 the experimental path is selected with `--video-decoder diffusion`. Spatial
-and temporal decode tiling and DFR keyframe-aware joint attention remain.
+and DFR keyframe-aware joint attention remain.
+
+Stage 4/5 spatial tiling is also implemented with a 24-cell stage-4-input
+receptive-field halo. A 2x2 tiled 768x512 / 121-frame run took 216.9 seconds and
+37.81 GB peak memory. This is 67.7 seconds slower than the untiled DiffVAE run,
+but reduces its peak by 13.52 GB so decoding no longer exceeds the generation
+transformer's peak. Small fixtures match the full decode numerically; the real
+MP4 comparison has a mean absolute difference of 2.67/255 without an error
+spike at tile seams. Temporal tiling and keyframe-aware decoding remain.
 
 ### Remaining adoption work
 
