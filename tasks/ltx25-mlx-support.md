@@ -44,18 +44,82 @@ upstream issue `Blaizzy/mlx-video#51` は open、assignee・関連 PR ともに�
 通常の model upgrade としては採用しない。MLX port 自体を kiapi 内で所有するより、まず
 `mlx-video` upstream で共通実装にする。
 
-## 次の一手
+## 実行計画
 
-1. `Blaizzy/mlx-video#51` に実装または PR が付いたら再確認する
-2. upstream が止まったままで、自前 port を優先するとユーザーが決めた場合は、`mlx-video` 側へ
-   Gemma 4、22B config、split checkpoint loader、2.5 upscaler、まず軽い convolutional VAE decoder
-   の順で実装する。diffusion decoder と DFR は別段階にする
-3. 対応 commit ができたら、kiapi の git pin と model resources を更新する。LTX-2.5 は複数ファイル
-   なので、従来の単一 `HfSnapshotResource` / `model_repo` 前提も見直す
-4. サーバー機で T2V、I2V、A2V、audio generation を full verify し、ディスク量、peak memory、
-   121-frame 生成時間、旧 LTX-2 との画質を実測する
-5. 実測後に既定モデルの移行、旧モデル併存、API へ multishot / auto-duration / prompt enhancement /
-   DFR をどこまで公開するか決める
+外部への提案を先に行わず、ローカル実装と実測で実現可能性を確定してから
+issue / PR を行う。
+
+### Phase 1: 比較基準と変換仕様を固める
+
+- `mlx-video` の最新 `main` を独立したローカル checkout で保持する
+- 現行 LTX-2 distilled の 97-frame T2V / I2V を一度実行し、生成時間、peak memory、
+  出力とログを baseline として保存する
+- LTX-2.5 の split checkpoint の metadata / tensor key / shape を取得し、公式 PyTorch 実装と
+  現行 MLX class の対応表を作る
+- Gemma 4 が `mlx-vlm` の再利用で足りるか、`mlx-video` 内の専用実装が必要かを
+  小さな loader probe で判定する
+
+完了条件: 必要 component、tensor 対応、未実装 operator の一覧があり、最小ポートの
+範囲を確定できる。
+
+### Phase 2: 重みを読まない単体実装
+
+- checkpoint-driven 22B config と split checkpoint path resolver
+- Gemma 4 tokenizer / text encoder / projection
+- 2.5 Transformer、RoPE、distilled sigma schedule、latent spatial upscaler
+- synthetic tensor と小型 fixture で shape、key conversion、forward を検証する
+- 旧 LTX-2 / 2.3 の現行 test をすべて通し、後方互換を保つ
+
+完了条件: 巨大 checkpoint に依存せず、新旧 config と変換ロジックを test で
+再現できる。
+
+### Phase 3: 段階的な実 checkpoint ロード
+
+- まず各 component を個別に load し、weight key と dtype / shape の完全一致を確認する
+- Gemma 4 の prompt encoding が完走することを確認する
+- Transformer の 1 step forward を小解像度・短い sequence で通す
+- convolutional video VAE で latent decode を通す
+
+停止条件: Metal 非対応 operator や統合 memory 不足が解消できない場合は、無理に
+全 pipeline へ進まず、再現コードと代替案を記録する。
+
+### Phase 4: 最小 end-to-end 生成
+
+- convolutional VAE と distilled pipeline で 256x256 / 9-frame T2V を通す
+- 同条件の I2V を通し、input image の conditioning が効いていることを確認する
+- NaN / Inf、灰色 frame、frame count、fps、MP4 mux を自動検査する
+
+完了条件: Apple Silicon で視認可能な T2V / I2V MP4 が生成され、同じ seed で
+再現できる。
+
+### Phase 5: 代表設定で実測する
+
+- 公式の代表設定 960x544 / 121 frames / 24 fps で T2V と I2V を実行する
+- wall time、peak process RSS、MLX active / peak memory、初回と二回目の差、出力サイズを測る
+- 同じ意図の prompt で現行 LTX-2 と並べ、prompt adherence、motion、人物・文字、
+  temporal consistency を視認比較する
+- 出力見本、実行コマンド、環境、commit、実測値を保存する
+
+完了条件: upstream maintainer が再現できる実装と、効果・コストを判断できる
+実測資料が揃う。
+
+### Phase 6: upstream への送信と PR
+
+- 実装と実測が成功してから issue #51 に、対応範囲、非対応範囲、測定値、
+  出力見本、PR 予定を書く
+- maintainer のフィードバックを取り込み、fork へ push して PR を開く
+- 最初の PR は distilled T2V / I2V + conv VAE に保ち、audio、diffusion VAE、
+  duration head、DFR / multishot は follow-up とする
+
+issue コメント、fork の公開 push、PR 作成は第三者への送信・公開なので、
+実行直前にユーザーの確認を取る。
+
+### Phase 7: kiapi へ取り込む
+
+- upstream の対応 commit を固定し、kiapi の model resources を split checkpoint に対応させる
+- kiapi の T2V / I2V full verify と旧 LTX-2 の regression test を通す
+- 実測値から memory headroom、進捗 ETA、disk size を更新する
+- 旧モデル併存か既定移行かを決める
 
 ## upstream PR の進め方
 
@@ -75,9 +139,7 @@ multishot まで入れず、最初の PR は次の縦切りにする。
 `mlx-video` の現行 LTX テストは scheduler / RoPE / VAE の一部に限られるため、
 新 loader と Gemma 4 のテストは PR 側で追加する。
 
-着手前に issue #51 へ「最初は distilled T2V / I2V + conv VAE」という範囲を書き、
-maintainer の期待と合わせる。第三者への送信になるため、issue へのコメントと
-PR 公開は実行直前にユーザーの確認を取る。
+まず Phase 1〜5 を外部へ送信せず進め、動作と実測値を得てから Phase 6 に進む。
 
 ## 再確認先
 
