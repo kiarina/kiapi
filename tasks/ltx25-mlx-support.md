@@ -33,6 +33,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `3ca6fef` | generated audio、A2V、A2V + I2V、audio VAE / vocoder、mux frame truncation 修正 |
 | `c8000e1` | DurationHead と `num_frames` 自動予測 |
 | `7d8b2f0` | 別 Gemma 4 E2B-it による T2V / I2V prompt enhancement |
+| `fae541a` | prompt-driven Multishot の検証済み example と制約の文書化 |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -51,6 +52,8 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   - `ltx25-a2v-768x512-121.mp4`
   - `ltx25-auto-duration.mp4`
   - `ltx25-enhance-auto.mp4`
+  - `ltx25-multishot-direct-768x512-241.mp4`
+  - `ltx2-multishot-direct-768x512-241.mp4`
 
 ### 検証状態と既知の問題
 
@@ -58,6 +61,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   T2V enhancement / I2V enhancement は実 checkpoint で end-to-end 完走
 - 関連 tests は 55 passed。fresh Python 3.12 install / CLI import も成功
 - 旧 LTX-2 は変更後も生成でき、`num_frames` 省略時の 33-frame default を維持
+- 同一 prompt / seed / 768x512 / 241 frames / generated audio で Multishot を新旧比較した。
+  LTX-2.5 は中景、close-up、暖色の店先へのwide shotを描き分け、人物と衣装も維持した。
+  旧LTX-2も画角変更と人物維持はできたが、3-shot指示と店へ入る展開への追従は弱かった
 - upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
   `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
   `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
@@ -67,16 +73,13 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **Multishotを先に実測する。** LTX-2.5 native能力なので、まず現在のpipelineへ複数cutを明示した
-   promptを渡し、人物・環境・照明・声・styleがcut間で維持されるか確認する。専用primitiveを
-   先に実装しない。必要ならprompt example、verify、READMEを独立commitにする
-2. **conv VAE限定のDFRを実装する。** generated keyframe slots、detailing IC-LoRA、reference latent
+1. **conv VAE限定のDFRを実装する。** generated keyframe slots、detailing IC-LoRA、reference latent
    conditioning、spatial refinementを最小範囲とする。temporal upscalerと高度なtilingは後段
-3. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
+2. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
    attention用の専用Metal kernelが必要。先に未完成コードを置かない
-4. Multishot / DFRの各commitをpushした後、PR本文のcommit guide・対応範囲・実測を更新する。
+3. Multishot / DFRの各commitをpushした後、PR本文のcommit guide・対応範囲・実測を更新する。
    更新文は日本語訳でユーザー承認後に送信
-5. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
+4. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
 ## 2026-09-15 調査
@@ -512,3 +515,20 @@ query tiling、online softmax、boundary window shift、RoPE の統合が必要�
 現時点で PR #52 branch は clean で、DiffVAE の未完成コードは追加していない。
 次はユーザーと、(1) 専用 Metal kernel 開発として続行、(2) 先に DFR / multishot を
 conv VAE 経路で実装し DiffVAE を後回し、の優先順を決める。
+
+### 2026-09-15: Multishot 新旧比較と対応方針
+
+同じ3-shot prompt、seed `314159`、768x512、241 frames、24 fps、generated audioで
+LTX-2.5と旧LTX-2 distilledを比較した。
+
+- LTX-2.5: 3分39.1秒、peak 39.55 GB。中景からclose-up、暖色の店先へのwide shotという
+  構成を描き分け、銀髪、黄色いraincoat、赤いscarf、顔の同一性を維持した
+- 旧LTX-2: 3分16.3秒、peak 39.07 GB。人物と衣装は維持したが、長い連続的な画角変化と
+  終盤のcutに寄り、指定した3-shot構成と店へ入る展開への追従は弱かった
+- `Hard cut`を指定しても、LTX-2.5を含めて滑らかな遷移になる場合がある。shot長とcut位置は
+  frame単位では保証されない
+
+Multishotは専用checkpointや追加の推論経路を必要とせず、通常のT2V promptで新旧とも機能する。
+このため独自の構造化APIは追加せず、検証済みprompt example、同一性を保つ書き方、制約を
+`mlx-video` READMEへ追加した。commit `fae541a` をPR #52と同じbranchへpush済み。
+次の実装はconv VAE限定DFR。PR本文のMultishot追記は日本語案をユーザー承認後に反映する。

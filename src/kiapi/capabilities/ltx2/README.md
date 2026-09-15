@@ -139,13 +139,20 @@ unfused MLX gather would create prohibitive temporary tensors and runtime.
 
 ### Remaining adoption work
 
-1. Verify native multishot behavior through the existing distilled pipeline;
-   it is primarily a model/prompt capability and may require only tests and docs.
-2. Implement DFR first with the convolutional VAE, generated keyframe slots,
+Native multishot behavior has been verified through the existing distilled T2V
+pipeline at 768x512 / 241 frames. LTX-2.5 followed a three-shot prompt while
+preserving the subject and wardrobe, but cut timing remained model-controlled
+and an explicit hard cut could become a smooth transition. The older LTX-2
+model also changed framing, although it followed the requested three-shot
+structure less closely. Since no separate inference path is required,
+`mlx-video` documents the prompt pattern and limitations instead of adding a
+new structured API.
+
+1. Implement DFR first with the convolutional VAE, generated keyframe slots,
    detailing IC-LoRA, and spatial refinement.
-3. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
+2. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
    even if its commit remains in the same upstream PR branch.
-4. After upstream review stabilizes, pin the accepted `mlx-video` commit in
+3. After upstream review stabilizes, pin the accepted `mlx-video` commit in
    kiapi, update setup resources and API fields, and run full kiapi regression
    verification before changing the default model.
 
