@@ -57,9 +57,30 @@ upstream issue `Blaizzy/mlx-video#51` は open、assignee・関連 PR ともに�
 5. 実測後に既定モデルの移行、旧モデル併存、API へ multishot / auto-duration / prompt enhancement /
    DFR をどこまで公開するか決める
 
+## upstream PR の進め方
+
+`mlx-video` への PR は可能。MIT license で特別な contribution 手順はなく、
+LTX-2 実装も `mlx_video/models/ltx_2/` にまとまっている。ただし、一度に DFR や
+multishot まで入れず、最初の PR は次の縦切りにする。
+
+- LTX-2 / 2.3 の後方互換を保つ
+- 2.5 split checkpoint の loader と checkpoint-driven config
+- Gemma 4 12B + projection の MLX 実装・重み変換
+- 22B distilled Transformer と固定 sigma schedule
+- まず convolutional video VAE を使う distilled T2V / I2V
+- 小型 tensor / config / conversion の単体テストと、Apple Silicon での 121-frame
+  end-to-end 生成結果
+
+この最小 PR の後、audio、diffusion VAE、duration head、DFR / multishot の順に分ける。
+`mlx-video` の現行 LTX テストは scheduler / RoPE / VAE の一部に限られるため、
+新 loader と Gemma 4 のテストは PR 側で追加する。
+
+着手前に issue #51 へ「最初は distilled T2V / I2V + conv VAE」という範囲を書き、
+maintainer の期待と合わせる。第三者への送信になるため、issue へのコメントと
+PR 公開は実行直前にユーザーの確認を取る。
+
 ## 再確認先
 
 - `https://huggingface.co/Lightricks/LTX-2.5`
 - `https://github.com/Lightricks/LTX-2/releases/tag/v1.2.0`
 - `https://github.com/Blaizzy/mlx-video/issues/51`
-
