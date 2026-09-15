@@ -29,6 +29,24 @@ class LTX2Settings(BaseSettings):
         ),
     )
 
+    ltx25_model_repo: str = Field(
+        default="Lightricks/LTX-2.5",
+        title="LTX-2.5 model repo",
+        description="Hugging Face repo ID for the split LTX-2.5 checkpoint.",
+    )
+
+    prompt_enhancer_repo: str = Field(
+        default="mlx-community/gemma-4-e2b-it-bf16",
+        title="Prompt enhancer repo",
+        description="Hugging Face repo ID for the Gemma 4 model used by enhance_prompt.",
+    )
+
+    detailing_lora_repo: str = Field(
+        default="Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler",
+        title="Detailing LoRA repo",
+        description="Hugging Face repo ID for the IC-LoRA used by the DFR pipeline.",
+    )
+
     # --------------------------------------------------
     # generate
     # --------------------------------------------------
@@ -86,6 +104,16 @@ class LTX2Settings(BaseSettings):
         description=(
             "Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2 job.\n"
             "The value is scaled by frame count and resolution. Set to 0 to disable it."
+        ),
+    )
+
+    ltx25_progress_eta_base_s: float = Field(
+        default=105.0,
+        title="LTX-2.5 progress ETA base seconds",
+        description=(
+            "Expected seconds for synthetic progress, based on a 97-frame 512x512 "
+            "LTX-2.5 distilled job.\n"
+            "DFR and the diffusion video decoder scale it further. Set to 0 to disable it."
         ),
     )
 

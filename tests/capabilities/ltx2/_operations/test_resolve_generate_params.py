@@ -60,3 +60,16 @@ def test_resolve_generate_params_generates_seed_when_omitted() -> None:
     params = resolve_generate_params(settings, req, variant="distilled")
 
     assert 0 <= params.seed <= 2**31 - 1
+
+
+def test_resolve_generate_params_leaves_frames_to_auto_duration() -> None:
+    settings = LTX2Settings()
+    req = GenerateRequest.model_validate(
+        {"prompt": "waves", "auto_duration": True, "pipeline": "dfr"}
+    )
+
+    params = resolve_generate_params(settings, req, variant="ltx-2.5-distilled")
+
+    assert params.num_frames is None
+    assert params.pipeline == "dfr"
+    assert params.video_decoder == "conv"

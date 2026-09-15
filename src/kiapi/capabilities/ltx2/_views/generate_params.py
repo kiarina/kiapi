@@ -1,5 +1,7 @@
 """Resolved LTX-2 generation parameters used by the model layer."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -10,7 +12,9 @@ class GenerateParams(BaseModel):
     seed: int = Field(description="Resolved seed; generated when request seed is null.")
     width: int = Field(description="Resolved output width in pixels.")
     height: int = Field(description="Resolved output height in pixels.")
-    num_frames: int = Field(description="Resolved output frame count.")
+    num_frames: int | None = Field(
+        description="Resolved output frame count, or null when auto_duration predicts it."
+    )
     fps: int = Field(description="Resolved output frame rate.")
     image_strength: float = Field(description="Resolved first-frame strength.")
     end_image_strength: float | None = Field(
@@ -18,6 +22,15 @@ class GenerateParams(BaseModel):
     )
     generate_audio: bool = Field(
         description="Whether LTX-2 should synthesize synchronized audio."
+    )
+    enhance_prompt: bool = Field(
+        default=False, description="Whether Gemma 4 expands the prompt first."
+    )
+    pipeline: Literal["distilled", "dfr"] = Field(
+        default="distilled", description="Resolved LTX-2.5 pipeline."
+    )
+    video_decoder: Literal["conv", "diffusion"] = Field(
+        default="conv", description="Resolved LTX-2.5 video decoder."
     )
 
     def gen_params(self) -> dict:
@@ -31,4 +44,7 @@ class GenerateParams(BaseModel):
             "image_strength": self.image_strength,
             "end_image_strength": self.end_image_strength,
             "generate_audio": self.generate_audio,
+            "enhance_prompt": self.enhance_prompt,
+            "pipeline": self.pipeline,
+            "video_decoder": self.video_decoder,
         }

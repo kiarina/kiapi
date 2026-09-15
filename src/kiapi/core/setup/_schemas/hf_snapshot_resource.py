@@ -35,6 +35,11 @@ class HfSnapshotResource(BaseModel):
         description="If set, materialize into this directory instead of the HF cache.",
         examples=[None],
     )
+    allow_patterns: tuple[str, ...] | None = Field(
+        default=None,
+        description="If set, download only files matching these patterns.",
+        examples=[["diffusion_models/*.safetensors"]],
+    )
 
     @computed_field(  # type: ignore[prop-decorator]
         description="Label accepted by kiapi activate/deactivate --repo.",
@@ -47,4 +52,5 @@ class HfSnapshotResource(BaseModel):
     def key(self) -> str:
         revision = self.revision or "main"
         local_dir = str(Path(self.local_dir).expanduser()) if self.local_dir else ""
-        return f"{self.kind}:{self.repo}:{revision}:{local_dir}"
+        patterns = ",".join(self.allow_patterns or ())
+        return f"{self.kind}:{self.repo}:{revision}:{local_dir}:{patterns}"

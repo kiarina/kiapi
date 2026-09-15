@@ -193,14 +193,59 @@ def test_validation(
     results.append((cid, ok))
 
 
+def test_generate(
+    client: httpx.Client,
+    verify_dir: Path,
+    saved_files: dict[str, list[Path]],
+    results: list[tuple[str, bool]],
+    cid: str,
+    desc: str,
+    p: dict,
+    check: Any,
+) -> None:
+    t0 = time.time()
+    r = client.post(VIDEO_URL, json={"mode": "sync", **p})
+    body = r.json() if r.status_code == 200 else {}
+    result = body.get("result") or {}
+    ok = (
+        body.get("status") == "succeeded"
+        and bool(body.get("artifacts"))
+        and bool(check(result))
+    )
+    print(f"[{cid}] {'✓' if ok else '✗'} ({time.time() - t0:5.1f}s) {desc}")
+    if not ok:
+        print(f"      status={r.status_code} result={str(result or r.text)[:300]}")
+    results.append((cid, ok))
+    if ok:
+        fid = body["artifacts"][0]
+        if saved_p := _save(client, verify_dir, fid, f"{cid}_{fid}.mp4"):
+            saved_files.setdefault(cid, []).append(saved_p)
+
+
+def test_dfr_image_rejected(
+    client: httpx.Client, results: list[tuple[str, bool]]
+) -> None:
+    image_id = _upload_file(client, IMAGE, "image/png")
+    p = {
+        "prompt": "x",
+        "pipeline": "dfr",
+        "image": {"type": "file_id", "file_id": image_id},
+    }
+    test_validation(client, "13", "pipeline=dfr + image", p, None, results)
+
+
+SMALL = {"width": 256, "height": 256, "fps": 24}
+
+
 def main() -> None:
+    known_ids = [str(i) for i in range(1, 14)]
     target_id = None
     for i, arg in enumerate(sys.argv):
         if arg == "--id" and i + 1 < len(sys.argv):
             target_id = sys.argv[i + 1]
         elif arg.startswith("--id="):
             target_id = arg.split("=", 1)[1]
-        elif arg in ["1", "2", "3", "4", "5", "6"] and sys.argv[i - 1] != "--id":
+        elif arg in known_ids and sys.argv[i - 1] != "--id":
             target_id = arg
 
     verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "ltx2"
@@ -249,6 +294,117 @@ def main() -> None:
                     results,
                 ),
             ),
+            (
+                "7",
+                lambda: test_generate(
+                    client,
+                    verify_dir,
+                    saved_files,
+                    results,
+                    "7",
+                    "LTX-2 `distilled` T2V regression",
+                    {
+                        "model": "distilled",
+                        "prompt": "a calm ocean wave at sunset",
+                        "num_frames": 25,
+                        "seed": 1,
+                        **SMALL,
+                    },
+                    lambda res: res.get("params", {}).get("num_frames") == 25,
+                ),
+            ),
+            (
+                "8",
+                lambda: test_generate(
+                    client,
+                    verify_dir,
+                    saved_files,
+                    results,
+                    "8",
+                    "LTX-2.5 auto_duration + enhance_prompt -> predicted frames",
+                    {
+                        "prompt": "a paper boat drifting down a rainy street",
+                        "auto_duration": True,
+                        "enhance_prompt": True,
+                        "seed": 8,
+                        **SMALL,
+                    },
+                    lambda res: (res.get("params", {}).get("num_frames") or 0) >= 25,
+                ),
+            ),
+            (
+                "9",
+                lambda: test_generate(
+                    client,
+                    verify_dir,
+                    saved_files,
+                    results,
+                    "9",
+                    "LTX-2.5 T2V + generated audio -> has_audio",
+                    {
+                        "prompt": "rain tapping on a tin roof, thunder far away",
+                        "generate_audio": True,
+                        "num_frames": 25,
+                        "seed": 9,
+                        **SMALL,
+                    },
+                    lambda res: res.get("has_audio") is True,
+                ),
+            ),
+            (
+                "10",
+                lambda: test_generate(
+                    client,
+                    verify_dir,
+                    saved_files,
+                    results,
+                    "10",
+                    "LTX-2.5 pipeline=dfr T2V -> requested frame count",
+                    {
+                        "prompt": "a fox walking through tall grass",
+                        "pipeline": "dfr",
+                        "num_frames": 25,
+                        "seed": 10,
+                        **SMALL,
+                    },
+                    lambda res: res.get("params", {}).get("num_frames") == 25,
+                ),
+            ),
+            (
+                "11",
+                lambda: test_generate(
+                    client,
+                    verify_dir,
+                    saved_files,
+                    results,
+                    "11",
+                    "LTX-2.5 video_decoder=diffusion I2V",
+                    {
+                        "prompt": "gentle zoom",
+                        "video_decoder": "diffusion",
+                        "num_frames": 25,
+                        "seed": 11,
+                        "image": {
+                            "type": "file_id",
+                            "file_id": _upload_file(client, IMAGE, "image/png"),
+                        },
+                        **SMALL,
+                    },
+                    lambda res: res.get("mode") == "I2V",
+                ),
+            ),
+            (
+                "12",
+                lambda: test_validation(
+                    client,
+                    "12",
+                    "auto_duration on LTX-2 `distilled`",
+                    {"prompt": "x", "model": "distilled", "auto_duration": True},
+                    None,
+                    results,
+                ),
+            ),
+            ("13", lambda: test_dfr_image_rejected(client, results)),
         ]
 
         for cid, test_fn in tests:

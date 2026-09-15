@@ -3,6 +3,33 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-15〜16 — ltx2 に LTX-2.5（`ltx-2.5-distilled`）を追加し、既定にした
+
+- 旧 LTX-2 の `distilled` と並べて追加し、既定だけ切り替えた（ユーザー判断: 比較・切り戻しのため併存）。
+  LTX-2.5 専用オプションは `auto_duration` / `enhance_prompt` / `pipeline="dfr"`（T2V のみ）/
+  `video_decoder="diffusion"`（2x2 spatial tile 固定）。`distilled` に指定すると 422
+- mlx-video の LTX-2.5 port は上流 PR [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52) で
+  開発した（経緯・実測は同 PR と `src/kiapi/capabilities/ltx2/README.md`）。マージ前に取り込むため、
+  fork の force-push しない branch `kiapi/ltx-2.5` を pin した。PR branch を直接 pin しない理由は、
+  rebase や分割で commit が到達不能になりうるため
+- pin は `cbb2c10`。PR head `d29c248` に packaging 修正を 1 commit 足した。git / wheel install では
+  `mlx_video/models/ltx_2/prompts/*.txt` が入らず、`enhance_prompt` が `FileNotFoundError` で 500 になった
+  （editable install の開発中は顕在化しない。旧 pin の Gemma 3 prompt も同じく欠けていた既存不具合）。
+  9/16 にユーザー承認のうえ PR branch へも push し、PR head も `cbb2c10` になった（PR 本文・コメントは変更なし）
+- `HfSnapshotResource` に `allow_patterns` を追加。LTX-2.5 repo は dev / diffusers の重みも含むため、
+  読む 7 ファイル（72.6 GB）だけ取る。cache に一部しかない snapshot も解決されてしまうので、
+  status ではワイルドカードでない pattern のファイル存在を個別に確認する
+- `PythonPackageResource` は spec が変わっても import できれば ready と判定し、入れ替わらない。
+  `verify_attrs` に新 pin にしか無い `LTX25_MODEL_REPO` を足し、旧版を未準備にして activate で入れ替える
+- サーバー機の HF cache は、mlx-video 開発時の local dir の `.cache/huggingface/download/*.metadata`
+  （commit と etag）から blob を APFS clone、snapshot を symlink で組んだ。再ダウンロードなしで activate が通った
+- `mise run verify --kiapi --family ltx2` を full で 13/13 通過（256x256 の小サイズ）。LTX-2.5 の T2V 21.7 秒、
+  I2V 20.5 秒、auto_duration + enhance_prompt 39.6 秒、生成音声 17.3 秒、DFR 23.3 秒、diffusion decoder I2V
+  26.9 秒、旧 LTX-2 回帰 26.3 秒。mlx の peak は最大 41.19 GB（DFR 以降）で、確保量 44 GB は据え置き。
+  1 回目の検証で出た 46.45 GB は、失敗したケースの後の process 累積 peak だった
+- 落とし穴: `kiapi deactivate` は確認プロンプトを出すので、非対話で実行すると入力待ちのまま止まる
+  （約 3 時間止まった）。package だけ入れ替えるなら `uv pip install --reinstall-package` を使う
+
 ## 2026-09-15 — mlx-vlm を 0.7.1 へ更新し、Omni の動画クラッシュを patch H で修正
 
 - 目的は Qwen3-Omni の deepstack 修正（上流 #1635）。0.6.3 は vision の deepstack 特徴量を

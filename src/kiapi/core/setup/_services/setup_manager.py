@@ -46,6 +46,7 @@ class SetupManager:
                 repo_id=resource.repo,
                 revision=resource.revision,
                 local_dir=resource.local_dir,
+                allow_patterns=_allow_patterns(resource),
             )
             return SetupStatus(True, str(snapshot_path))
         if isinstance(resource, DockerImageResource):
@@ -125,10 +126,14 @@ class SetupManager:
                 repo_id=resource.repo,
                 revision=resource.revision,
                 local_dir=resource.local_dir,
+                allow_patterns=_allow_patterns(resource),
                 local_files_only=True,
             )
         except Exception as exc:
             return SetupStatus(False, str(exc))
+        missing = _missing_allowed_files(resource, Path(snapshot_path))
+        if missing:
+            return SetupStatus(False, f"missing: {', '.join(missing)}")
         return SetupStatus(True, str(snapshot_path))
 
     def _hf_deactivate(self, resource: HfSnapshotResource) -> SetupStatus:
@@ -329,3 +334,22 @@ class SetupManager:
             capture_output=True,
         )
         return result.returncode == 0
+
+
+def _allow_patterns(resource: HfSnapshotResource) -> list[str] | None:
+    if resource.allow_patterns is None:
+        return None
+    return list(resource.allow_patterns)
+
+
+def _missing_allowed_files(
+    resource: HfSnapshotResource, snapshot_path: Path
+) -> list[str]:
+    # A cached snapshot resolves even when only some of its files were
+    # downloaded, so exact file patterns are checked one by one.
+    return [
+        pattern
+        for pattern in resource.allow_patterns or ()
+        if not any(char in pattern for char in "*?[")
+        and not (snapshot_path / pattern).exists()
+    ]

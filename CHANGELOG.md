@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ltx2: added the `ltx-2.5-distilled` model (`Lightricks/LTX-2.5`) and made it
+  the default. `distilled` (LTX-2) remains available. LTX-2.5 adds the request
+  options `auto_duration`, `enhance_prompt`, `pipeline="dfr"`, and
+  `video_decoder="diffusion"`. Run `kiapi activate --family ltx2` to install the
+  new mlx-video and the gated LTX-2.5 weights (about 83 GB including the prompt
+  enhancer and DFR adapter).
+- setup: `HfSnapshotResource` accepts `allow_patterns` so a model can download
+  only the files it loads from a large repo.
+
 - chat: added the `qwen3.8-27b` model (`mlx-community/Qwen3.8-27B-4bit`, aliases
   `qwen3.8`, `qwen3_5`, `qwen3-vl`, `vlm`). The last three moved from
   `qwen3.6-27b`, which keeps only `qwen3.6`. It runs on the existing `qwen3_5`

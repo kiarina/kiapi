@@ -38,7 +38,7 @@ async def generate(
     ctx: AppContext = Depends(get_ctx),
     worker: Worker = Depends(get_worker),
 ) -> Response:
-    """Generate a short MP4 with LTX-2 distilled (text/image/audio to video).
+    """Generate a short MP4 with LTX-2.5 or LTX-2 distilled (text/image/audio to video).
 
     The mode is inferred from supplied inputs: prompt only is T2V; `image` adds
     first-frame I2V; `end_image` adds last-frame conditioning; `audio` drives A2V

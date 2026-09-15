@@ -38,9 +38,46 @@ def test_hf_status_uses_local_files_only(monkeypatch: pytest.MonkeyPatch) -> Non
             "repo_id": "org/model",
             "revision": None,
             "local_dir": None,
+            "allow_patterns": None,
             "local_files_only": True,
         }
     ]
+
+
+def test_hf_status_requires_every_allowed_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = []
+
+    def snapshot_download(**kwargs: object) -> str:
+        calls.append(kwargs)
+        return str(tmp_path)
+
+    monkeypatch.setattr(
+        "kiapi.core.setup._services.setup_manager.snapshot_download",
+        snapshot_download,
+    )
+    resource = HfSnapshotResource(
+        repo="org/model", allow_patterns=("a/model.safetensors", "b/*.json")
+    )
+
+    state = SetupManager().status(resource)
+
+    assert state.ready is False
+    assert "a/model.safetensors" in state.detail
+    assert calls[0]["allow_patterns"] == ["a/model.safetensors", "b/*.json"]
+
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "model.safetensors").write_bytes(b"x")
+
+    assert SetupManager().status(resource).ready is True
+
+
+def test_hf_snapshot_resource_key_includes_allow_patterns() -> None:
+    full = HfSnapshotResource(repo="org/model")
+    partial = HfSnapshotResource(repo="org/model", allow_patterns=("a/*",))
+
+    assert full.key != partial.key
 
 
 def test_hf_status_missing_on_download_error(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -46,8 +46,9 @@ class VideoResponse(BaseModel):
     params: dict[str, Any] = Field(
         description=(
             "Resolved parameters actually used for the run (prompt, dimensions, "
-            "frame count, fps, seed, conditioning strengths, and generate_audio), "
-            "so the result is reproducible."
+            "frame count, fps, seed, conditioning strengths, generate_audio, and "
+            "the LTX-2.5 options), so the result is reproducible. With "
+            "`auto_duration`, `num_frames` is the predicted frame count."
         )
     )
     has_audio: bool = Field(

@@ -653,6 +653,18 @@ kiapi.capabilities.ltx2:
   #   When None, the model's default text encoder is used.
   # text_encoder_repo: 
   #--------------------------------------------------
+  # LTX-2.5 model repo: str
+  #   Hugging Face repo ID for the split LTX-2.5 checkpoint.
+  # ltx25_model_repo: Lightricks/LTX-2.5
+  #--------------------------------------------------
+  # Prompt enhancer repo: str
+  #   Hugging Face repo ID for the Gemma 4 model used by enhance_prompt.
+  # prompt_enhancer_repo: mlx-community/gemma-4-e2b-it-bf16
+  #--------------------------------------------------
+  # Detailing LoRA repo: str
+  #   Hugging Face repo ID for the IC-LoRA used by the DFR pipeline.
+  # detailing_lora_repo: Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler
+  #--------------------------------------------------
   # Maximum frame count: int
   #   Upper limit for the video frame count accepted in a request.
   # max_num_frames: 721
@@ -685,6 +697,11 @@ kiapi.capabilities.ltx2:
   #   Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2 job.
   #   The value is scaled by frame count and resolution. Set to 0 to disable it.
   # progress_eta_base_s: 90.0
+  #--------------------------------------------------
+  # LTX-2.5 progress ETA base seconds: float
+  #   Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2.5 distilled job.
+  #   DFR and the diffusion video decoder scale it further. Set to 0 to disable it.
+  # ltx25_progress_eta_base_s: 105.0
 
 #--------------------------------------------------------------------------------
 # Settings for Web search/fetch backends and request defaults.

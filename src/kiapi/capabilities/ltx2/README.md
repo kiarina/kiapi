@@ -1,11 +1,14 @@
 # ltx2
 
-[mlx-video LTX-2](https://github.com/Blaizzy/mlx-video) provides short video generation functionality.
+[mlx-video](https://github.com/Blaizzy/mlx-video) runs LTX-2.5 (default) and
+LTX-2 for short video generation.
 
 - **T2V**: Generate video from text
 - **I2V**: animate image as first or last frame
 - **A2V**: Drive motion and timing with voice
 - **T2V + Audio**: Generate audio along with video
+- **LTX-2.5 only**: automatic duration, prompt enhancement, DFR, and the
+  diffusion video decoder
 
 ## API
 
@@ -44,13 +47,26 @@ Inferred mode:
 
 | Package | License | Description |
 |---|---|---|
-| [mlx-video](https://github.com/Blaizzy/mlx-video) | MIT | Run LTX-2 distilled pipeline on MLX. `pyproject.toml` pins known good git commits. |
+| [mlx-video](https://github.com/Blaizzy/mlx-video) | MIT | Run the LTX-2.5 / LTX-2 distilled pipelines on MLX. Installed by `kiapi activate --family ltx2` from a pinned commit (see below). |
+
+LTX-2.5 support is under review upstream in
+[Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52). Until it
+is merged, `_helpers/register.py` pins the
+[`kiapi/ltx-2.5`](https://github.com/kiarina/mlx-video/tree/kiapi/ltx-2.5)
+branch of the kiarina fork, which points at the PR head. That branch is never
+force-pushed, so the pinned commit stays reachable even if the PR branch is
+rewritten during review. After the merge, pin an upstream commit again.
 
 ## Models
 
 | Model | License | Terms | Size | Mem | Description |
 |---|---|---|---:|---:|---|
-| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE) (derived from [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) Compliant with repo itself (no model card / LICENSE) | HF gated. However, use and distribution require license agreement | 101 GB | ~40 GB (transient) | `distilled` (default). Two-stage distilled pipeline. No CFG, about 11 steps inside. A transient model that loads/releases on every call. |
+| [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | [LTX-2.x Community License](https://huggingface.co/Lightricks/LTX-2.5) | HF gated. Accept the model terms before `kiapi activate` | 72.6 GB (7 files) | ~44 GB (transient) | `ltx-2.5-distilled` (default). 22B transformer, Gemma 4 text encoder, conv and diffusion video VAEs, audio VAE, spatial upscaler, and duration head. Only these files are downloaded, not the whole repo. |
+| [mlx-community/gemma-4-e2b-it-bf16](https://huggingface.co/mlx-community/gemma-4-e2b-it-bf16) | [Gemma](https://ai.google.dev/gemma/terms) | — | 10.2 GB | loaded only for `enhance_prompt` | Prompt enhancer for `ltx-2.5-distilled`. |
+| [Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler) | LTX-2.x Community License | HF gated | 0.3 GB | — | Detailing IC-LoRA for `pipeline="dfr"`. |
+| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE) (derived from [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) Compliant with repo itself (no model card / LICENSE) | HF gated. However, use and distribution require license agreement | 101 GB | ~40 GB (transient) | `distilled`. The previous LTX-2 (19B) two-stage distilled pipeline. No CFG, about 11 steps inside. Does not accept the LTX-2.5 options. |
+
+Both models are transient: they load and release on every call.
 
 Key defaults and limits:
 
@@ -65,17 +81,22 @@ Key defaults and limits:
 `duration = num_frames / fps`. At 24 fps, `97` takes about 4 seconds, `161` takes about 6.7 seconds,
 `241` takes about 10 seconds, `481` takes about 20 seconds, and `721` takes about 30 seconds.
 
-## LTX-2.5 upstream development status
+LTX-2.5 options (`ltx-2.5-distilled` only; `distilled` returns 422):
 
-> [!IMPORTANT]
-> LTX-2.5 is not part of the current kiapi capability. The installed `mlx-video`
-> pin and the `distilled` model above remain the production implementation until
-> the upstream work is merged, pinned, and verified through kiapi.
+| Item | Default value | Notes |
+|---|---:|---|
+| `auto_duration` | `false` | Predict 1 to 20 seconds from the prompt. Omit `num_frames`. The result `params.num_frames` is the generated length. |
+| `enhance_prompt` | `false` | Expand the prompt with Gemma 4 E2B. I2V also passes the image. |
+| `pipeline` | `"distilled"` | `"dfr"` adds generated keyframes and IC-LoRA detailing. T2V only (with or without `generate_audio`). |
+| `video_decoder` | `"conv"` | `"diffusion"` uses the experimental diffusion video VAE, decoded in 2x2 spatial tiles to bound memory. |
 
-LTX-2.5 support is being developed upstream in
+## LTX-2.5 implementation notes
+
+The `mlx-video` LTX-2.5 port was developed in
 [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52). The PR
 keeps the existing `mlx_video.models.ltx_2` pipeline and legacy model layouts,
-and separates each feature into its own commit for review.
+and separates each feature into its own commit for review. The measurements
+below come from that work and measure direct `mlx-video` runs.
 
 ### Architecture and resources
 
@@ -224,18 +245,16 @@ output showed finer fur, edge, and grass detail and more stable subject shape.
 This initial path supports T2V and optional generated audio; I2V, A2V, temporal
 upscaling, streaming, and diffusion-VAE decoding remain out of scope.
 
-1. Treat the diffusion VAE Metal kernel as a separate optimization milestone,
-   even if its commit remains in the same upstream PR branch.
-2. After upstream review stabilizes, pin the accepted `mlx-video` commit in
-   kiapi, update setup resources and API fields, and run full kiapi regression
-   verification before changing the default model.
+kiapi now exposes these paths through `ltx-2.5-distilled` (see the option table
+above) from the fork pin. When the upstream PR is merged, pin the accepted
+upstream commit and rerun the full ltx2 verify.
 
 ## Notes
 
 - **transient model**:
-  LTX-2 is not a permanent model. Load, create, and free each call, and before execution
-  Reserve a temporary memory budget of approximately 40 GB with `memory.reserve()`. Therefore, `/health`
-  It will not remain in the resident model.
+  LTX-2.5 and LTX-2 are not permanent models. Each call loads, generates, and frees the
+  pipeline, reserving a temporary memory budget with `memory.reserve()` first (about 44 GB
+  for `ltx-2.5-distilled`, 40 GB for `distilled`). They never appear as resident models in `/health`.
 - **Response format**:
   If sync produces only one MP4, it defaults to returning the raw MP4.
   You can trace the metadata from the `X-Kiapi-File-Id` / `X-Kiapi-Job-Id` headers.
