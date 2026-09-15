@@ -35,6 +35,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `7d8b2f0` | 別 Gemma 4 E2B-it による T2V / I2V prompt enhancement |
 | `fae541a` | prompt-driven Multishot の検証済み example と制約の文書化 |
 | `5f008b8` | conv VAE限定DFR、generated keyframe slots、IC-LoRA detailing、tests / docs |
+| `1e071c7` | READMEに記載済みの`mlx_video.generate` CLI aliasをproject scriptsへ追加 |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -60,6 +61,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   - `ltx25-dfr-fixed-768x512-121.mp4`
   - `ltx25-dfr-baseline-768x512-121.mp4`
   - `ltx25-dfr-fixed-768x512-121-comparison.png`
+  - `ltx25-dfr-audio-auto.mp4`
+  - `ltx25-dfr-audio-auto.wav`
+  - `ltx2-dfr-regression-256-25.mp4`
 
 ### 検証状態と既知の問題
 
@@ -73,6 +77,12 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 - conv VAE限定DFRは実checkpointで256x256 / 25 framesと768x512 / 121 framesを完走。
   代表設定は179.6秒・41.25 GB、同一prompt / seedの通常distilledは103.4秒・37.81 GB。
   DFRは毛並み、輪郭、草の微細構造と時間方向の被写体形状が改善した
+- DFR + generated audio + auto-durationも完走。4.88秒→113 framesを予測し、内部121-frame
+  canvasからMP4を正確に113 frames / 4.708秒へtrim。WAVも4.708秒、mux後AACは4.693秒。
+  video/audioはfiniteで、静止・灰色・無音出力ではない
+- 旧LTX-2 distilledは変更後も256x256 / 25 framesを23.6秒・36.73 GBで生成した
+- fresh Python 3.12 installでDFR importとCLI optionsを確認。READMEで使っていた
+  `mlx_video.generate`がproject scriptに無かったためaliasを追加し、実起動を確認した
 - upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
   `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
   `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
@@ -82,8 +92,8 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **DFRのPR本文を更新する。** 日本語訳をユーザーに提示し、承認後にcommit guide、対応範囲、
-   実測と初期対応の制約をPR #52へ反映する
+1. **DFR残検証とCLI aliasのPR本文を更新する。** 日本語訳をユーザーに提示し、承認後に
+   generated audio / padding / trim / regression / fresh installと`1e071c7`をPR #52へ反映する
 2. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
    attention用の専用Metal kernelが必要。先に未完成コードを置かない
 3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
@@ -571,3 +581,19 @@ commit `5f008b8` をPR #52 branchへpush済み。初期対応はT2Vと任意のg
 I2V、A2V、streaming、temporal upscaling、DiffVAE decodeは未対応。日本語案をユーザーが
 承認後、PR #52本文のcommit guide、対応範囲、実装説明、実測、制約、別gated adapterを
 更新した。PRはopen / mergeable。Issue #51は更新していない。
+
+### 2026-09-15: DFR残検証
+
+generated audio、auto-duration、内部canvas paddingを1回のE2E生成で検証した。promptから
+4.88秒 / 113 framesを予測し、DFRは内部canvasを121 framesへpadding。conv VAE decode後に
+MP4を113 frames / 4.708秒へtrimし、WAVも48 kHz stereo / 4.708秒へtrimした。mux後AACは
+4.693秒で、映像を短縮していない。decoded video / audioはfinite、video std 56.93、
+audio std 89.12 / peak 1871で、静止、灰色、無音ではない。生成は187.5秒・41.25 GB。
+
+通常LTX-2.5 distilledは同じDFR実装後の代表比較で103.4秒・37.81 GB、旧LTX-2 distilledは
+256x256 / 25 framesを23.6秒・36.73 GBで完走した。selected suiteは22 passedを再確認。
+fresh Python 3.12環境へinstallし、DFR module importとCLI optionsを確認した。
+
+fresh install検証で、model README全体が使う`uv run mlx_video.generate`に対応するproject scriptが
+無い既存不整合を発見した。既存の`mlx_video.ltx_2.generate`を維持しつつ同じentry pointへのaliasを
+追加し、実際に`--help`が起動することを確認。commit `1e071c7`をPR branchへpush済み。
