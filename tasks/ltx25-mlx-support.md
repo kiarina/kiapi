@@ -237,3 +237,19 @@ LTX-2 / 2.3 inference implementation を既に MIT repository で配布してい
 適用文書は LTX-2.5 から `LICENSE-2_x` に変わるが、inference port の取り扱いは
 `mlx-video` の既存方針に従う。PR では LTX-2.5 のモデルカードとライセンスを
 明示するが、Lightricks への事前照会を必須条件にしない。
+
+### 2026-09-15: PR 候補の最終ローカル検証
+
+- local commit `73d919b` を追加し、LTX-2.5 ancestral Euler step を単独関数にして
+  seed 再現性と最終 denoise step を単体テスト化
+- 関連 test は 47 passed
+- 新しい Python 3.12 venv で local package を一から install し、`mlx-vlm 0.7.1`、
+  CLI `--help`、LTX-2.5 component allowlist の import を確認
+- upstream `main` は依然 `87db56a`。issue #51 に返信と assignee はなく、LTX-2.5 の
+  競合 PR もない
+- local branch は clean。未公開 commits は `a956b3a`, `b73e6a8`, `73d919b`
+- upstream 全 test suite は既存の `tests/test_generate_dev.py` が削除済み module
+  `mlx_video.generate_dev` を import するため collection で停止する。今回差分では触らない
+
+次は、ユーザー確認用に issue #51 の返信文と PR 本文を日本語訳で提示する。
+ユーザーが承認するまで issue 返信、fork / push、PR 作成は行わない。
