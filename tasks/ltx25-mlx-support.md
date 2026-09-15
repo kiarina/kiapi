@@ -253,3 +253,17 @@ LTX-2 / 2.3 inference implementation を既に MIT repository で配布してい
 
 次は、ユーザー確認用に issue #51 の返信文と PR 本文を日本語訳で提示する。
 ユーザーが承認するまで issue 返信、fork / push、PR 作成は行わない。
+
+### 2026-09-15: upstream PR 作成
+
+ユーザーが日本語訳で issue 返信と PR 本文を確認・承認した後に実行。
+
+- public fork `kiarina/mlx-video` を作成し、branch `ltx-2.5-local-port` を push
+- upstream PR [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52)
+  `feat(ltx2): add LTX-2.5 distilled T2V and I2V support` を作成
+- issue [Blaizzy/mlx-video#51](https://github.com/Blaizzy/mlx-video/issues/51) へ実装範囲、
+  121-frame 実測、test 結果、PR URL を返信
+- PR は open / mergeable。調査時点で status check の登録はない
+
+次の一手: maintainer review を待ち、質問・変更要求・CI 結果が来たら対応する。
+返信テキストは今回と同じく、送信前に日本語訳でユーザー確認を取る。
