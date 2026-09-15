@@ -172,8 +172,19 @@ addition to its local 3D window; each keyframe query sees its own plane and the
 two nearest video frames in the same online softmax. At 768x512 / 121 frames,
 untiled DFR + DiffVAE completed in 241.1 seconds at 49.71 GB. Keyframe-aware 2x2
 spatial tiling completed in 331.0 seconds at 41.25 GB, reducing 8.46 GB without
-an error concentration at tile seams. Temporal tiling remains before final
-regression and upstream documentation.
+an error concentration at tile seams.
+
+Temporal tiling is now implemented with a 22-cell stage-4-input halo and causal
+leading-frame handling. Two temporal tiles took 185.4 seconds / 46.21 GB for
+plain DiffVAE and 292.4 seconds / 46.24 GB for keyframe-aware DFR. Full/tiled
+MP4 differences averaged 1.42/255 and 2.16/255 respectively without a visible
+frame seam. Spatial and temporal tiling are currently separate modes.
+
+Final regression covered DFR keyframes + 2x2 spatial tiles + generated audio +
+automatic duration, producing an exact 113-frame / 4.708-second MP4 and WAV;
+DiffVAE I2V and A2V; legacy LTX-2 Conv VAE generation; all 40 LTX-2.5 tests;
+and a fresh Python 3.12 install with documented CLI entry points. DiffVAE
+implementation and local verification are complete pending upstream review.
 
 ### Remaining adoption work
 

@@ -43,6 +43,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `4775630` | DiffVAE stage 4 / 5のhalo付きspatial tiling |
 | `5001b17` | DFR keyframe dual-stream joint-attention Metal kernelとdecoder統合 |
 | `f9a458a` | DFR keyframe-aware DiffVAE spatial tiling |
+| `d29c248` | plain / keyframe-aware DiffVAE temporal tiling |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -78,6 +79,11 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   - `ltx25-dfr-diffvae-keyframes-768x512-121.mp4`
   - `ltx25-dfr-diffvae-keyframes-tiled2-768x512-121.mp4`
   - `ltx25-dfr-diffvae-keyframes-768x512-121-comparison.png`
+  - `ltx25-diffvae-temporal2-768x512-121.mp4`
+  - `ltx25-dfr-diffvae-keyframes-temporal2-768x512-121.mp4`
+  - `ltx25-dfr-diffvae-audio-auto-tiled2.mp4`
+  - `ltx25-diffvae-i2v-256-25.mp4`
+  - `ltx25-diffvae-a2v-256-25.mp4`
 
 ### 検証状態と既知の問題
 
@@ -106,6 +112,12 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 - DFR generated keyframesを全5 stagesでjoint decode。代表設定はtilingなし241.1秒・49.71 GB、
   2x2 spatial tilesは331.0秒・41.25 GB。どちらも121 frames / finite。tiledは8.46 GB削減し、
   full/tiled差3.23/255、seam誤差集中なし
+- temporal 2 tilesはplain DiffVAEで185.4秒・46.21 GB、keyframe-aware DFRで292.4秒・46.24 GB。
+  fullとの差は各1.42/255、2.16/255で、frame seamに破綻なし
+- DFR + DiffVAE + keyframes + 2x2 spatial tiles + generated audio + auto-durationは328.1秒・
+  41.25 GBで完走。内部121 framesから113 frames / 4.708秒へtrimし、WAVも同duration
+- DiffVAE I2V / A2Vは256x256 / 25 framesで完走。LTX-2.5 tests 40 passed、fresh Python
+  3.12 install / CLI、旧LTX-2 Conv VAE regressionも成功
 - upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
   `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
   `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
@@ -115,10 +127,10 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **temporal tilingを追加する。** keyframe joint decodeのseam設計と共通化し、長尺・高fps時の
-   stage-5 temporal peakを抑える
-2. **DiffVAE最終回帰を行う。** plain / DFR、Conv / DiffVAE、generated audio、auto-duration、
-   spatial tiling、fresh installと旧LTX-2を通し、対応範囲と制約を確定する
+1. **DiffVAE完成内容をPR本文へ反映する。** 全追記の日本語訳をユーザーへ提示し、承認後に
+   commits、対応範囲、implementation、実測、制約をPR #52へまとめて追記する
+2. **upstream reviewへ対応する。** maintainerから分割や変更を求められた場合のみcommit境界を
+   使って再構成する。Issue #51へ細かな進捗は追記しない
 3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
@@ -722,3 +734,29 @@ mean frame delta 17.74。commit `5001b17`をpush。
 331.0秒・41.25 GBで、untiledから8.46 GB削減。full/tiled MP4平均差3.23/255、p99 14、max 57。
 縦横seam近傍の差は全体平均以下。selected tests 30 passed。commit `f9a458a`をpush。
 PR本文は未更新。次はtemporal tilingと最終回帰。
+
+### 2026-09-15: DiffVAE temporal tilingと最終回帰
+
+stage-4入力上で片側22 cellsのtemporal haloを使い、先頭tileだけcausal pixel shuffleのleading
+frameをdrop、後続tileは保持するtemporal tilingを実装した。global pixel frameへ再配置してcoreを
+連結し、keyframe timesもstage-4 / stage-5のtile originでrebaseする。spatial / temporal tilesの
+同時指定は未対応として明示的に拒否する。
+
+- plain temporal 2 tiles: 185.4秒・46.21 GB。untiled 149.2秒・51.33 GBから5.12 GB削減
+- keyframe-aware DFR temporal 2 tiles: 292.4秒・46.24 GB。untiled 241.1秒・49.71 GBから3.47 GB削減
+- full/tiled MP4平均差はplain 1.42/255、keyframe 2.16/255。temporal seam付近は差が増えるが
+  global frame max以下で、視認上の境界破綻なし。両方121 frames
+- commit `d29c248`をPR #52 branchへpush
+
+最終複合回帰としてDFR + generated keyframes + DiffVAE + 2x2 spatial tiles + generated audio +
+auto-durationを実行。4.88秒→113 frames予測、内部121-frame canvasからMP4 / WAVを113 frames /
+4.708秒へtrim、AACは4.693秒。video/audio finite、video std 54.34、mean frame delta 13.79、
+audio std 89.12 / peak 1871。328.1秒・41.25 GB。
+
+追加回帰はDiffVAE I2V 256x256 / 25 frames（23.1秒・37.08 GB）、A2V 25 frames + 16 kHz
+stereo AAC（16.4秒・36.94 GB）、旧LTX-2 Conv VAE 25 frames（24.2秒・36.73 GB）が完走。
+`tests/test_ltx25_*.py`は40 passed。fresh Python 3.12 install、DiffVAE import、documented CLI alias、
+video decoder / spatial / temporal optionsを確認。working tree clean。
+
+DiffVAEの実装と回帰は完了。PR本文はまだ更新していない。ユーザーへ日本語追記案を提示し、
+承認後にのみ外部更新する。
