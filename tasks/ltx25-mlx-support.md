@@ -299,3 +299,19 @@ fork へはまだ push していない。
 
 次は、本家 `main` 向けに `Depends on #52` と明記した stacked PR と、issue #51 への
 経緯追記を作成する。本文は送信前に日本語訳でユーザー確認を取る。
+
+### 2026-09-15: Audio stacked PR 作成
+
+ユーザーが日本語訳で PR 本文と issue 追記を確認・承認した後に実行。
+
+- fork branch `kiarina:ltx-2.5-audio` を push
+- 本家 `main` 向けの stacked PR
+  [Blaizzy/mlx-video#53](https://github.com/Blaizzy/mlx-video/pull/53)
+  `feat(ltx2): add LTX-2.5 audio generation and A2V support` を作成
+- PR 本文に `Depends on #52` と、#52 を先に merge する必要があることを明記
+- issue [Blaizzy/mlx-video#51](https://github.com/Blaizzy/mlx-video/issues/51) へ audio の
+  対応範囲、実測、stacked PR URL を追記
+- PR #53 は open / mergeable。調査時点で status check の登録はない
+
+次の一手: #52 / #53 の maintainer review を待ちながら、次の独立機能を別 branch で
+進める。返信や次の PR 本文は引き続き送信前に日本語訳で確認を取る。
