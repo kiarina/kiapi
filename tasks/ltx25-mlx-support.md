@@ -315,3 +315,19 @@ fork へはまだ push していない。
 
 次の一手: #52 / #53 の maintainer review を待ちながら、次の独立機能を別 branch で
 進める。返信や次の PR 本文は引き続き送信前に日本語訳で確認を取る。
+
+### 2026-09-15: PR #52 へ統合
+
+ユーザーと、基本機能を過度に細分化せず commit 単位でレビューできる 1 PR に
+まとめる方針に変更した。日本語訳で更新文と close コメントを確認・承認後に実行。
+
+- Audio commit を PR #52 branch へ cherry-pick し、`3ca6fef` として push
+- PR #52 を `feat(ltx2): add LTX-2.5 distilled generation support` へ改題し、
+  4 commits の review guide、T2V / I2V / Audio / A2V の全範囲、実測、未対応範囲を記載
+- PR #52 は 4 commits / 19 files、open / mergeable、status check なし
+- PR #53 に「Audio を #52 の commit `3ca6fef` へ統合した」と記録して close
+- issue #51 へ、#52 が Audio / A2V を含む正典 PR になったことを追記
+
+次の一手: Duration predictor と Gemma 4 prompt enhancement はそれぞれ独立 commit として
+PR #52 branch へ追加する。Diffusion video VAE、DFR、multishot は実装量とレビュー境界が
+大きいため別 PR に保つ。
