@@ -213,3 +213,25 @@ component ごとの download と Phase 3 以降を進める。承諾待ちの間
 
 次の一手: local commit のレビューと PR 向け整理を行う。issue コメント、fork への
 push、PR 作成はまだ行わない。
+
+### 2026-09-15: PR 向け整理とライセンス blocker
+
+local commit `b73e6a8` を追加し、LTX-2.5 の必要な 4 component だけを
+Hugging Face から取得する allowlist、未対応の audio / dev pipeline の明示的エラー、
+利用手順、model path の単体テスを追加。関連 test は 45 passed。
+
+公開前のレビューで **LTX-2.5 の新ライセンスと `mlx-video` の MIT license が
+両立するか不明** と判明した。LTX-2.x Community License は次を定めている。
+
+- 1.5: LTX-2.x の architecture に基づく derivative model architecture も Derivative
+- 3.2: Derivative は同 Agreement の条件のみで配布し、完全な Agreement を同梱
+- 3.3: 変更ファイルに目立つ変更告知を記載
+- 3.6: 追加 license は許容するが Agreement と競合できず、Agreement が優先
+
+今回の MLX implementation がこの Derivative に当たると、MIT-only の upstream へそのまま
+merge するのは不適切な可能性が高い。重み自体を配布しない loader と inference support が
+「derivative model architecture」に該当するかは文面だけで確定できない。
+
+このため、fork への public push と PR は保留する。次は Lightricks または
+`mlx-video` maintainer に、MLX port を MIT repository で配布する場合の正しい license
+表記・配布方法を確認し、回答に従って PR の license 構成を決める。
