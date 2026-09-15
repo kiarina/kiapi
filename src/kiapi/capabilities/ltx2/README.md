@@ -164,7 +164,16 @@ receptive-field halo. A 2x2 tiled 768x512 / 121-frame run took 216.9 seconds and
 but reduces its peak by 13.52 GB so decoding no longer exceeds the generation
 transformer's peak. Small fixtures match the full decode numerically; the real
 MP4 comparison has a mean absolute difference of 2.67/255 without an error
-spike at tile seams. Temporal tiling and keyframe-aware decoding remain.
+spike at tile seams.
+
+DFR generated keyframes now use a dual-stream Metal attention path through all
+five decoder stages. Each video query sees the two nearest keyframe planes in
+addition to its local 3D window; each keyframe query sees its own plane and the
+two nearest video frames in the same online softmax. At 768x512 / 121 frames,
+untiled DFR + DiffVAE completed in 241.1 seconds at 49.71 GB. Keyframe-aware 2x2
+spatial tiling completed in 331.0 seconds at 41.25 GB, reducing 8.46 GB without
+an error concentration at tile seams. Temporal tiling remains before final
+regression and upstream documentation.
 
 ### Remaining adoption work
 
