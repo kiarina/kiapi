@@ -760,3 +760,24 @@ video decoder / spatial / temporal optionsを確認。working tree clean。
 
 DiffVAEの実装と回帰は完了。PR本文はまだ更新していない。ユーザーへ日本語追記案を提示し、
 承認後にのみ外部更新する。
+
+ユーザー承認後、PR #52本文へDiffVAE 8 commits、対応範囲、Metal / decoder / joint attention /
+tilingの実装、全実測、最終回帰、制約、checkpoint downloadを追記し、未対応欄からDiffVAEを
+削除した。PRは17 commits、open / mergeable / review required、checkなし。Issueは未更新。
+
+### 2026-09-15: DiffVAE生成品質の評価
+
+同じprompt / seedで生成したlatentをConv VAEとDiffVAEでdecodeしたplain pair、およびDFR Convと
+DFR keyframe-aware DiffVAE pairを目視・簡易指標で比較した。被写体、構図、移動方向は維持され、
+崩壊、色飽和、frame欠落、tile seamは見られない。実装がlatent semanticを保持している根拠になる。
+
+一方、狐の例ではDiffVAEは単純なedge sharpnessを増やしていない。plainはLaplacian varianceが
+141.1→128.3、DFRは414.3→272.0。Conv DFRの強い草・毛の高周波を落とし、より滑らかで
+低crunchな復元になった。時間差分はplain 22.50→20.53、DFR 20.54→17.74、二階差分は
+plain 36.41→33.17、DFR 34.19→29.00で、時間方向の変動とちらつき代理値は低下した。
+
+したがって現時点の品質評価は「明確なsharpness向上」ではなく、「semanticを保った生成的な
+再レンダリング、時間安定性、過剰な高周波の抑制」。単一sceneの簡易指標なので一般化しない。
+また公式PyTorch decoderと同一latent / noiseでoutput tensorを直接比較していないため、architecture、
+396-tensor strict load、Metal-vs-reference attention、full-vs-tiled fixtureの確度は高いが、公式出力との
+end-to-end数値同一性は未確定。このparity検証は品質判断を強める将来候補。

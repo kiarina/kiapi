@@ -186,6 +186,23 @@ DiffVAE I2V and A2V; legacy LTX-2 Conv VAE generation; all 40 LTX-2.5 tests;
 and a fresh Python 3.12 install with documented CLI entry points. DiffVAE
 implementation and local verification are complete pending upstream review.
 
+### DiffVAE output-quality interpretation
+
+The verified fox pair preserves subject identity, composition, and motion, with
+no collapse, saturation, missing frames, or visible tile seams. DiffVAE did not
+increase simple edge sharpness in this scene: Laplacian variance changed from
+141.1 to 128.3 for the plain pair and from 414.3 to 272.0 for DFR. Instead it
+reduced frame-to-frame differences from 22.50 to 20.53 (plain) and 20.54 to
+17.74 (DFR); second-order temporal differences also fell from 36.41 to 33.17
+and 34.19 to 29.00. Visually this reads as a smoother, less crunchy rendering
+with lower high-frequency instability, especially in grass and fur.
+
+These metrics are diagnostic rather than a general quality score. They cover
+one scene, and an official PyTorch same-latent/same-noise output-tensor parity
+comparison has not yet been run. Confidence is high in architecture mapping,
+strict loading, attention numerical tests, and tiled/full fixture parity, but
+exact end-to-end parity with the official decoder remains unproven.
+
 ### Remaining adoption work
 
 Native multishot behavior has been verified through the existing distilled T2V
