@@ -568,4 +568,6 @@ detailing adapterは327.3 MB、rank 32。別gated repo
 103.4秒・37.81 GB。DFRは毛並み、輪郭、草の細部と被写体形状の時間的一貫性が改善した。
 
 commit `5f008b8` をPR #52 branchへpush済み。初期対応はT2Vと任意のgenerated audio。
-I2V、A2V、streaming、temporal upscaling、DiffVAE decodeは未対応。
+I2V、A2V、streaming、temporal upscaling、DiffVAE decodeは未対応。日本語案をユーザーが
+承認後、PR #52本文のcommit guide、対応範囲、実装説明、実測、制約、別gated adapterを
+更新した。PRはopen / mergeable。Issue #51は更新していない。
