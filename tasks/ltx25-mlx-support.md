@@ -94,7 +94,7 @@ issue / PR を行う。
 
 ### Phase 5: 代表設定で実測する
 
-- 公式の代表設定 960x544 / 121 frames / 24 fps で T2V と I2V を実行する
+- 新旧を比較できる代表設定 768x512 / 121 frames / 24 fps で T2V と I2V を実行する
 - wall time、peak process RSS、MLX active / peak memory、初回と二回目の差、出力サイズを測る
 - 同じ意図の prompt で現行 LTX-2 と並べ、prompt adherence、motion、人物・文字、
   temporal consistency を視認比較する
@@ -165,3 +165,51 @@ multishot まで入れず、最初の PR は次の縦切りにする。
 次の一手: ユーザーが Hugging Face で LTX-2.x Community License に承諾した後、
 component ごとの download と Phase 3 以降を進める。承諾待ちの間も、公式コードに
 基づく Phase 2 の実装は進められる。
+
+### 2026-09-15: Phase 1〜5 完了（前回のユーザ向け一覧の手順 6 まで）
+
+ユーザーが Hugging Face の利用条件を承諾し、LTX-2.5 の必要な split weights を
+サーバー機に取得した。`Blaizzy/mlx-video` の local branch `ltx-2.5-local-port` で
+既存の `mlx_video.models.ltx_2` 設計を維持したまま実装し、local commit `a956b3a`
+(`feat(ltx2): add initial LTX-2.5 distilled support`) を作成。外部へは push していない。
+
+実装範囲:
+
+- LTX-2.5 split checkpoint の自動検出と component path 解決
+- `mlx-vlm>=0.7.1` の Gemma 4 Unified 実装を再利用する text encoder adapter
+- checkpoint 内の tokenizer / config / text projection の読み込み
+- checkpoint-driven Transformer config、独立した FF bias / gated attention / cross-attention
+  AdaLN、keyframe absolute-position embedding
+- LTX-2.5 の 22B Transformer を 4,349 tensors すべて strict load
+- split conv video VAE encoder / decoder と 2.5 spatial upscaler
+- LTX-2.5 が必要とする stage-1 ancestral Euler、条件付き frame の保護
+- 旧 LTX-2 / 2.3 の従来レイアウトと deterministic sampler は維持
+
+検証:
+
+- Gemma 4: 1024 tokens から video `(1, 1024, 4096)` / audio `(1, 1024, 2048)` の
+  finite embeddings を生成、peak 30.73 GB
+- conv VAE: 9-frame 32x32 へ decode して finite、upscaler も 72 weights を load
+- 256x256 / 9-frame: T2V 18.4 秒・36.92 GB、I2V 24.7 秒・37.08 GB。MP4 は
+  H.264 / 24 fps / 9 frames で、画像・動画とも視認確認済み
+- 768x512 / 121-frame T2V の同一 prompt / seed 比較:
+  LTX-2.5 は 108.7 秒・37.81 GB、LTX-2 は 96.9 秒・37.48 GB。2.5 は約 12% 遅い
+- 768x512 / 121-frame I2V の同一 input / prompt / seed 比較:
+  LTX-2.5 は 120.8 秒・39.54 GB、LTX-2 は 101.7 秒・39.35 GB。2.5 は約 19% 遅い
+- 全出力は 121 frames が揃い、最小 frame standard deviation は 48.49 以上、
+  adjacent-frame mean absolute difference は 3.47〜10.37 で、灰色画像・静止画・NaN はない
+- 視認上、2.5 は T2V の波と反射が細かく、色が自然で、時間的な一貫性も良好。
+  I2V も input 構図を保ったまま 121 frames 完走
+- 追加・関連 unit tests は 43 passed。全体は `test_generate_dev.py` の削除済み
+  module import、`test_wan_tiling.py` の古い argument、optional torch 未導入の既存 3 問題があり、
+  今回変更と無関係に upstream `main` の test suite 全体は元から green ではない。
+
+注記: 公式の Diffusers 例の `960x544` は stage 1 解像度で、x2 後は `1920x1088`。
+`mlx-video` の現行二段 API は最終出力解像度を受け取るため、新旧の公平な比較に
+`768x512` を使った。従来計画の `960x544` 出力という記述はこの理由で訂正する。
+
+成果物はサーバー機の
+`~/src/github.com/kiarina/kiapi/.verify/ltx25-mlx-video/` に MP4、contact sheet、ffprobe JSON を保存。
+
+次の一手: local commit のレビューと PR 向け整理を行う。issue コメント、fork への
+push、PR 作成はまだ行わない。
