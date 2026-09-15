@@ -3,6 +3,25 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-16 — chat の出力上限をサーバーの cap から context window に替えた
+
+- 意思決定（ユーザーと合意）: kiapi は個人利用が前提なので、どこまで出力させるかは呼び出し側が決める。
+  サーバー全体の `max_tokens_cap`（`KIAPI_CHAT_MAX_TOKENS_CAP`、4096）を廃止し、既定を 512 → 1024 にした。
+  モデルに出力専用の上限はなく、真の上限は context window（入力 + 出力）だけなので、サーバーはそこで止める。
+  上限を超える `max_completion_tokens` は OpenAI のような 400 にせず、切り詰める
+- context window は各モデルの `config.json` から読む（handler の `CONTEXT_WINDOW_KEYS`）。qwen3.6 / 3.8 は
+  `text_config.max_position_embeddings` = 262144、Omni は `thinker_config.text_config` の 65536。
+  `GET /v1/models` の `context_window` でも返す
+- 入力トークン数は prefill 後にしか分からないため、mlx-vlm が各チャンクに付ける `prompt_tokens` を見て生成ループで止める
+  （`limit_to_context`）。非 stream も `generate()` をやめて同じ `stream_generate` のループに揃えた
+- `finish_reason` は tool call 以外で常に `"stop"` だった。mlx-vlm が最終チャンクで返す `"length"` を反映するよう直した
+- YaRN などの context 拡張設定は扱っていない。今のモデルに無く、mlx-vlm 側の対応も未確認のため。
+  クライアント切断時に生成を止める処理も今回はやらない判断
+- 検証: 単体テスト 303 件、chat の full verify（66 ケース + stream）通過。本番で `/v1/models` の値と、
+  `max_completion_tokens: 8` の非 stream / stream がともに `"length"`、自然終了が `"stop"` になることを確認
+- 落とし穴: worktree で verify したとき `tests/assets` の link を忘れ、最初の画像ケースで止まった
+  （`docs/playbooks/dependency-upgrades.md` に既に手順あり）
+
 ## 2026-09-15〜16 — ltx2 に LTX-2.5（`ltx-2.5-distilled`）を追加し、既定にした
 
 - 旧 LTX-2 の `distilled` と並べて追加し、既定だけ切り替えた（ユーザー判断: 比較・切り戻しのため併存）。
