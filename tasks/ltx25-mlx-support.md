@@ -146,3 +146,22 @@ multishot まで入れず、最初の PR は次の縦切りにする。
 - `https://huggingface.co/Lightricks/LTX-2.5`
 - `https://github.com/Lightricks/LTX-2/releases/tag/v1.2.0`
 - `https://github.com/Blaizzy/mlx-video/issues/51`
+
+## 進捗
+
+### 2026-09-15: Phase 1 開始
+
+- サーバー機に `Blaizzy/mlx-video` の最新 `main`
+  (`87db56a51758fefb748a359b90a5283bb8ba4837`) を clone し、ローカル branch
+  `ltx-2.5-local-port` を作成。外部へは push していない
+- kiapi の現行 LTX-2 full verify は 6/6 成功。256x256 baseline は T2V 25 frames
+  29.4 秒、I2V 17 frames 26.5 秒、async T2V 17 frames 26.1 秒
+- LTX-2.5 の最小 distilled + conv VAE 一式は、Transformer 42.02 GB、Gemma 4 text
+  encoder 26.26 GB、conv video VAE 1.45 GB、spatial upscaler 1.00 GB、audio を除いて
+  合計約 70.7 GB（10 進 GB）と確認
+- Hugging Face へは `kiarina` で認証済みだが、`Lightricks/LTX-2.5` の利用条件が
+  未承諾のため download は `Access denied. This repository requires approval.` で停止
+
+次の一手: ユーザーが Hugging Face で LTX-2.x Community License に承諾した後、
+component ごとの download と Phase 3 以降を進める。承諾待ちの間も、公式コードに
+基づく Phase 2 の実装は進められる。
