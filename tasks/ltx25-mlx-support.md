@@ -331,3 +331,31 @@ fork へはまだ push していない。
 次の一手: Duration predictor と Gemma 4 prompt enhancement はそれぞれ独立 commit として
 PR #52 branch へ追加する。Diffusion video VAE、DFR、multishot は実装量とレビュー境界が
 大きいため別 PR に保つ。
+
+### 2026-09-15: Duration predictor を追加
+
+PR #52 branch の独立 commit `c8000e1`
+(`feat(ltx2): add LTX-2.5 duration prediction`) で次を実装・push した。
+
+- 3.8 MB の split duration-head checkpoint を必要 component allowlist へ追加
+- video 4096-dim / audio 2048-dim connector outputs の projection、modality embedding、
+  4-head cross-attention pooler、MLP からなる MLX `DurationHead`
+- PyTorch `MultiheadAttention.in_proj_weight` layout をそのまま strict load し、
+  MLX で Q / K / V に分解して実行
+- 予測秒を 1〜20 秒に clamp し、causal VAE の `8k+1` frame grid へ snap
+- LTX-2.5 は `num_frames` 省略時に自動予測。`--auto-duration MIN MAX` で範囲を指定
+- LTX-2 / 2.3 は従来どおり省略時 33 frames で後方互換を維持
+
+検証:
+
+- 実 checkpoint を strict load。zero connector tokens で video-only 2.47 秒、audio-only 2.38 秒、
+  video + audio 2.42 秒を finite 出力
+- 実 prompt で `A quick blink.` は 4.72 秒→113 frames、長い旅行シーンは
+  5.28 秒→121 frames
+- `num_frames` 省略の end-to-end で 256x256 / 113 frames / 24 fps / 4.708 秒の
+  H.264 MP4 を 29.0 秒・37.03 GB で生成
+- LTX-2 の `num_frames` 省略回帰は 33 frames で完走
+- 関連 tests 54 passed
+
+PR #52 は新 commit を含むが、PR 本文はまだ更新していない。更新文は日本語訳で
+ユーザー確認後に送信する。
