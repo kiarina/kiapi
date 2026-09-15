@@ -137,6 +137,15 @@ port therefore needs a dedicated tiled Metal kernel with online softmax,
 boundary-window shifting, and integrated RoPE. Building the decoder around an
 unfused MLX gather would create prohibitive temporary tensors and runtime.
 
+An inference-only MLX Metal prototype now provides NATTEN-compatible 3D window
+geometry, BF16 inputs, float32 accumulation, and a two-pass online softmax
+without materializing attention scores. It matches the eager reference for
+small boundary cases and runs an 11x11x11 / head-dim-64 smoke test. A
+16x16x16 / 16-head / head-dim-64 warm run took 20.8 ms with an 80 MiB peak.
+The prototype assigns one query/head to each thread and is a correctness
+baseline; it still needs the SIMD-group and threadgroup K/V tiling ideas from
+the open NATTEN Metal PR #312 before integrating the five-stage decoder.
+
 ### Remaining adoption work
 
 Native multishot behavior has been verified through the existing distilled T2V

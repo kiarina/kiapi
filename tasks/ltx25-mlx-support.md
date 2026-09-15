@@ -36,6 +36,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `fae541a` | prompt-driven Multishot の検証済み example と制約の文書化 |
 | `5f008b8` | conv VAE限定DFR、generated keyframe slots、IC-LoRA detailing、tests / docs |
 | `1e071c7` | READMEに記載済みの`mlx_video.generate` CLI aliasをproject scriptsへ追加 |
+| `dc33a96` | DiffVAE向け3D neighborhood attention Metal kernel prototypeと数値tests |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -92,10 +93,11 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **DFR残検証とCLI aliasのPR本文を更新する。** 日本語訳をユーザーに提示し、承認後に
-   generated audio / padding / trim / regression / fresh installと`1e071c7`をPR #52へ反映する
-2. **Diffusion video VAEは後回し。** 通常のMLX gatherでは実用にならず、11x11x11 neighborhood
-   attention用の専用Metal kernelが必要。先に未完成コードを置かない
+1. **DiffVAE Metal kernelを最適化する。** `dc33a96`の1-thread / query-head正解実装を基準に、
+   NATTEN PR #312のSIMD / threadgroup K/V tilingをMLXへ移植する。11x11x11 / head dim 64で
+   数値一致と実サイズ速度を測る
+2. **DiffVAE decoderを段階移植する。** keyframeなしで5-stage / 396 tensorsをstrict loadし、
+   小型decodeから768x512 / 121 framesへ進む。keyframe streamは通常decode確立後に追加する
 3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
@@ -601,3 +603,27 @@ fresh install検証で、model README全体が使う`uv run mlx_video.generate`�
 日本語案をユーザーが承認後、DFR generated audio / padding / trim、旧LTX-2 regression、fresh
 install、CLI aliasをPR #52本文へ追記した。PRは9 commits、open / mergeable、checkなし、
 review required。Issue #51は更新していない。DFR残検証は完了。
+
+### 2026-09-15: DiffVAE Metal kernel prototype
+
+NATTEN PR #312（commit `943e14a204141a1a2eb3300dcb77d0dd6ea1cccf`、open / reviewなし）の
+Metal MPS backendを調査した。PRはNA1D / 2D / 3D、FP32 / FP16 / BF16、forward / backward、
+GQA、causal、stride、dilation、additional KVを含む約6,221 linesで、Metal / Objective-C++が
+4,039 lines、testsが1,358 lines。PyTorch ATen / MPS wrapperは直接使えないが、window geometry、
+KV bounding box、threadgroup K/V tile、online softmaxはMLX kernelへ移植可能。
+
+最初の正解基準として`mx.fast.metal_kernel`によるinference-only NA3Dを実装した。BTHWHD layout、
+FP32 / FP16 / BF16、odd 3D window、NATTEN互換のboundary shift、float32 accumulatorを持ち、
+attention score tensorをmaterializeしない。各threadが1 query / headを処理し、2-passでmaximumと
+softmax/value accumulationを行う単純版。小型eager MLX referenceも追加した。
+
+- FP32 / BF16の3x3x3 boundary testはeager referenceと一致
+- LTX実条件の11x11x11 / head dim 64はfiniteで完走
+- warm 11x11x11 grid / 1 head / dim 64: 4.0〜4.6 ms、peak 1.67 MiB
+- warm 16x16x16 grid / 16 heads / dim 64: 20.8 ms、peak 80.0 MiB
+- DiffVAE / DFR / VAE selected tests 12 passed
+
+実decoder最終gridへの外挿では1 block数秒になり得るため、この版は正解referenceであり最終性能では
+ない。次はPR #312のSIMD group分担とthreadgroup K/V tileを移植する。通常NA3Dはほぼ対応するが、
+LTX keyframe decodeはqueryごとに近いkeyframe planesを選ぶため、PRのglobal additional KVを
+そのまま使えず、通常decode確立後に専用拡張する。commit `dc33a96`をPR #52 branchへpush済み。
