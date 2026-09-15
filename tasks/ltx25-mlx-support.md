@@ -781,3 +781,21 @@ plain 36.41→33.17、DFR 34.19→29.00で、時間方向の変動とちらつ�
 また公式PyTorch decoderと同一latent / noiseでoutput tensorを直接比較していないため、architecture、
 396-tensor strict load、Metal-vs-reference attention、full-vs-tiled fixtureの確度は高いが、公式出力との
 end-to-end数値同一性は未確定。このparity検証は品質判断を強める将来候補。
+
+### 2026-09-15: DiffVAE多scene生成
+
+DFR + generated keyframes + DiffVAEを512x320 / 49 frames / 24 fpsで4 scene生成した。各48〜56秒、
+peak 41.19 GB。すべて49 frames、finite、時間変化あり。
+
+- `variety-portrait-dfr-diffvae.mp4`: 巻き髪とそばかすの人物が横顔からcameraへ向く。
+  顔identity、髪の細線、肌、照明が全体で安定し、4例中もっとも良好
+- `variety-hands-clay-dfr-diffvae.mp4`: 両手で回転する粘土を成形。bowl形状、濡れた粘土、指の
+  接触は安定。細部では指同士の重なりが曖昧だが、典型的なhand collapseはない
+- `variety-architecture-dfr-diffvae.mp4`: glass-and-steel stationのforward dolly。梁、柱、窓の
+  反復直線と消失点は安定。一部窓枠が移動中に変形し、指定したtrain arrivalは表現されない
+- `variety-fast-motion-dfr-diffvae.mp4`: beachを走るborder collie。胴体、毛色、走行方向は維持。
+  脚は高速motion中に曖昧になり、red discは小点として位置・形が不安定。2秒内にcatchへ至らない
+
+contact sheetは`variety-dfr-diffvae-contact.png`。この比較からDiffVAE実装は人物、手、反復建築、
+高速動物のいずれでもdecoder由来の崩壊や色異常を起こしていない。一方、prompt内の複合action完遂、
+小物identity、高速な四肢はdecoderではなく主にTransformer / duration側の限界として残る。
