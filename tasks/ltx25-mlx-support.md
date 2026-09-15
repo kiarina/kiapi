@@ -359,3 +359,35 @@ PR #52 branch の独立 commit `c8000e1`
 
 PR #52 は新 commit を含むが、PR 本文はまだ更新していない。更新文は日本語訳で
 ユーザー確認後に送信する。
+
+### 2026-09-15: Gemma 4 prompt enhancement を追加
+
+PR #52 branch の独立 commit `7d8b2f0`
+(`feat(ltx2): add Gemma 4 prompt enhancement`) で実装・push した。
+
+実装前の probe で、LTX-2.5 の 12B Gemma 4 Unified text-encoder checkpoint は encode 専用で、
+そのまま autoregressive generation すると無意味な反復出力になることを確認。公式
+PyTorch 実装も Gemma 4 Unified encode root では別の generative instruct checkpoint を必須と
+していたため、その設計に合わせた。
+
+- 既定で `mlx-community/gemma-4-e2b-it-bf16` を別ロードし、
+  `--prompt-enhancer-repo` で差し替え可能
+- LTX-2.5 公式の Gemma 4 T2V / I2V system prompts を追加
+- T2V はユーザーの短い prompt のみ、I2V は実際の reference image も Gemma 4 へ入力
+- Gemma 4 E2B-it は greedy generation で caption のみ返し、その caption を 12B
+  Unified encoder と DurationHead へ渡す
+- 古い LTX-2 / 2.3 の Gemma 3 enhancement 経路は変更しない
+
+検証:
+
+- T2V `a cat walking through grass` を、framing、camera motion、lighting、soundscape を
+  含む英語 caption へ展開
+- I2V は `miineko.png` の magenta pixel-art cat、黒背景、白い耳、黒い目を
+  正しく読み取った caption を生成
+- enhancement + auto-duration end-to-end は、展開 caption から 2.55 秒→57 frames を
+  予測し、256x256 MP4 を 26.8 秒・36.97 GB で生成
+- I2V enhancement + 25-frame generation は 32.3 秒・37.08 GB で完走
+- 関連 tests 55 passed
+
+PR #52 本文は Duration / Prompt enhancement の 2 commits をまとめて追記する。
+更新文と issue #51 の進捗追記は送信前に日本語訳でユーザー確認を取る。
