@@ -178,3 +178,4 @@ mise run verify --kiapi --family embedding --fast
 - [上流で Omni の deepstack 修正が出たら patch H を外す](tasks/mlx-vlm-omni-deepstack-upstream.md)
 - [Qwen3.8 の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
+- [chat の出力上限を呼び出し側の指定と context window で決める](tasks/chat-output-token-limit.md)
