@@ -37,6 +37,7 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `5f008b8` | conv VAE限定DFR、generated keyframe slots、IC-LoRA detailing、tests / docs |
 | `1e071c7` | READMEに記載済みの`mlx_video.generate` CLI aliasをproject scriptsへ追加 |
 | `dc33a96` | DiffVAE向け3D neighborhood attention Metal kernel prototypeと数値tests |
+| `aa18e5a` | LTX head dim 64向けSIMD-group Metal kernel最適化 |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -93,11 +94,11 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **DiffVAE Metal kernelを最適化する。** `dc33a96`の1-thread / query-head正解実装を基準に、
-   NATTEN PR #312のSIMD / threadgroup K/V tilingをMLXへ移植する。11x11x11 / head dim 64で
-   数値一致と実サイズ速度を測る
-2. **DiffVAE decoderを段階移植する。** keyframeなしで5-stage / 396 tensorsをstrict loadし、
+1. **DiffVAE decoderを段階移植する。** keyframeなしで5-stage / 396 tensorsをstrict loadし、
    小型decodeから768x512 / 121 framesへ進む。keyframe streamは通常decode確立後に追加する
+2. **decoder統合時にMetal kernelを再計測する。** `aa18e5a`のhead-dim-64 SIMD版を使い、
+   stageごとのshape、kernel time、peak memoryを記録する。必要なら複数query / SIMD groupと
+   threadgroup K/V tileを追加する
 3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
@@ -627,3 +628,15 @@ softmax/value accumulationを行う単純版。小型eager MLX referenceも追�
 ない。次はPR #312のSIMD group分担とthreadgroup K/V tileを移植する。通常NA3Dはほぼ対応するが、
 LTX keyframe decodeはqueryごとに近いkeyframe planesを選ぶため、PRのglobal additional KVを
 そのまま使えず、通常decode確立後に専用拡張する。commit `dc33a96`をPR #52 branchへpush済み。
+
+続いてLTXのhead dim 64に特化したSIMD版を追加した。1 query / headを32-lane SIMD groupへ割り当て、
+各laneが2 channelsを担当し、`simd_sum`でQK dot productを求める。近傍ごとのthreadgroup barrierは
+不要で、online softmax stateは各laneで同じ値を更新する。ほかのhead dimは正解版へfallbackする。
+
+- BF16 / head dim 64を3x3x3 boundaryでeager referenceと比較し一致
+- 11x11x11 / 1 head / dim 64: median 0.83 ms（単純版約4.0 ms、約4.9倍）
+- 16x16x16 / 16 heads / dim 64: median 12.75 ms（単純版20.8 ms、約1.6倍）
+- DiffVAE / DFR / VAE selected tests 13 passed
+
+commit `aa18e5a`をPR #52 branchへpush済み。次はこのkernelを使うkeyframeなし5-stage decoderの
+class / checkpoint loaderを移植し、実際のstage shape上で追加最適化の要否を判断する。

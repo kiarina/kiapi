@@ -142,9 +142,13 @@ geometry, BF16 inputs, float32 accumulation, and a two-pass online softmax
 without materializing attention scores. It matches the eager reference for
 small boundary cases and runs an 11x11x11 / head-dim-64 smoke test. A
 16x16x16 / 16-head / head-dim-64 warm run took 20.8 ms with an 80 MiB peak.
-The prototype assigns one query/head to each thread and is a correctness
-baseline; it still needs the SIMD-group and threadgroup K/V tiling ideas from
-the open NATTEN Metal PR #312 before integrating the five-stage decoder.
+The correctness baseline assigns one query/head to each thread. A second kernel
+now specializes the model's head dimension of 64: one 32-lane SIMD group owns a
+query/head, each lane accumulates two channels, and `simd_sum` computes the QK
+dot product without a threadgroup barrier. This reduced the warm 11x11x11 case
+from about 4.0 ms to 0.83 ms and the 16x16x16 / 16-head case from 20.8 ms to
+12.75 ms. Decoder integration is the next step and will determine whether K/V
+threadgroup tiling is still required at production stage shapes.
 
 ### Remaining adoption work
 
