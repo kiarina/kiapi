@@ -38,6 +38,8 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 | `1e071c7` | READMEに記載済みの`mlx_video.generate` CLI aliasをproject scriptsへ追加 |
 | `dc33a96` | DiffVAE向け3D neighborhood attention Metal kernel prototypeと数値tests |
 | `aa18e5a` | LTX head dim 64向けSIMD-group Metal kernel最適化 |
+| `ef28627` | DiffVAEのabsolute RoPE、NA block、SwiGLU、linear pixel shuffle layers |
+| `e634684` | keyframeなし5-stage DiffVAE decoder、strict loader、CLI統合 |
 
 各機能は同じ PR branch へ独立 commit で追加する。maintainer から要求された場合だけ、commit 境界を
 使って後から PR を分ける。新しい PR を先に増やさない。
@@ -66,6 +68,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
   - `ltx25-dfr-audio-auto.mp4`
   - `ltx25-dfr-audio-auto.wav`
   - `ltx2-dfr-regression-256-25.mp4`
+  - `ltx25-diffvae-256-25.mp4`
+  - `ltx25-diffvae-768x512-121.mp4`
+  - `ltx25-diffvae-768x512-121-comparison.png`
 
 ### 検証状態と既知の問題
 
@@ -85,6 +90,9 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 - 旧LTX-2 distilledは変更後も256x256 / 25 framesを23.6秒・36.73 GBで生成した
 - fresh Python 3.12 installでDFR importとCLI optionsを確認。READMEで使っていた
   `mlx_video.generate`がproject scriptに無かったためaliasを追加し、実起動を確認した
+- keyframeなしDiffVAEは396-tensor checkpointをstrict loadし、256x256 / 25 framesと
+  768x512 / 121 framesをend-to-end decode。代表設定は全体149.2秒・51.33 GB、Conv VAEは
+  103.4秒・37.81 GB。出力は121 frames / finite / 時間変化あり
 - upstream 全 pytest は今回差分と無関係な既存問題で green にならない:
   `tests/test_generate_dev.py` が削除済み `mlx_video.generate_dev` を import、
   `test_wan_tiling.py` が古い `causal_temporal` argument を使用、torch optional test は
@@ -94,11 +102,10 @@ kiapi の `ltx2` family を LTX-2.5 に更新し、Apple Silicon 上で新しい
 
 ### 次の作業順
 
-1. **DiffVAE decoderを段階移植する。** keyframeなしで5-stage / 396 tensorsをstrict loadし、
-   小型decodeから768x512 / 121 framesへ進む。keyframe streamは通常decode確立後に追加する
-2. **decoder統合時にMetal kernelを再計測する。** `aa18e5a`のhead-dim-64 SIMD版を使い、
-   stageごとのshape、kernel time、peak memoryを記録する。必要なら複数query / SIMD groupと
-   threadgroup K/V tileを追加する
+1. **DiffVAE tilingを実装する。** 現在は768x512 / 121 framesをtilingなしで処理できるが
+   51.33 GBを使う。deterministic stageとstage-5 canvasをtile分割し、高解像度のpeakを抑える
+2. **DFR keyframe decodeを追加する。** generated slot latentsとpixel positionsをdecoderへ渡し、
+   video queryと近傍keyframe planes、keyframe queryと近傍video framesのjoint softmaxをMetal化する
 3. upstream実装が固まってからkiapi統合へ進む。`mlx-video` pin、split resources、API、memory
    headroom、progress ETA、disk sizeを更新し、full verifyと旧LTX-2回帰を通す
 
@@ -640,3 +647,26 @@ LTX keyframe decodeはqueryごとに近いkeyframe planesを選ぶため、PRの
 
 commit `aa18e5a`をPR #52 branchへpush済み。次はこのkernelを使うkeyframeなし5-stage decoderの
 class / checkpoint loaderを移植し、実際のstage shape上で追加最適化の要否を判断する。
+
+### 2026-09-15: keyframeなしDiffVAE decoder
+
+公式checkpoint metadataどおり、stage channels `2048/1024/512/512/256`、depths `4/6/4/2/8`、
+kernels `3x7x7 / 3x7x7 / 3x5x5 / 3x5x5 / 11x11x11`、4段のcausal linear pixel shuffle、
+stage-5 one-step x0 diffusionを実装した。absolute 3-axis RoPEはhead dim 64を`16/24/24`に分割。
+Q/K/Vはpeakを抑えるためcheckpointのfused qkvを3つのLinearへsplit loadする。
+
+396-tensor safetensorsからencoder keysを除外し、decoder fused qkvをsplit、per-channel statisticsの
+hyphen keysをMLX namesへ変換してstrict loadした。parameter leavesは408。小型zero latent
+`1x128x1x7x7`は`1x3x1x224x224`へ0.60秒・2.31 GBでdecodeし、finite。
+
+CLIに`--video-decoder conv|diffusion`を追加し、remote使用時だけdiffusion VAE checkpointを
+追加downloadする。Conv VAEを既定のまま維持。実生成latentで次を確認した。
+
+- 256x256 / 25 frames: end-to-end成功、正しいframe count、Conv VAEと同じ内容・動きを復元
+- 768x512 / 121 frames: tilingなしでend-to-end成功、149.2秒・51.33 GB
+- 同条件Conv VAE: 103.4秒・37.81 GB。DiffVAE追加costは約45.8秒・13.52 GB
+- MP4は121 frames / 5.042秒、finite、pixel std 51.91、mean frame delta 20.53
+- DiffVAE / DFR / VAE / config / model-path selected tests 24 passed
+
+commit `ef28627`（共通layers）と`e634684`（decoder / loader / CLI / docs）をPR #52 branchへpush。
+現時点はkeyframeなし・tilingなし。次はtiling、その後DFR generated keyframesのjoint decode。

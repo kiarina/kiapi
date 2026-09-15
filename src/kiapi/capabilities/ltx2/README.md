@@ -147,8 +147,16 @@ now specializes the model's head dimension of 64: one 32-lane SIMD group owns a
 query/head, each lane accumulates two channels, and `simd_sum` computes the QK
 dot product without a threadgroup barrier. This reduced the warm 11x11x11 case
 from about 4.0 ms to 0.83 ms and the 16x16x16 / 16-head case from 20.8 ms to
-12.75 ms. Decoder integration is the next step and will determine whether K/V
-threadgroup tiling is still required at production stage shapes.
+12.75 ms.
+
+The keyframe-free five-stage decoder is now implemented and strict-loads the
+396-tensor checkpoint after splitting its fused QKV projections. It completed
+end-to-end generation at 256x256 / 25 frames and 768x512 / 121 frames. The
+representative run took 149.2 seconds with a 51.33 GB peak, compared with 103.4
+seconds and 37.81 GB for the convolutional decoder. The output contained all
+121 finite, non-static frames. The convolutional decoder remains the default;
+the experimental path is selected with `--video-decoder diffusion`. Spatial
+and temporal decode tiling and DFR keyframe-aware joint attention remain.
 
 ### Remaining adoption work
 
