@@ -267,3 +267,35 @@ LTX-2 / 2.3 inference implementation を既に MIT repository で配布してい
 
 次の一手: maintainer review を待ち、質問・変更要求・CI 結果が来たら対応する。
 返信テキストは今回と同じく、送信前に日本語訳でユーザー確認を取る。
+
+### 2026-09-15: Audio / A2V stacked PR 候補を実装
+
+PR #52 の先端から local branch `ltx-2.5-audio` を作り、local commit `6fb1208`
+(`feat(ltx2): add LTX-2.5 audio support`) で次を実装した。
+
+- LTX-2.5 split audio checkpoint を必要 component allowlist へ追加
+- metadata から audio VAE encoder / decoder と BigVGAN + BWE vocoder の config を復元
+- PyTorch Conv1d / Conv2d / ConvTranspose1d weights を MLX layout へ変換
+- T2V + generated audio、A2V、A2V + I2V を split checkpoint で有効化
+- 既存 mux の `-shortest` が音声の端数差で 25-frame 動画を 21 frames へ
+  切り詰める不具合を発見。`apad` で音声を動画長まで補完し、全 frame を保持
+
+検証:
+
+- split audio encoder / decoder / vocoder の strict load と個別 forward 成功。vocoder は
+  48 kHz stereo で finite waveform を生成
+- 256x256 / 25 frames で generated audio、A2V、A2V + I2V の 3 経路が完走
+- 768x512 / 121 frames: generated audio は 118.1 秒・37.81 GB、A2V は
+  106.4 秒・37.81 GB
+- generated audio は H.264 121 frames + AAC 48 kHz stereo 5.035 秒、A2V は
+  H.264 121 frames + AAC 16 kHz stereo 4.992 秒
+- 音声の NaN / Inf は 0。generated audio は peak -0.58 dB / RMS -10.69 dB、
+  A2V は peak -6.14 dB / RMS -20.77 dB
+- 関連 tests 49 passed、fresh Python 3.12 install / import 成功
+
+成果物は引き続きサーバー機の
+`~/src/github.com/kiarina/kiapi/.verify/ltx25-mlx-video/` に保存。local branch は clean で、
+fork へはまだ push していない。
+
+次は、本家 `main` 向けに `Depends on #52` と明記した stacked PR と、issue #51 への
+経緯追記を作成する。本文は送信前に日本語訳でユーザー確認を取る。
