@@ -391,3 +391,16 @@ PyTorch 実装も Gemma 4 Unified encode root では別の generative instruct c
 
 PR #52 本文は Duration / Prompt enhancement の 2 commits をまとめて追記する。
 更新文と issue #51 の進捗追記は送信前に日本語訳でユーザー確認を取る。
+
+ユーザー確認で、issue #51 は現時点でユーザーしか返信していないため、
+この進捗は追記せず PR 本文だけを更新すると決定。日本語訳で追記内容を
+承認後、PR #52 本文に次を反映した。
+
+- commit guide を `c8000e1` / `7d8b2f0` まで拡張
+- 対応範囲、実装説明、検証結果へ Duration / Prompt enhancement を追加
+- 未対応から Duration / Prompt enhancement を削除
+- 別 Gemma 4 E2B-it checkpoint を使う理由と既定 repo を追記
+- test 表記を 55 passed へ更新
+- PR #52 は 6 commits / 24 files、open / mergeable、status check なし
+
+issue #51 は更新していない。
