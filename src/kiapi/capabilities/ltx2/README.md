@@ -155,8 +155,8 @@ end-to-end generation at 256x256 / 25 frames and 768x512 / 121 frames. The
 representative run took 149.2 seconds with a 51.33 GB peak, compared with 103.4
 seconds and 37.81 GB for the convolutional decoder. The output contained all
 121 finite, non-static frames. The convolutional decoder remains the default;
-the experimental path is selected with `--video-decoder diffusion`. Spatial
-and DFR keyframe-aware joint attention remain.
+the experimental path is selected with `--video-decoder diffusion`. Temporal
+tiling and DFR keyframe-aware joint attention remain.
 
 Stage 4/5 spatial tiling is also implemented with a 24-cell stage-4-input
 receptive-field halo. A 2x2 tiled 768x512 / 121-frame run took 216.9 seconds and
