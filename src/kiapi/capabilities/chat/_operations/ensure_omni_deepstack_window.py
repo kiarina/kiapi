@@ -27,6 +27,13 @@ def ensure_omni_deepstack_window() -> None:
     if getattr(Qwen3VLMoEModel, _PATCH_FLAG, False):
         return
 
+    from mlx_vlm.models.qwen3_omni_moe import language
+
+    # Newer upstream represents deepstack as [batch, tokens, layers, hidden]
+    # and windows it in LanguageModel. The old compact-row patch must not run.
+    if hasattr(language, "expand_deepstack_visual_embeds"):
+        return
+
     original = Qwen3VLMoEModel.__call__
 
     def __call__(  # type: ignore

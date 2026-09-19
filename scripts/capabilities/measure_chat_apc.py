@@ -3,6 +3,7 @@
 import argparse
 import base64
 import gc
+import inspect
 import json
 import time
 from pathlib import Path
@@ -24,6 +25,12 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     import mlx.core as mx
+    from mlx_vlm import stream_generate
+
+    image_prefix_enabled = (
+        args.model == "qwen3.8-27b"
+        and "apc_image_prefix" in inspect.signature(stream_generate).parameters
+    )
 
     handler = qwen3_omni if args.model == "qwen3-omni" else qwen3_5
     repos = {
@@ -170,8 +177,8 @@ def main() -> None:
         partial_cold = request(label, "partial_cold", continuation)
         assert cached(partial_cold) == 0
         if parts:
-            # A second media occurrence lies in the suffix: recompute the full
-            # request rather than restoring a prefix that would skip new media.
+            # The pinned Qwen3.8 path reuses text before new suffix images.
+            # Other engines/models retain whole-request media invalidation.
             base = messages(
                 [], "Remember the word ORCHID. " + "Background context. " * 100
             )
@@ -182,7 +189,11 @@ def main() -> None:
                 *messages(parts, question),
             ]
             new_media = request(label, "new_media_suffix", extended)
-            assert cached(new_media) == 0
+            assert (
+                (cached(new_media) > 0)
+                if image_prefix_enabled
+                else (cached(new_media) == 0)
+            )
         if label in {"video", "image_video"}:
             manager.clear()
             request(label, "option_baseline", msgs)

@@ -86,3 +86,77 @@ def test_release_closes_apc_manager(handler: Any) -> None:
     handler.release(SimpleNamespace(apc_manager=manager))
 
     assert manager.closed and manager.cleared
+
+
+@pytest.mark.parametrize(
+    "model,engine_support,expected",
+    [
+        ("qwen3.8-27b", True, True),
+        ("qwen3.6-27b", True, False),
+        ("qwen3.8-27b", False, False),
+    ],
+)
+def test_image_prefix_integration_preserves_legacy_fallback(
+    monkeypatch: Any, tmp_path: Any, model: str, engine_support: bool, expected: bool
+) -> None:
+    from kiapi.capabilities.chat._views.chat_params import ChatParams
+
+    image = tmp_path / "image"
+    image.write_bytes(b"test image")
+    work = tmp_path / "work"
+    work.mkdir()
+    calls = []
+
+    def legacy(*args: Any, **kwargs: Any):  # type: ignore[no-untyped-def]
+        calls.append(kwargs)
+        yield SimpleNamespace(text="ok")
+
+    def supported(*args: Any, apc_image_prefix: bool = False, **kwargs: Any):  # type: ignore[no-untyped-def]
+        kwargs["apc_image_prefix"] = apc_image_prefix
+        yield from legacy(*args, **kwargs)
+
+    module = ModuleType("mlx_vlm")
+    module.stream_generate = supported if engine_support else legacy  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "mlx_vlm", module)
+    monkeypatch.setattr(
+        qwen3_5, "parse_messages", lambda *args, **kwargs: ([], [str(image)], [], [])
+    )
+    monkeypatch.setattr(qwen3_5, "create_work_dir", lambda *args: work)
+    monkeypatch.setattr(qwen3_5, "_build_prompt", lambda *args: ("prompt", ""))
+    monkeypatch.setattr(qwen3_5, "apply_seed", lambda *args: None)
+    monkeypatch.setattr(qwen3_5, "limit_to_context", lambda chunks, _: chunks)
+    monkeypatch.setattr(
+        qwen3_5,
+        "collect_generation",
+        lambda processor, chunks: ("ok", list(chunks)[-1]),
+    )
+    monkeypatch.setattr(qwen3_5, "format_response", lambda **kwargs: kwargs)
+    monkeypatch.setattr(qwen3_5, "log_apc_result", lambda *args: None)
+    payload = SimpleNamespace(
+        model=object(),
+        processor=object(),
+        apc_manager=SimpleNamespace(clear=lambda: None),
+        apc_tenant="tenant",
+        context_window=32768,
+    )
+    params = ChatParams(
+        model=model,
+        messages=[],
+        tools=None,
+        tool_choice=None,
+        parallel_tool_calls=True,
+        max_tokens=8,
+        temperature=0,
+        top_p=1,
+        seed=None,
+        fps=1,
+        use_audio_in_video=False,
+        chat_template_kwargs=None,
+        stream=False,
+    )
+    qwen3_5.run(payload, params)
+    assert calls[0].get("apc_image_prefix", False) is expected
+    if expected:
+        assert calls[0]["apc_tenant"] == "tenant"
+    else:
+        assert calls[0]["apc_tenant"].startswith("tenant:media:")

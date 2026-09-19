@@ -28,3 +28,10 @@ mlx-vlm 0.7.1 の Qwen3-Omni は、chunked prefill で deepstack の入力を ch
 - kiapi の patch C は 2026-09-15 に #2257 と同じ処理へ置き換え済み（`ensure_omni_image_video_join.py`）
 - patch A（音声をパスで渡すと落ちる）は 0.7.1 では再現しない。ただし kiapi は B の回避のため自前で
   mono 化・resample した配列を渡しているので、A と B は #2258 のリリース後にまとめて外せる
+
+## 2026-09-19 更新
+
+Qwen3.8画像prefix対応のforkをpinする作業で、上流base `e79b0e04`にはOmniのdeepstack修正
+（`22a84f63`）とimage+video修正（`bd6d8ca0` / #2287）が含まれることを確認した。
+uv-managed checkoutではCがno-op、Hが新しいdense layoutを検出してskipする。
+公式PyPI 0.7.1との互換性を保つためpatch自体は残す。公式releaseへの移行時に削除を判断する。

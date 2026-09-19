@@ -100,6 +100,11 @@ allow-direct-references = true
 # The development lockfile resolves on Apple Silicon (kiapi pulls MLX wheels).
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 
+[tool.uv.sources]
+# Opt-in Qwen3.8 appended-image APC, pending its upstream release.
+# Published wheels retain the official 0.7.1 dependency and conservative fallback.
+mlx-vlm = { git = "https://github.com/kiarina/mlx-vlm.git", rev = "3c5bd17c5cff3ad45d80273b366e86ad7df4ed96" }
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",

@@ -370,7 +370,7 @@ requires-dist = [
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
-    { name = "mlx-vlm", specifier = "==0.7.1" },
+    { name = "mlx-vlm", git = "https://github.com/kiarina/mlx-vlm.git?rev=3c5bd17c5cff3ad45d80273b366e86ad7df4ed96" },
     { name = "numpy" },
     { name = "pillow" },
     { name = "psutil" },
@@ -651,7 +651,7 @@ wheels = [
 [[package]]
 name = "mlx-vlm"
 version = "0.7.1"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/kiarina/mlx-vlm.git?rev=3c5bd17c5cff3ad45d80273b366e86ad7df4ed96#3c5bd17c5cff3ad45d80273b366e86ad7df4ed96" }
 dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "jinja2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -670,10 +670,6 @@ dependencies = [
     { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "uvicorn", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "websockets", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/57/62/7fb872fd4c4cb2b8069afde85f08590098d0689efc588eab01bedb2d741b/mlx_vlm-0.7.1.tar.gz", hash = "sha256:b8abd3cc7e3513d9915bf9f6903833c697dc4c3084c2acdc880029c33e331a03", size = 2326562, upload-time = "2026-09-14T18:09:51.229Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/fc/7fbd894db247582bfa16df9b0b7514a47e9c3971836fc8d3fbd9f6efdbe8/mlx_vlm-0.7.1-py3-none-any.whl", hash = "sha256:d9696bc3a2e961f43b5948a101dc0c966b5989d382e6910c37e2f3d555bc3408", size = 2924465, upload-time = "2026-09-14T18:09:49.737Z" },
 ]
 
 [[package]]

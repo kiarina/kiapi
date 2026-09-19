@@ -1,4 +1,6 @@
 import argparse
+import base64
+import io
 import json
 import os
 import sys
@@ -332,6 +334,97 @@ def verify_nonparallel_tool_call_units(model: str) -> None:
     print(f"nonparallel_tool_call_units: {model} passed")
 
 
+def verify_image_prefix(model: str) -> None:
+    if model != "qwen3.8-27b":
+        return
+    from PIL import Image
+
+    def image_part(color: str) -> dict[str, Any]:
+        buffer = io.BytesIO()
+        size = {"red": (128, 128), "green": (256, 128), "blue": (128, 256)}[color]
+        Image.new("RGB", size, color).save(buffer, format="PNG")
+        return {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,"
+                + base64.b64encode(buffer.getvalue()).decode()
+            },
+        }
+
+    def request(messages: list[dict[str, Any]]) -> dict[str, Any]:
+        response = httpx.post(
+            URL,
+            json={
+                "model": model,
+                "messages": messages,
+                "temperature": 0,
+                "max_completion_tokens": 20,
+            },
+            timeout=180,
+        )
+        response.raise_for_status()
+        return response.json()  # type: ignore[no-any-return]
+
+    past: list[dict[str, Any]] = [
+        {
+            "role": "system",
+            "content": "Image-prefix regression context. "
+            + "Background facts for this conversation. " * 400,
+        },
+        {
+            "role": "user",
+            "content": [
+                image_part("red"),
+                {
+                    "type": "text",
+                    "text": "What color is this image? Reply with one color word.",
+                },
+            ],
+        },
+    ]
+    first = request(past)
+    extended: list[dict[str, Any]] = [
+        *past,
+        {"role": "assistant", "content": "Red."},
+        {
+            "role": "user",
+            "content": [
+                image_part("green"),
+                {
+                    "type": "text",
+                    "text": "List the colors of both images in order, using only color words.",
+                },
+            ],
+        },
+    ]
+    second = request(extended)
+    cached = second["usage"]["prompt_tokens_details"]["cached_tokens"]
+    text = second["choices"][0]["message"]["content"].lower()
+    assert cached > 0 and text.index("red") < text.index("green"), second
+    extended[1] = {
+        "role": "user",
+        "content": [
+            image_part("blue"),
+            {
+                "type": "text",
+                "text": "What color is this image? Reply with one color word.",
+            },
+        ],
+    }
+    # Do not retain a textual color answer that contradicts the replaced image.
+    extended[2] = {"role": "assistant", "content": "I have inspected it."}
+    changed = request(extended)
+    changed_cached = changed["usage"]["prompt_tokens_details"]["cached_tokens"]
+    text = changed["choices"][0]["message"]["content"].lower()
+    assert changed_cached < cached < first["usage"]["prompt_tokens"]
+    assert (
+        "blue" in text and "green" in text and text.index("blue") < text.index("green")
+    ), changed
+    print(
+        f"image_prefix: {model} passed (append cached={cached}, changed old image cached={changed_cached})"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Verify chat streaming behavior when tools are present."
@@ -348,6 +441,7 @@ def main() -> None:
             "multi_tool_call_units",
             "usage_chunk",
             "nonparallel_tool_call_units",
+            "image_prefix",
         ),
     )
     args = parser.parse_args()
@@ -362,6 +456,7 @@ def main() -> None:
         "multi_tool_call_units": verify_multi_tool_call_units,
         "usage_chunk": verify_usage_chunk,
         "nonparallel_tool_call_units": verify_nonparallel_tool_call_units,
+        "image_prefix": verify_image_prefix,
     }
 
     selected_models = DEFAULT_MODELS if len(sys.argv) == 1 else (args.model,)

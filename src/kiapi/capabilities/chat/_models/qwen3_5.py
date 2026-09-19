@@ -21,6 +21,7 @@ Notes vs. qwen3_omni:
     "mlx-vlm dependency notes" section of this capability's README.
 """
 
+import inspect
 import shutil
 import time
 from collections.abc import Callable
@@ -104,6 +105,16 @@ def run(  # type: ignore
 
         apply_seed(params.seed)
         apc_manager = payload.apc_manager
+        image_prefix_enabled = (
+            params.model == "qwen3.8-27b"
+            and "apc_image_prefix" in inspect.signature(stream_generate).parameters
+        )
+        prefix_kwargs: dict[str, Any] = (
+            {"apc_image_prefix": True} if image_prefix_enabled else {}
+        )
+        apc_tenant = payload.apc_tenant
+        if apc_manager is not None and not image_prefix_enabled:
+            apc_tenant = media_apc_tenant(apc_tenant, image_paths, [], [])
         chunks = cancel_on_request(
             limit_to_context(
                 stream_generate(
@@ -112,9 +123,8 @@ def run(  # type: ignore
                     prompt,
                     image=image_paths or None,
                     apc_manager=apc_manager,
-                    apc_tenant=media_apc_tenant(payload.apc_tenant, image_paths, [], [])
-                    if apc_manager is not None
-                    else payload.apc_tenant,
+                    apc_tenant=apc_tenant,
+                    **prefix_kwargs,
                     **_sampling_kwargs(params),
                 ),
                 payload.context_window,

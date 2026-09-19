@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: Qwen3.8 reuses unchanged image history when new images are appended,
+  using a pinned mlx-vlm fork in uv-managed checkouts. Official-engine installs
+  retain the conservative whole-request fallback.
+
 - chat: client disconnects now cancel queued work or stop running generation at
   the next token boundary. Cancellation uses the existing `canceled` job state
   and safely clears APC state when a generator closes early.

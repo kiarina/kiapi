@@ -116,8 +116,8 @@ def _tiny_thinker():  # type: ignore
 
 def test_image_and_video_deepstack_rows_land_at_their_own_positions():  # type: ignore
     with mx.stream(mx.cpu):
-        assert ensure_omni_image_video_join() is True
-        assert ensure_omni_image_video_join() is True
+        ensure_omni_image_video_join()
+        ensure_omni_image_video_join()
 
         thinker = _tiny_thinker()
         mx.random.seed(11)
@@ -146,10 +146,21 @@ def test_image_and_video_deepstack_rows_land_at_their_own_positions():  # type: 
         _, image_only = thinker.vision_tower(pixel_values, grid)
         _, video_only = thinker.vision_tower(pixel_values_videos, grid)
 
-        assert len(joint) == 2
-        for rows, image_rows, video_rows in zip(
-            joint, image_only, video_only, strict=True
-        ):
-            assert tuple(rows.shape) == (8, 16)
-            assert mx.allclose(rows[:4], image_rows, atol=1e-6).item()
-            assert mx.allclose(rows[4:], video_rows, atol=1e-6).item()
+        if getattr(joint, "ndim", None) == 4:
+            # The pinned upstream fork expands deepstack residuals to all tokens.
+            assert tuple(joint.shape) == (1, input_ids.shape[1], 2, 16)
+            for layer in range(2):
+                assert mx.allclose(
+                    joint[0, 3:7, layer], image_only[layer], atol=1e-6
+                ).item()
+                assert mx.allclose(
+                    joint[0, 9:13, layer], video_only[layer], atol=1e-6
+                ).item()
+        else:
+            assert len(joint) == 2
+            for rows, image_rows, video_rows in zip(
+                joint, image_only, video_only, strict=True
+            ):
+                assert tuple(rows.shape) == (8, 16)
+                assert mx.allclose(rows[:4], image_rows, atol=1e-6).item()
+                assert mx.allclose(rows[4:], video_rows, atol=1e-6).item()
