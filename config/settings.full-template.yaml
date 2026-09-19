@@ -137,6 +137,26 @@ kiapi.capabilities.chat:
   # Use audio in video: bool
   #   When true, audio tracks in video files are demuxed and passed to the model as audio input.
   # use_audio_in_video: true
+  #--------------------------------------------------
+  # Enable automatic prefix caching: bool
+  #   Reuse matching text-only prompt prefixes between Qwen3.6 and Qwen3.8 requests. Qwen3-Omni and multimodal requests are not cached.
+  # apc_enabled: true
+  #--------------------------------------------------
+  # Automatic prefix cache blocks: int
+  #   Maximum number of in-memory APC blocks per loaded chat model.
+  # apc_num_blocks: 2048
+  #--------------------------------------------------
+  # Automatic prefix cache block size: int
+  #   Number of prompt tokens stored in each APC block.
+  # apc_block_size: 16
+  #--------------------------------------------------
+  # Automatic prefix cache memory limit: float
+  #   Maximum estimated APC resident memory per loaded chat model in GiB.
+  # apc_memory_max_gb: 4.0
+  #--------------------------------------------------
+  # Automatic prefix cache tenant: str
+  #   Server-controlled isolation salt for prompt-prefix cache entries. Deployments serving separate trust domains must use separate values.
+  # apc_tenant: default
 
 #--------------------------------------------------------------------------------
 # Settings for Embedding input length limits.

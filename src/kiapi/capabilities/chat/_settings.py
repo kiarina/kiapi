@@ -65,5 +65,45 @@ class ChatSettings(BaseSettings):
         ),
     )
 
+    apc_enabled: bool = Field(
+        default=True,
+        title="Enable automatic prefix caching",
+        description=(
+            "Reuse matching text-only prompt prefixes between Qwen3.6 and "
+            "Qwen3.8 requests. Qwen3-Omni and multimodal requests are not cached."
+        ),
+    )
+
+    apc_num_blocks: int = Field(
+        default=2048,
+        ge=1,
+        title="Automatic prefix cache blocks",
+        description="Maximum number of in-memory APC blocks per loaded chat model.",
+    )
+
+    apc_block_size: int = Field(
+        default=16,
+        ge=1,
+        title="Automatic prefix cache block size",
+        description="Number of prompt tokens stored in each APC block.",
+    )
+
+    apc_memory_max_gb: float = Field(
+        default=4.0,
+        ge=0,
+        title="Automatic prefix cache memory limit",
+        description="Maximum estimated APC resident memory per loaded chat model in GiB.",
+    )
+
+    apc_tenant: str = Field(
+        default="default",
+        min_length=1,
+        title="Automatic prefix cache tenant",
+        description=(
+            "Server-controlled isolation salt for prompt-prefix cache entries. "
+            "Deployments serving separate trust domains must use separate values."
+        ),
+    )
+
 
 settings_manager = SettingsManager(ChatSettings)

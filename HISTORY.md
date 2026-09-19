@@ -3,6 +3,28 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-19 — chat の長い text prompt に Automatic Prefix Caching を導入した
+
+- mlx-vlm 0.7.1 の `APCManager` を Qwen3.6 / Qwen3.8 のmodel payloadごとに保持し、statelessな
+  OpenAI-compatible requestでも、system message・tool schema・conversation historyの最長一致prefixを
+  request横断で再利用するようにした。response自体はcacheしない。Qwen3-Omniと画像入力は安全性を
+  個別検証するまで明示的に対象外
+- memory-onlyで既定有効。1 modelあたり2048 blocks × 16 tokens、推定4 GiBを上限とし、diskへpromptを
+  永続化しない。tenantはclient headerではなくserver設定の固定salt。model eviction / TTL / server shutdownで
+  managerをcloseし、通常のMLX cacheとともに解放する。無効化すると従来のcold generationへ戻る
+- Mac Studio M4 Max 128GB、mlx-vlm 0.7.1、Qwen3.8-27B-4bit、生成1 tokenで実測。25,252 prompt tokensの
+  実装前content TTFTは108.102秒 / 108.808秒（中央値108.455秒）。実装後coldは109.295秒、同一promptの
+  warm 3回は0.141 / 0.140 / 0.141秒（中央値0.141秒、約769倍、99.87%短縮）、25,251 tokensを再利用した
+- 同じ長いhistoryに異なるuser suffixを追加するpartial hitでは、約25,255 tokens中24,576 tokensを再利用し、
+  TTFTは3.679 / 3.504 / 3.509秒（中央値3.509秒、実装前比約30.9倍、96.76%短縮）。cache residentは
+  約3.57 GB、観測peakは同一promptで23.37 GB、partial hitで24.93 GBだった
+- `cached_tokens`、`prompt_tps`、peak memory、resident bytes、hit/miss集計はserver logへ出す。
+  `usage.prompt_tokens`はcache hit後も論理prompt全体（25,252）のまま維持した
+- `make`、chat unit test 29件、サーバー機のchat full verify（全case + stream専用検証）が通過。
+  stream/non-stream、tool choice、parallel tool calls、画像、Omniのaudio/videoを含む既存経路を確認した
+- Qwen3-Omniとmultimodal APC、disk tierは効果と安全性を独立して判断する。Omni / media hash / patch C・Hとの
+  組み合わせは未検証なので、別taskへ分離した
+
 ## 2026-09-16 — chat の出力上限をサーバーの cap から context window に替えた
 
 - 意思決定（ユーザーと合意）: kiapi は個人利用が前提なので、どこまで出力させるかは呼び出し側が決める。

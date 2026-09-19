@@ -14,6 +14,31 @@ It supports the following functions.
 - tool call
 - tool choice (auto, any, specific)
 - parallel tool calls
+- automatic prefix caching for text-only Qwen3.6 / Qwen3.8 requests
+
+## Automatic Prefix Caching
+
+Qwen3.6 and Qwen3.8 reuse the longest matching token prefix from earlier
+text-only requests. This reduces prefill latency when clients resend a stable
+system message, tool schema, or conversation history. Responses are never
+cached, and `usage.prompt_tokens` continues to report the complete logical
+prompt. Qwen3-Omni and requests containing images are excluded.
+
+The cache is scoped to each loaded model, remains in memory only, and is
+released with the model. Hits and memory use are written to the server log as
+`cached_tokens`, `prompt_tps`, `resident_bytes`, and aggregate stats.
+
+| Setting | Environment variable | Default | Description |
+|---|---|---:|---|
+| `apc_enabled` | `KIAPI_CHAT_APC_ENABLED` | `true` | Enable text-only APC. |
+| `apc_num_blocks` | `KIAPI_CHAT_APC_NUM_BLOCKS` | `2048` | Maximum blocks per loaded model. |
+| `apc_block_size` | `KIAPI_CHAT_APC_BLOCK_SIZE` | `16` | Tokens per block. |
+| `apc_memory_max_gb` | `KIAPI_CHAT_APC_MEMORY_MAX_GB` | `4.0` | Estimated resident-memory limit per model. |
+| `apc_tenant` | `KIAPI_CHAT_APC_TENANT` | `default` | Server-controlled isolation salt. |
+
+Changing the tenant makes existing entries unreachable. Disable APC to fall
+back to normal generation. Disk persistence is intentionally not enabled, so a
+server restart starts with an empty prefix cache.
 
 ## API
 

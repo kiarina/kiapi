@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: Qwen3.6 and Qwen3.8 text-only requests now use bounded, model-scoped
+  automatic prefix caching to reuse stable system messages, tool schemas, and
+  conversation history across requests.
 - chat: `GET /v1/models` returns each model's `context_window`, read from the
   model's `config.json` (`null` until the model is set up).
 
