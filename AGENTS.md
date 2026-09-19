@@ -181,3 +181,5 @@ mise run verify --kiapi --family embedding --fast
 - [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
 
 - [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
+
+- [Qwen3.8 の cold prefill chunk サイズを測定する](tasks/chat-prefill-chunk-tuning.md)
