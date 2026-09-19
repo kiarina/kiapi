@@ -30,3 +30,32 @@ def test_tool_calls_take_precedence_over_length() -> None:
         _finish_reason(SimpleNamespace(finish_reason="length"), tool_calls)
         == "tool_calls"
     )
+
+
+def test_reports_cached_prompt_tokens() -> None:
+    response = format_response(
+        model_name="m",
+        full_text="text",
+        elapsed=0.0,
+        result=SimpleNamespace(
+            prompt_tokens=25000,
+            generation_tokens=1,
+            cached_tokens=24576,
+        ),
+        tool_calls=[],
+    )
+
+    assert response["usage"]["prompt_tokens"] == 25000
+    assert response["usage"]["prompt_tokens_details"] == {"cached_tokens": 24576}
+
+
+def test_reports_zero_cached_tokens_when_engine_omits_metric() -> None:
+    response = format_response(
+        model_name="m",
+        full_text="text",
+        elapsed=0.0,
+        result=SimpleNamespace(prompt_tokens=12, generation_tokens=1),
+        tool_calls=[],
+    )
+
+    assert response["usage"]["prompt_tokens_details"]["cached_tokens"] == 0

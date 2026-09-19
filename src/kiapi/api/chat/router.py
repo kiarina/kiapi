@@ -102,8 +102,11 @@ async def chat_completions(
 
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue[dict | None] = asyncio.Queue()
+        last_chunk: dict[str, Any] | None = None
 
         def emit(chunk: dict) -> None:
+            nonlocal last_chunk
+            last_chunk = chunk
             loop.call_soon_threadsafe(queue.put_nowait, chunk)
 
         def finish_stream() -> None:
@@ -129,9 +132,12 @@ async def chat_completions(
                     yield _sse(item)
 
                 try:
-                    await asyncio.shield(fut)
+                    result = await asyncio.shield(fut)
                 except Exception as exc:
                     yield _sse(_stream_error(exc))
+                else:
+                    if req.stream_options and req.stream_options.include_usage:
+                        yield _sse(_stream_usage_chunk(result, last_chunk))
                 yield _sse("[DONE]")
             except asyncio.CancelledError:
                 # The running worker job is not preemptible; let it finish and
@@ -251,3 +257,15 @@ def _sse(payload) -> str:  # type: ignore
 
 def _stream_error(exc: BaseException) -> dict:
     return {"error": {"message": str(exc), "type": exc.__class__.__name__}}
+
+
+def _stream_usage_chunk(result: dict, last_chunk: dict[str, Any] | None) -> dict:
+    last_chunk = last_chunk or {}
+    return {
+        "id": last_chunk.get("id", result.get("id")),
+        "object": "chat.completion.chunk",
+        "created": last_chunk.get("created", result.get("created")),
+        "model": last_chunk.get("model", result.get("model")),
+        "choices": [],
+        "usage": result["usage"],
+    }

@@ -1,4 +1,8 @@
-from kiapi.api.chat.router import _BASE64_PLACEHOLDER, _redacted_chat_request_dump
+from kiapi.api.chat.router import (
+    _BASE64_PLACEHOLDER,
+    _redacted_chat_request_dump,
+    _stream_usage_chunk,
+)
 from kiapi.capabilities.chat import ChatRequest
 
 
@@ -8,6 +12,46 @@ def test_parallel_tool_calls_defaults_to_true():  # type: ignore
     )
 
     assert req.parallel_tool_calls is True
+
+
+def test_stream_options_include_usage_defaults_to_false():  # type: ignore
+    req = ChatRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "hi"}],
+            "stream": True,
+            "stream_options": {},
+        }
+    )
+
+    assert req.stream_options is not None
+    assert req.stream_options.include_usage is False
+
+
+def test_stream_usage_chunk_uses_stream_identity_and_final_usage():  # type: ignore
+    usage = {
+        "prompt_tokens": 25000,
+        "completion_tokens": 1,
+        "total_tokens": 25001,
+        "prompt_tokens_details": {"cached_tokens": 24576},
+    }
+
+    chunk = _stream_usage_chunk(
+        {"id": "different", "model": "qwen3.8-27b", "usage": usage},
+        {
+            "id": "chatcmpl-stream",
+            "created": 123,
+            "model": "qwen3.8-27b",
+        },
+    )
+
+    assert chunk == {
+        "id": "chatcmpl-stream",
+        "object": "chat.completion.chunk",
+        "created": 123,
+        "model": "qwen3.8-27b",
+        "choices": [],
+        "usage": usage,
+    }
 
 
 def test_redacted_chat_request_dump_masks_message_base64_only():  # type: ignore

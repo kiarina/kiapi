@@ -12,6 +12,18 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class StreamOptions(BaseModel):
+    """OpenAI-compatible options for streamed chat completions."""
+
+    include_usage: bool = Field(
+        default=False,
+        description=(
+            "When true, emit a final chunk before `[DONE]` with an empty "
+            "`choices` array and the request's token usage."
+        ),
+    )
+
+
 class ChatRequest(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -144,6 +156,10 @@ class ChatRequest(BaseModel):
             "`data: [DONE]`. When false, wait for and return the full "
             "`chat.completion` object."
         ),
+    )
+    stream_options: StreamOptions | None = Field(
+        default=None,
+        description="Options applied when `stream` is true.",
     )
 
     @model_validator(mode="after")

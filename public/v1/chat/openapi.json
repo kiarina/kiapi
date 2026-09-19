@@ -379,6 +379,17 @@
             "title": "Stream",
             "description": "When true, stream the answer as OpenAI-style `text/event-stream` `chat.completion.chunk` events ending with `data: [DONE]`. When false, wait for and return the full `chat.completion` object.",
             "default": false
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOptions"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Options applied when `stream` is true."
           }
         },
         "additionalProperties": true,
@@ -510,6 +521,19 @@
         "title": "OpenAIModelSpec",
         "description": "An OpenAI-compatible model spec (one entry in a model list)."
       },
+      "StreamOptions": {
+        "properties": {
+          "include_usage": {
+            "type": "boolean",
+            "title": "Include Usage",
+            "description": "When true, emit a final chunk before `[DONE]` with an empty `choices` array and the request's token usage.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "StreamOptions",
+        "description": "OpenAI-compatible options for streamed chat completions."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -594,6 +618,20 @@
           "arguments"
         ],
         "title": "_FunctionCall"
+      },
+      "_PromptTokensDetails": {
+        "properties": {
+          "cached_tokens": {
+            "type": "integer",
+            "title": "Cached Tokens",
+            "description": "Prompt tokens reused from the automatic prefix cache."
+          }
+        },
+        "type": "object",
+        "required": [
+          "cached_tokens"
+        ],
+        "title": "_PromptTokensDetails"
       },
       "_ResponseMessage": {
         "properties": {
@@ -689,13 +727,18 @@
             "type": "integer",
             "title": "Total Tokens",
             "description": "Sum of prompt and completion tokens."
+          },
+          "prompt_tokens_details": {
+            "$ref": "#/components/schemas/_PromptTokensDetails",
+            "description": "Detailed accounting for prompt tokens."
           }
         },
         "type": "object",
         "required": [
           "prompt_tokens",
           "completion_tokens",
-          "total_tokens"
+          "total_tokens",
+          "prompt_tokens_details"
         ],
         "title": "_Usage"
       }

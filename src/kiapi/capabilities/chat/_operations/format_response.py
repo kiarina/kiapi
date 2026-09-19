@@ -48,6 +48,7 @@ def format_response(  # type: ignore
 
     prompt_tokens = _int_attr(result, "prompt_tokens", "prompt_token_count")
     completion_tokens = _int_attr(result, "generation_tokens", "completion_token_count")
+    cached_tokens = _int_attr(result, "cached_tokens")
 
     return {
         "id": f"chatcmpl-{uuid.uuid4().hex}",
@@ -59,6 +60,7 @@ def format_response(  # type: ignore
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": prompt_tokens + completion_tokens,
+            "prompt_tokens_details": {"cached_tokens": cached_tokens},
         },
         "timings": {"total_s": round(elapsed, 2)},
     }

@@ -273,6 +273,38 @@ def verify_multi_tool_call_units(model: str) -> None:
         raise AssertionError("raw <tool_call> markup leaked into content stream")
 
 
+def verify_usage_chunk(model: str) -> None:
+    stable_prefix = "Stable prefix for cached token usage verification. " * 100
+    payload = {
+        "model": model,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+        "messages": [
+            {"role": "system", "content": stable_prefix},
+            {"role": "user", "content": "Reply with OK."},
+        ],
+        "temperature": 0,
+        "max_completion_tokens": 1,
+    }
+
+    stream_chat(payload)
+    chunks, _arrivals = stream_chat(payload)
+    usage_chunks = [chunk for chunk in chunks if chunk.get("usage") is not None]
+
+    print("\n=== usage_chunk ===")
+    print(f"model: {model}")
+    print(json.dumps(usage_chunks, ensure_ascii=False, indent=2))
+
+    if len(usage_chunks) != 1:
+        raise AssertionError("expected exactly one usage chunk")
+    usage_chunk = usage_chunks[0]
+    if usage_chunk.get("choices") != []:
+        raise AssertionError("usage chunk choices must be empty")
+    cached_tokens = usage_chunk["usage"]["prompt_tokens_details"]["cached_tokens"]
+    if model == "qwen3.6-27b" and cached_tokens <= 0:
+        raise AssertionError("warm text request did not report cached tokens")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Verify chat streaming behavior when tools are present."
@@ -287,6 +319,7 @@ def main() -> None:
             "auto_tool_does_not_leak_markup",
             "tool_name_streams_before_arguments",
             "multi_tool_call_units",
+            "usage_chunk",
         ),
     )
     args = parser.parse_args()
@@ -299,6 +332,7 @@ def main() -> None:
         "auto_tool_does_not_leak_markup": verify_auto_tool_does_not_leak_markup,
         "tool_name_streams_before_arguments": verify_tool_name_streams_before_arguments,
         "multi_tool_call_units": verify_multi_tool_call_units,
+        "usage_chunk": verify_usage_chunk,
     }
 
     selected_models = DEFAULT_MODELS if len(sys.argv) == 1 else (args.model,)

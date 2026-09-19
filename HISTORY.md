@@ -3,6 +3,16 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-19 — chat response に cached tokens をOpenAI互換で追加した
+
+- non-stream responseの`usage.prompt_tokens_details.cached_tokens`へ、mlx-vlmが返すAPC再利用token数を追加した。
+  `prompt_tokens`は従来どおり論理prompt全体で、cache miss、APC無効、非対応model / modalityは0を返す
+- requestに`stream_options.include_usage`を追加した。trueの場合は`[DONE]`直前に、同じstream id、
+  `choices: []`、最終usageを持つOpenAI互換chunkを返す。false / 未指定時のstreamは従来どおり
+- OpenAPI、chat README、stream verifyを更新。`make`、unit test 312件、サーバー機のchat full verifyが通過した
+- 実機のwarm Qwen3.6 streamで`prompt_tokens: 822`、`cached_tokens: 821`を確認。APC対象外の
+  Qwen3-Omniは同じusage chunkで`cached_tokens: 0`を返すことを確認した
+
 ## 2026-09-19 — chat の長い text prompt に Automatic Prefix Caching を導入した
 
 - mlx-vlm 0.7.1 の `APCManager` を Qwen3.6 / Qwen3.8 のmodel payloadごとに保持し、statelessな

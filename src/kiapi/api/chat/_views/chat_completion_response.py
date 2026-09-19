@@ -49,10 +49,19 @@ class _Choice(BaseModel):
     )
 
 
+class _PromptTokensDetails(BaseModel):
+    cached_tokens: int = Field(
+        description="Prompt tokens reused from the automatic prefix cache."
+    )
+
+
 class _Usage(BaseModel):
     prompt_tokens: int = Field(description="Tokens in the prompt.")
     completion_tokens: int = Field(description="Tokens generated.")
     total_tokens: int = Field(description="Sum of prompt and completion tokens.")
+    prompt_tokens_details: _PromptTokensDetails = Field(
+        description="Detailed accounting for prompt tokens."
+    )
 
 
 class _Timings(BaseModel):

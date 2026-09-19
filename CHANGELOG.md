@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: responses report APC reuse through the OpenAI-compatible
+  `usage.prompt_tokens_details.cached_tokens` field. Streaming requests support
+  `stream_options.include_usage` and emit usage before `[DONE]` when requested.
 - chat: Qwen3.6 and Qwen3.8 text-only requests now use bounded, model-scoped
   automatic prefix caching to reuse stable system messages, tool schemas, and
   conversation history across requests.

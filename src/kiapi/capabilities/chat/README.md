@@ -27,6 +27,10 @@ prompt. Qwen3-Omni and requests containing images are excluded.
 The cache is scoped to each loaded model, remains in memory only, and is
 released with the model. Hits and memory use are written to the server log as
 `cached_tokens`, `prompt_tps`, `resident_bytes`, and aggregate stats.
+Responses report reused tokens in the OpenAI-compatible
+`usage.prompt_tokens_details.cached_tokens` field. For streaming requests, set
+`stream_options.include_usage: true` to receive usage in a final chunk with an
+empty `choices` array before `[DONE]`.
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
