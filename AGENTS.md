@@ -181,3 +181,5 @@ mise run verify --kiapi --family embedding --fast
 - [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
 
 - [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
+
+- [Omni の追加メディアでも既存prefixを再利用する](tasks/chat-omni-media-prefix-reuse.md)

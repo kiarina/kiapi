@@ -25,6 +25,7 @@ video) are inserted in document order by ``parse_messages`` + the chat template,
 so we don't hand-place them here.
 """
 
+import inspect
 import shutil
 import time
 from collections.abc import Callable
@@ -121,6 +122,22 @@ def run(  # type: ignore
 
         apply_seed(params.seed)
         gen_kwargs = _sampling_kwargs(params)
+        media_prefix_enabled = (
+            getattr(model, "supports_media_prefix_apc", False)
+            and "apc_media_prefix" in inspect.signature(stream_generate).parameters
+        )
+        apc_tenant = payload.apc_tenant
+        if media_prefix_enabled:
+            gen_kwargs["apc_media_prefix"] = True
+        elif payload.apc_manager is not None:
+            apc_tenant = media_apc_tenant(
+                apc_tenant,
+                image_paths,
+                audio_paths,
+                video_paths,
+                fps=params.fps,
+                use_audio_in_video=params.use_audio_in_video,
+            )
 
         if video_paths:
             gen_kwargs["fps"] = params.fps
@@ -135,16 +152,7 @@ def run(  # type: ignore
                     audio=audio_arrays or None,  # type: ignore[arg-type]  # (A) arrays, not paths
                     video=video_paths or None,
                     apc_manager=payload.apc_manager,
-                    apc_tenant=media_apc_tenant(
-                        payload.apc_tenant,
-                        image_paths,
-                        audio_paths,
-                        video_paths,
-                        fps=params.fps,
-                        use_audio_in_video=params.use_audio_in_video,
-                    )
-                    if payload.apc_manager is not None
-                    else payload.apc_tenant,
+                    apc_tenant=apc_tenant,
                     **gen_kwargs,
                 ),
                 payload.context_window,

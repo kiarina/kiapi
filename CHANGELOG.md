@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: Omni reuses unchanged prefixes when images, audio clips or videos are
+  appended, including demuxed audiovisual inputs, through a pinned mlx-vlm fork.
+- chat: the pinned engine supports multiple audio clips with independent feature
+  extraction/encoding and corrected CNN lengths and chunk masks.
+
 - chat: Qwen3.8 reuses unchanged image history when new images are appended,
   using a pinned mlx-vlm fork in uv-managed checkouts. Official-engine installs
   retain the conservative whole-request fallback.

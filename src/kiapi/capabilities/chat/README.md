@@ -25,30 +25,36 @@ stable system messages, tool schemas, or conversation history with media.
 Responses are never cached, and `usage.prompt_tokens` reports the complete
 logical prompt.
 
-With the pinned mlx-vlm fork used by this checkout, Qwen3.8 can reuse unchanged
-history when new images are appended. Each checkpoint identifies only processed
-image pixels, grid geometry and image positions inside that prefix. After a hit,
-only new images are encoded. Changing or reordering an old image invalidates
-checkpoints containing it, but an earlier text/image checkpoint may still hit.
-All images are still downloaded/decoded/preprocessed before lookup.
+With the pinned mlx-vlm fork used by this checkout, Qwen3.8 reuses unchanged
+history when images are appended, and Omni does the same for images, audio clips,
+videos and mixtures. Each checkpoint identifies only the processed media content,
+grid/length, positions and video FPS inside that prefix. After a hit, only suffix
+media is encoded. Changing or reordering old media invalidates checkpoints
+containing it; an earlier checkpoint may still hit. Downloading, decoding and
+preprocessing still run before lookup.
 
-Qwen3.6 and Omni keep whole-request media identity: ordered SHA-256 content hashes
-and video options (`fps`, `use_audio_in_video`), independent of temporary paths.
-Adding or replacing their media still recomputes the full prompt. All models
-avoid restoring a checkpoint inside an image span.
+Omni supports multiple independent audio clips, including audio tracks demuxed
+from videos by `use_audio_in_video`. Each clip is extracted and encoded
+independently so a longer appended clip cannot change old audio features.
+Native mlx-vlm audiovisual token interleaving is excluded from prefix reuse;
+kiapi uses its existing separate video/audio representation instead.
 
-The source checkout pins [mlx-vlm PR #2309](https://github.com/Blaizzy/mlx-vlm/pull/2309)
-at `3c5bd17c5cff3ad45d80273b366e86ad7df4ed96` through `tool.uv.sources`.
-Published kiapi wheels still depend on official mlx-vlm 0.7.1; without the new
-`stream_generate` argument, Qwen3.8 automatically retains conservative
-whole-request media invalidation. No request API or new user setting is needed.
+Qwen3.6 retains whole-request media identity: ordered SHA-256 content hashes,
+independent of temporary paths. Adding or replacing its media recomputes the full
+prompt. All models avoid restoring a checkpoint inside a media span.
+
+The source checkout pins [Omni PR #2311](https://github.com/Blaizzy/mlx-vlm/pull/2311),
+built on [Qwen image PR #2309](https://github.com/Blaizzy/mlx-vlm/pull/2309), at
+`98300012bbccc728d0a98e92444cc45bc433e284` through `tool.uv.sources`.
+Published kiapi wheels still depend on official mlx-vlm 0.7.1. Without the new
+engine capability, handlers retain conservative whole-request media invalidation;
+multiple audio clips also require the pinned fork. No request API or new user
+setting is needed.
 
 A hit also requires a matching stored checkpoint. Qwen3.6 removes its empty
 thinking prefill from historical assistant turns, so continuing a short image
 conversation can miss even when the image is unchanged; repeating the same
 request still hits.
-The underlying processor currently accepts one audio clip per request; multiple
-audio clips in conversation history remain unsupported independently of APC.
 
 The cache is scoped to each loaded model, remains in memory only, and is
 released with the model. Hits and memory use are written to the server log as
@@ -916,13 +922,15 @@ curl -sS "http://localhost:${PORT:-8000}/v1/chat/completions" \
 
 ### Omni APC compatibility (mlx-vlm 0.7.1)
 
-`ensure_omni_apc_embeddings` adds nested thinker image/video/audio token IDs to
+For official mlx-vlm 0.7.1, `ensure_omni_apc_embeddings` adds nested thinker image/video/audio token IDs to
 APC's safe-boundary detection. On a restored text suffix it preserves the complete
 prompt's RoPE positions and skips re-encoding media; upstream otherwise attempts
 to apply full media grids to the short suffix and can raise an index error.
 Omni uses compact, layer-major snapshots for media-safe restoration. This is
 verified together with patches C and H on visual prompts longer than 2048 tokens.
-Re-check this workaround when upgrading mlx-vlm.
+The pinned fork owns this restoration and advertises its media-prefix capability,
+so kiapi skips the old text-suffix-only embedding wrapper. Re-check this workaround
+when upgrading mlx-vlm.
 
 ### Pinned-fork compatibility
 

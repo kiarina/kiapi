@@ -101,9 +101,9 @@ allow-direct-references = true
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 
 [tool.uv.sources]
-# Opt-in Qwen3.8 appended-image APC, pending its upstream release.
+# Opt-in Qwen3.8 image and Omni media-prefix APC, pending upstream releases.
 # Published wheels retain the official 0.7.1 dependency and conservative fallback.
-mlx-vlm = { git = "https://github.com/kiarina/mlx-vlm.git", rev = "3c5bd17c5cff3ad45d80273b366e86ad7df4ed96" }
+mlx-vlm = { git = "https://github.com/kiarina/mlx-vlm.git", rev = "98300012bbccc728d0a98e92444cc45bc433e284" }
 
 [dependency-groups]
 dev = [

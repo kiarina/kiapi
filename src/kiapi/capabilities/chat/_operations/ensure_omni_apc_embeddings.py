@@ -8,6 +8,9 @@ def ensure_omni_apc_embeddings() -> None:
     from mlx_vlm.models.base import InputEmbeddingsFeatures
     from mlx_vlm.models.qwen3_omni_moe.qwen3_omni_moe import Model
 
+    if getattr(Model, "supports_media_prefix_apc", False):
+        return
+
     if getattr(Model, "_kiapi_apc_embeddings", False):
         return
     original_ids = apc.multimodal_token_ids_from_config

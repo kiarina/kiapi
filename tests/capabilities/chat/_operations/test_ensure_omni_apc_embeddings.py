@@ -65,3 +65,27 @@ def test_omni_restored_suffix_skips_media_and_preserves_full_positions(
         ),
     )
     assert apc.multimodal_token_ids_from_config(config) == {11, 12, 13}
+
+
+def test_upstream_media_prefix_embedding_is_not_replaced(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = Mock()
+    model_cls: Any = type(
+        "Model",
+        (),
+        {"get_input_embeddings": original, "supports_media_prefix_apc": True},
+    )
+    apc = SimpleNamespace(multimodal_token_ids_from_config=Mock())
+    modules: dict[str, dict[str, Any]] = {
+        "mlx_vlm": {"apc": apc},
+        "mlx_vlm.models.base": {"InputEmbeddingsFeatures": SimpleNamespace},
+        "mlx_vlm.models.qwen3_omni_moe.qwen3_omni_moe": {"Model": model_cls},
+    }
+    for name, attrs in modules.items():
+        module = ModuleType(name)
+        module.__dict__.update(attrs)
+        monkeypatch.setitem(sys.modules, name, module)
+    ensure_omni_apc_embeddings()
+    assert model_cls.get_input_embeddings is original
+    assert not hasattr(model_cls, "_kiapi_apc_embeddings")

@@ -335,7 +335,7 @@ def verify_nonparallel_tool_call_units(model: str) -> None:
 
 
 def verify_image_prefix(model: str) -> None:
-    if model != "qwen3.8-27b":
+    if model not in {"qwen3.8-27b", "qwen3-omni"}:
         return
     from PIL import Image
 

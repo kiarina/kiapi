@@ -47,13 +47,13 @@ _TRAIN_ENV = {
 def discover_families() -> dict[str, list[Path]]:
     """Map each capability family to its verification scripts.
 
-    The family name is the capability directory name; ``chat`` bundles both
-    ``verify_chat.py`` and ``verify_chat_stream.py``.
+    The family name is the capability directory name; ``chat`` bundles standard,
+    streaming and appended-Omni-media checks.
     """
     families: dict[str, list[Path]] = {}
     for script in sorted(CAPABILITIES_DIR.glob("verify_*.py")):
         base = script.stem.removeprefix("verify_")
-        family = "chat" if base in {"chat", "chat_stream"} else base
+        family = "chat" if base in {"chat", "chat_stream", "chat_omni_prefix"} else base
         families.setdefault(family, []).append(script)
     return families
 
