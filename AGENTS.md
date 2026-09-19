@@ -180,4 +180,4 @@ mise run verify --kiapi --family embedding --fast
 - [Qwen3.8 の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
 
-- [Qwen3.8 の画像追加で既存prefixを再利用する](tasks/chat-qwen38-image-prefix-reuse.md)
+- [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)

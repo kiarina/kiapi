@@ -3,6 +3,43 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-19 — Qwen3.8 で新しい画像を追加しても既存prefixを再利用できるようにした
+
+- ユーザー合意に基づきmlx-vlm本体で実装し、fork commit `3c5bd17c5cff3ad45d80273b366e86ad7df4ed96`を
+  kiapiの`tool.uv.sources` / uv.lockへ固定した。上流PR: [Blaizzy/mlx-vlm#2309](https://github.com/Blaizzy/mlx-vlm/pull/2309)。
+  上流CIは成功し、review / merge待ち。通常のPyPI依存は0.7.1のまま維持し、新引数がない場合は旧方式へfallbackする
+- kiapiはQwen3.8だけ`apc_image_prefix=True`を内部指定する。request APIは変更しない。
+  Qwen3.6 / Omniのmedia追加は従来どおりwhole-request invalidation。diskは有効化していない
+- forkは処理済みpixel / grid / token spanを画像ごとにhashし、checkpoint以前の画像だけをkeyへ含める。
+  checkpoint範囲ごとに既存exact-cache APIを検索するため保存形式は変わらない。
+  画像途中にはcheckpointを置かず、再開時は新しい画像だけをencodeし、full-prompt RoPEを保持する
+- 位置・特徴量・embedding・mask・cacheのopaque override、投機的decode、KV量子化/size overrideは
+  新しいopt-in経路でAPCを無効化する。単一requestのqwen3_5 text/image限定で、continuous batchingは対象外
+- Mac Studio M4 Max 128GB、Qwen3.8-27B-4bit、temperature=0、memory APC 4 GiB、最大20生成tokens。
+  forkの`examples/verify_image_prefix_apc.py`で実測。モデルloadを除き前処理を含む最初の出力までの時間（各1回）:
+
+| 入力 | Prompt tokens | 再利用tokens | Cold TTFT | Prefix hit TTFT |
+|---|---:|---:|---:|---:|
+| text履歴 + 1画像 | 2,920 | 2,822 | 11.586 s | 0.644 s |
+| 画像履歴 + 1画像 | 2,995 | 2,897 | 11.869 s | 0.648 s |
+| 画像履歴 + 2画像 | 3,061 | 2,897 | 12.139 s | 0.924 s |
+
+- 期待する色の順序はcold/hitで一致。first-token分布のKL divergenceは0.0005未満。
+  量子化の数値差があるためbit一致は保証しない。encodeしたpatch行数を計測し、追加画像だけの処理を確認した
+- 同じpathの旧画像差し替え、画像の順序変更、grid/tenant変更を検証。旧画像を含むcheckpointは使わず、
+  前段textの2,048 tokensだけを再利用できた。API側でも縦横比が異なる画像の追加を確認した
+- 旧画像変更のAPI検証で古いassistant回答Red.を残したところ、cached_tokens=0でも誤答した。
+  cache.clear後も同じ回答だったためcache問題ではなく矛盾した検証入力の問題と切り分け、入力を修正した
+- fork baseにはOmniのC/H修正も含まれる。Cはno-op、Hはexpanded deepstackを検出してskipし、
+  公式0.7.1向けのcompact-row互換処理を残した。再利用方針と制約はchat READMEを更新した
+- upstream cache/generate/画像prefix test 451件 + model contract 2件、kiapi make / CPU test 339件、
+  通常chat全caseとstream全caseが通過。公式0.7.1環境でもchat CPU test 54件が通過した。
+  kiapiの45画像/2,991 tokensのmatrix、media追加、旧画像変更、clear/reloadも通過し、
+  release後のMLX active memoryは1,056 bytesだった
+- 本番checkoutへpinを反映し、Tailscale経由のAPIで画像追加時に2,499 tokensを再利用、
+  旧画像差し替え時はcached_tokens=0で正しい色を返すことを確認した。詳細な配置・運用記録は運用側に残す。
+
+
 ## 2026-09-19 — Omni と画像・音声・動画の chat APC を実装・検証した
 
 - Qwen3.6 / Qwen3.8の画像入力と、Qwen3-Omniのtext / image / audio / video / image + videoへ
