@@ -21,7 +21,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from kiapi.core.app import AppContext
-from kiapi.core.job import Job, ProgressReporter
+from kiapi.core.job import Job, JobCanceledError, ProgressReporter
 from kiapi.core.model import ModelKey
 from kiapi.core.setup import SetupRequiredError
 
@@ -77,6 +77,11 @@ class Worker:
         loop = asyncio.get_running_loop()
         while True:
             job, fn, fut = await self.queue.get()
+            if job.cancel_requested():
+                job.mark_canceled()
+                if not fut.done():
+                    fut.cancel()
+                continue
             job.mark_running()
             # Bind a reporter for this job so capability code can push coarse
             # progress via ProgressReporter.current(); run_bound installs it on
@@ -86,9 +91,18 @@ class Worker:
                 result, artifacts = await loop.run_in_executor(
                     self.executor, reporter.run_bound, fn
                 )
+                if job.cancel_requested():
+                    job.mark_canceled()
+                    if not fut.done():
+                        fut.cancel()
+                    continue
                 job.mark_succeeded(result, artifacts)
                 if not fut.done():
                     fut.set_result(result)
+            except JobCanceledError:
+                job.mark_canceled()
+                if not fut.done():
+                    fut.cancel()
             except Exception as exc:
                 traceback.print_exc()
                 job.mark_failed(str(exc))

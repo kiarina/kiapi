@@ -24,6 +24,7 @@ Notes vs. qwen3_omni:
 import logging
 import shutil
 import time
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any
 
@@ -31,6 +32,7 @@ from kiapi.core.model import ModelSpec
 from kiapi.core.workdir import create_work_dir
 
 from .._operations.apply_template import apply_template
+from .._operations.cancel_on_request import cancel_on_request
 from .._operations.collect_generation import collect_generation
 from .._operations.completed_hermes_tool_call_text import (
     completed_hermes_tool_call_text,
@@ -83,6 +85,7 @@ def run(  # type: ignore
     payload: SimpleNamespace,
     params: ChatParams,
     emit=None,
+    cancel_requested: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     from mlx_vlm import stream_generate
 
@@ -104,17 +107,22 @@ def run(  # type: ignore
         )
 
         apply_seed(params.seed)
-        chunks = limit_to_context(
-            stream_generate(
-                model,
-                processor,
-                prompt,
-                image=image_paths or None,
-                apc_manager=payload.apc_manager if not image_paths else None,
-                apc_tenant=payload.apc_tenant,
-                **_sampling_kwargs(params),
+        apc_manager = payload.apc_manager if not image_paths else None
+        chunks = cancel_on_request(
+            limit_to_context(
+                stream_generate(
+                    model,
+                    processor,
+                    prompt,
+                    image=image_paths or None,
+                    apc_manager=apc_manager,
+                    apc_tenant=payload.apc_tenant,
+                    **_sampling_kwargs(params),
+                ),
+                payload.context_window,
             ),
-            payload.context_window,
+            cancel_requested,
+            apc_manager.clear if apc_manager is not None else None,
         )
 
         if emit is not None:

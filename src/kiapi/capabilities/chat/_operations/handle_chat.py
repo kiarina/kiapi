@@ -6,7 +6,10 @@ budget with every other capability. ``emit`` (when set) streams OpenAI-style SSE
 chunks from the worker thread; the final completion dict is still returned.
 """
 
+from collections.abc import Callable
+
 from kiapi.core.app import AppContext
+from kiapi.core.job import Job
 from kiapi.core.model import model_registry
 
 from .._settings import settings_manager
@@ -14,12 +17,20 @@ from .._views.chat_request import ChatRequest
 from .resolve_chat_params import resolve_chat_params
 
 
-def handle_chat(ctx: AppContext, req: ChatRequest, emit=None) -> tuple[dict, list[str]]:  # type: ignore
+def handle_chat(
+    ctx: AppContext,
+    req: ChatRequest,
+    emit: Callable[[dict], None] | None = None,
+    job: Job | None = None,
+) -> tuple[dict, list[str]]:
     """Run one chat completion. Returns (openai_completion, artifact_file_ids)."""
     settings = settings_manager.get_settings()
     spec = model_registry.resolve("chat", req.model)
     ctx.ensure_model_ready(spec)
     params = resolve_chat_params(settings, req, variant=spec.name)
     payload = ctx.memory_manager.acquire(spec)
-    result = spec.module.run(payload, params, emit=emit)
+    cancel_requested = job.cancel_requested if job is not None else None
+    result = spec.module.run(
+        payload, params, emit=emit, cancel_requested=cancel_requested
+    )
     return result, []  # chat produces no file artifacts

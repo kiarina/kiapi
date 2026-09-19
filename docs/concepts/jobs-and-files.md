@@ -29,8 +29,11 @@ This preserves MLX thread affinity, keeps GPU work serial, and makes peak-memory
 accounting deterministic. Parallel deployments use multiple kiapi processes
 with separate memory budgets.
 
-Queued jobs can be canceled. Running inference cannot be interrupted reliably.
-Chat streaming still occupies the same worker while generation runs.
+Chat jobs request cancellation when their client disconnects. Queued chat jobs
+are skipped, while running chat generation stops cooperatively at the next
+generated-token boundary. A long prompt prefill cannot yet be interrupted
+because mlx-vlm 0.7.1 does not expose a prefill cancellation callback. Other
+running capability jobs cannot be interrupted reliably.
 
 ## Job Model
 

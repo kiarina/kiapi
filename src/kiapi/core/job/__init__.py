@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ._enums.job_status import JobStatus
+    from ._exceptions.job_canceled_error import JobCanceledError
     from ._helpers.creep_progress import creep_progress
     from ._models.job import Job
     from ._services.job_store import JobStore
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Job",
+    "JobCanceledError",
     "JobID",
     "JobResult",
     "JobStatus",
@@ -34,6 +36,7 @@ def __getattr__(name: str) -> object:
 
     module_map = {
         "Job": "._models.job",
+        "JobCanceledError": "._exceptions.job_canceled_error",
         "JobID": "._types.job_id",
         "JobResult": "._types.job_result",
         "JobStatus": "._enums.job_status",

@@ -13,11 +13,12 @@ import json
 import logging
 import re
 from collections.abc import AsyncIterator
+from contextlib import suppress
 from copy import deepcopy
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response, StreamingResponse
 
 from kiapi.api import (
     REQUIRE_AUTH,
@@ -28,6 +29,7 @@ from kiapi.api import (
 from kiapi.api._settings import settings_manager
 from kiapi.capabilities.chat import ChatRequest, handle_chat
 from kiapi.core.app import AppContext
+from kiapi.core.job import Job
 from kiapi.core.memory import MemoryBudgetError
 from kiapi.core.model import UnknownModelError, model_registry
 from kiapi.core.setup import SetupRequiredError
@@ -71,9 +73,10 @@ _DATA_URL_BASE64 = re.compile(
 )
 async def chat_completions(
     req: ChatRequest,
+    request: Request,
     ctx: AppContext = Depends(get_ctx),
     worker: Worker = Depends(get_worker),
-) -> dict | StreamingResponse:
+) -> dict | Response:
     """Generate a chat completion (OpenAI-compatible).
 
     Accepts the OpenAI `chat.completions` request shape with multimodal
@@ -114,7 +117,7 @@ async def chat_completions(
 
         def thunk():  # type: ignore
             try:
-                return handle_chat(ctx, req, emit=emit)
+                return handle_chat(ctx, req, emit=emit, job=job)
             finally:
                 finish_stream()
 
@@ -140,9 +143,9 @@ async def chat_completions(
                         yield _sse(_stream_usage_chunk(result, last_chunk))
                 yield _sse("[DONE]")
             except asyncio.CancelledError:
-                # The running worker job is not preemptible; let it finish and
-                # keep its final state in the job store.
-                return
+                job.request_cancel()
+                fut.cancel()
+                raise
 
         return StreamingResponse(
             events(),
@@ -154,10 +157,23 @@ async def chat_completions(
         )
 
     job = ctx.job_store.create(type="chat", params={"model": req.model})
-    fut = await worker.submit(job, lambda: handle_chat(ctx, req))
+    fut = await worker.submit(job, lambda: handle_chat(ctx, req, job=job))
+    disconnect_task = asyncio.create_task(
+        _cancel_on_disconnect(request, job, fut),
+        name=f"chat-disconnect-{job.id}",
+    )
 
     try:
-        return await asyncio.wait_for(fut, timeout=settings.sync_timeout_s)
+        return await asyncio.wait_for(
+            asyncio.shield(fut), timeout=settings.sync_timeout_s
+        )
+    except asyncio.CancelledError:
+        disconnected = job.cancel_requested()
+        job.request_cancel()
+        fut.cancel()
+        if disconnected:
+            return Response(status_code=499)
+        raise
     except TimeoutError:
         raise HTTPException(  # noqa: B904
             status_code=504,
@@ -175,6 +191,10 @@ async def chat_completions(
         if exc.__class__.__name__ in ("MediaError", "CapabilityError"):
             raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
         raise HTTPException(status_code=500, detail=f"generation failed: {exc}")  # noqa: B904
+    finally:
+        disconnect_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await disconnect_task
 
 
 register_capability_endpoints(router, name="chat", base_path="/v1/chat")
@@ -257,6 +277,17 @@ def _sse(payload) -> str:  # type: ignore
 
 def _stream_error(exc: BaseException) -> dict:
     return {"error": {"message": str(exc), "type": exc.__class__.__name__}}
+
+
+async def _cancel_on_disconnect(
+    request: Request, job: Job, fut: asyncio.Future
+) -> None:
+    while not fut.done():
+        if await request.is_disconnected():
+            job.request_cancel()
+            fut.cancel()
+            return
+        await asyncio.sleep(0.1)
 
 
 def _stream_usage_chunk(result: dict, last_chunk: dict[str, Any] | None) -> dict:

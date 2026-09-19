@@ -175,6 +175,7 @@ mise run verify --kiapi --family embedding --fast
 ファイルの追加・削除のたびにこの一覧を更新してください。
 
 - [seedvr2 の upscale が mflux 0.19.1 + mlx 0.32.2 で失敗する](tasks/seedvr2-mflux-repeat-error.md)
+- [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
 - [Qwen3-Omni と multimodal chat に APC を広げる](tasks/chat-apc-omni-multimodal.md)
 - [上流で Omni の deepstack 修正が出たら patch H を外す](tasks/mlx-vlm-omni-deepstack-upstream.md)
 - [Qwen3.8 の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)

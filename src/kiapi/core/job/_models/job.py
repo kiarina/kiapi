@@ -13,9 +13,10 @@ that can outlive jobs while their files remain on disk.
 
 import time
 import uuid
+from threading import Event
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from kiapi.core.file import FileID
 
@@ -26,6 +27,8 @@ from .._types.job_type import JobType
 
 
 class Job(BaseModel):
+    _cancel_requested: Event = PrivateAttr(default_factory=Event)
+
     type: JobType = Field(
         ...,
         description="Job type. Use this to interpret the capability-specific result payload.",
@@ -118,4 +121,11 @@ class Job(BaseModel):
 
     def mark_canceled(self) -> None:
         self.status = JobStatus.CANCELED
+        self.progress_label = "canceled"
         self.finished_at = time.time()
+
+    def request_cancel(self) -> None:
+        self._cancel_requested.set()
+
+    def cancel_requested(self) -> bool:
+        return self._cancel_requested.is_set()

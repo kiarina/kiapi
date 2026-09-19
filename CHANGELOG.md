@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: client disconnects now cancel queued work or stop running generation at
+  the next token boundary. Cancellation uses the existing `canceled` job state
+  and safely clears APC state when a generator closes early.
 - chat: responses report APC reuse through the OpenAI-compatible
   `usage.prompt_tokens_details.cached_tokens` field. Streaming requests support
   `stream_options.include_usage` and emit usage before `[DONE]` when requested.

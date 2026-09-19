@@ -7,6 +7,7 @@ on: jobs execute strictly one at a time, in submission order.
 """
 
 import asyncio
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -16,7 +17,7 @@ import pytest
 
 from kiapi.core.app import AppContext
 from kiapi.core.file import FileSettings, FileStore
-from kiapi.core.job import Job, JobStatus, JobStore
+from kiapi.core.job import Job, JobCanceledError, JobStatus, JobStore
 from kiapi.core.memory import create_memory_manager
 from kiapi.core.model import ModelSpec, model_registry
 from kiapi.core.setup import LocalPathResource, SetupManager
@@ -99,6 +100,62 @@ async def test_jobs_run_one_at_a_time_in_order(ctx: AppContext) -> None:
 
     assert order == ["a", "b", "c"]
     assert max_concurrent == 1
+    await worker.stop()
+
+
+async def test_canceled_queued_job_is_skipped(ctx: AppContext) -> None:
+    worker = _worker(ctx)
+    worker.start()
+    release_first = threading.Event()
+    second_ran = False
+
+    first = Job(type="chat")
+    second = Job(type="chat")
+
+    def first_thunk() -> tuple[dict, list]:
+        release_first.wait()
+        return {}, []
+
+    first_future = await worker.submit(first, first_thunk)
+
+    def second_thunk() -> tuple[dict, list]:
+        nonlocal second_ran
+        second_ran = True
+        return {}, []
+
+    second_future = await worker.submit(second, second_thunk)
+    second.request_cancel()
+    release_first.set()
+
+    await first_future
+    with pytest.raises(asyncio.CancelledError):
+        await second_future
+
+    assert second.status is JobStatus.CANCELED
+    assert not second_ran
+    await worker.stop()
+
+
+async def test_running_job_cooperatively_cancels(ctx: AppContext) -> None:
+    worker = _worker(ctx)
+    worker.start()
+    started = threading.Event()
+    job = Job(type="chat")
+
+    def thunk() -> tuple[dict, list]:
+        started.set()
+        while not job.cancel_requested():
+            time.sleep(0.001)
+        raise JobCanceledError
+
+    fut = await worker.submit(job, thunk)
+    await asyncio.to_thread(started.wait)
+    job.request_cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await fut
+
+    assert job.status is JobStatus.CANCELED
     await worker.stop()
 
 

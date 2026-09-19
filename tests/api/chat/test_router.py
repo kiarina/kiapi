@@ -1,9 +1,13 @@
+import asyncio
+
 from kiapi.api.chat.router import (
     _BASE64_PLACEHOLDER,
+    _cancel_on_disconnect,
     _redacted_chat_request_dump,
     _stream_usage_chunk,
 )
 from kiapi.capabilities.chat import ChatRequest
+from kiapi.core.job import Job
 
 
 def test_parallel_tool_calls_defaults_to_true():  # type: ignore
@@ -25,6 +29,20 @@ def test_stream_options_include_usage_defaults_to_false():  # type: ignore
 
     assert req.stream_options is not None
     assert req.stream_options.include_usage is False
+
+
+async def test_disconnect_requests_job_cancel_and_cancels_future() -> None:
+    class DisconnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return True
+
+    job = Job(type="chat")
+    fut = asyncio.get_running_loop().create_future()
+
+    await _cancel_on_disconnect(DisconnectedRequest(), job, fut)  # type: ignore[arg-type]
+
+    assert job.cancel_requested()
+    assert fut.cancelled()
 
 
 def test_stream_usage_chunk_uses_stream_identity_and_final_usage():  # type: ignore

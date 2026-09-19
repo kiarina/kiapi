@@ -58,6 +58,16 @@ def test_mark_canceled() -> None:
 
     assert job.status is JobStatus.CANCELED
     assert job.finished_at is not None
+    assert job.progress_label == "canceled"
+
+
+def test_cancel_request_is_thread_safe_state_outside_serialization() -> None:
+    job = Job(type="chat")
+
+    job.request_cancel()
+
+    assert job.cancel_requested()
+    assert "cancel_requested" not in job.to_dict()
 
 
 def test_to_dict_roundtrips_fields() -> None:

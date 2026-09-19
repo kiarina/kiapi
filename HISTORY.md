@@ -3,6 +3,22 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-19 — chat client切断をjob cancellationへ結線した
+
+- 既存の`JobStatus.CANCELED` / `Job.mark_canceled()`を実処理へ結線した。Jobにthread-safeなcancel signalを
+  持たせ、workerはqueued jobを開始前にskipし、協調キャンセル例外を`failed`ではなく`canceled`へ遷移させる
+- streamはSSE iteratorの`CancelledError`、non-streamは`Request.is_disconnected()`の監視からcancelを要求する。
+  sync timeoutは従来どおり別扱いで、504後もjobを続ける
+- Qwen3.6 / Qwen3.8 / Omniのgeneration iteratorをcancel-aware wrapperで包み、生成token境界で停止する。
+  generatorをcloseし、temporary directoryとMLX cacheを解放する。APC hit中の早期closeはmlx-vlm内部の
+  block lease解放まで到達しないため、キャンセル時だけ対象modelのAPC全体をclearする
+- 実機Qwen3.8でstream / non-stream切断がともに`canceled`となり、`queue_len=0`へ戻ることを確認。
+  3,248-tokenのAPC warm requestは0.089秒で出力開始後に切断でき、その後の同一promptが
+  `cached_tokens: 0`でcold再計算（12.985秒）となり、安全にcacheを破棄できた
+- mlx-vlm 0.7.1はchunked prefill中のcancel callbackを公開していないため、cold long promptは最初の
+  generation tokenが返るまで止められない。100K tokens級では重要なので独立taskへ分離した
+- `make`、unit test 318件、サーバー機のchat full verifyとstream usage検証が通過した
+
 ## 2026-09-19 — chat response に cached tokens をOpenAI互換で追加した
 
 - non-stream responseの`usage.prompt_tokens_details.cached_tokens`へ、mlx-vlmが返すAPC再利用token数を追加した。

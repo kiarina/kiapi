@@ -44,6 +44,19 @@ Changing the tenant makes existing entries unreachable. Disable APC to fall
 back to normal generation. Disk persistence is intentionally not enabled, so a
 server restart starts with an empty prefix cache.
 
+## Client Disconnects
+
+When a streaming or non-streaming client disconnects, its chat job requests
+cancellation. A queued job is skipped; generation already producing output
+stops at the next token boundary. Canceling a request that uses APC clears that
+model's prefix cache because mlx-vlm 0.7.1 otherwise retains internal block
+leases when its generator closes early.
+
+Long prompt prefill is not immediately interruptible. mlx-vlm 0.7.1 does not
+expose a cancellation callback inside chunked prefill, so cancellation takes
+effect when prefill returns the first generated token. HTTP sync timeout remains
+different from a disconnect: a timed-out job continues and can be polled.
+
 ## API
 
 | Endpoint | Name | Description |
