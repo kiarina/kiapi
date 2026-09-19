@@ -32,6 +32,7 @@ def emit_streaming_response(
     emit: Callable[[dict], None],
     parse_tool_calls: Callable[[str], list[dict[str, Any]]],
     buffer_for_tools: bool,
+    parallel_tool_calls: bool = True,
     completed_tool_call_text: Callable[[str], str] | None = None,
 ) -> tuple[str, float, object | None, list[dict[str, Any]]]:
     """Stream chunks to ``emit`` and return (full_text, elapsed, last_chunk, tool_calls)."""
@@ -78,6 +79,8 @@ def emit_streaming_response(
 
     def emit_tool_call_names(names: list[str]) -> None:
         nonlocal streamed_tool_call_name_count
+        if not parallel_tool_calls:
+            names = names[:1]
         for name in names[streamed_tool_call_name_count:]:
             index = streamed_tool_call_name_count
             emit(

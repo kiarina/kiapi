@@ -21,7 +21,6 @@ Notes vs. qwen3_omni:
     "mlx-vlm dependency notes" section of this capability's README.
 """
 
-import logging
 import shutil
 import time
 from collections.abc import Callable
@@ -39,42 +38,39 @@ from .._operations.completed_hermes_tool_call_text import (
 )
 from .._operations.emit_streaming_response import emit_streaming_response
 from .._operations.format_response import format_response
+from .._operations.initialize_apc import initialize_apc
 from .._operations.limit_to_context import limit_to_context
+from .._operations.log_apc_result import log_apc_result
 from .._operations.parse_hermes_tool_calls import parse_hermes_tool_calls
 from .._operations.parse_messages import parse_messages
 from .._operations.stream_text_from_tokens import stream_text_from_tokens
-from .._settings import settings_manager
 from .._utils.apply_parallel_tool_call_policy import apply_parallel_tool_call_policy
 from .._utils.apply_seed import apply_seed
 from .._utils.load_mlx_vlm import load_mlx_vlm
+from .._utils.media_apc_tenant import media_apc_tenant
 from .._utils.warmup_params import warmup_params
 from .._views.chat_params import ChatParams
 
 FEATURES = {"text", "image", "tools"}
 CONTEXT_WINDOW_KEYS = ("text_config", "max_position_embeddings")
-logger = logging.getLogger(__name__)
 
 
 def load(spec: ModelSpec) -> SimpleNamespace:
     payload = load_mlx_vlm(spec)
-    settings = settings_manager.get_settings()
-    payload.apc_manager = None
-    payload.apc_tenant = settings.apc_tenant
-    if settings.apc_enabled:
-        from mlx_vlm.apc import APCManager
-
-        payload.apc_manager = APCManager(
-            num_blocks=settings.apc_num_blocks,
-            block_size=settings.apc_block_size,
-            overrides={"memory_max_gb": settings.apc_memory_max_gb},
-        )
+    initialize_apc(payload)
     return payload
 
 
 def release(payload: SimpleNamespace) -> None:
     apc_manager = getattr(payload, "apc_manager", None)
     if apc_manager is not None:
+        apc_manager.clear()
         apc_manager.close()
+
+
+def resident_extra_bytes(payload: SimpleNamespace) -> int:
+    manager = payload.apc_manager
+    return manager.resident_bytes() if manager is not None else 0
 
 
 def warmup(payload: SimpleNamespace) -> None:
@@ -107,7 +103,7 @@ def run(  # type: ignore
         )
 
         apply_seed(params.seed)
-        apc_manager = payload.apc_manager if not image_paths else None
+        apc_manager = payload.apc_manager
         chunks = cancel_on_request(
             limit_to_context(
                 stream_generate(
@@ -116,7 +112,9 @@ def run(  # type: ignore
                     prompt,
                     image=image_paths or None,
                     apc_manager=apc_manager,
-                    apc_tenant=payload.apc_tenant,
+                    apc_tenant=media_apc_tenant(payload.apc_tenant, image_paths, [], [])
+                    if apc_manager is not None
+                    else payload.apc_tenant,
                     **_sampling_kwargs(params),
                 ),
                 payload.context_window,
@@ -138,10 +136,11 @@ def run(  # type: ignore
                     parse_hermes_tool_calls(full), params.parallel_tool_calls
                 ),
                 buffer_for_tools=buffer_for_tools,
+                parallel_tool_calls=params.parallel_tool_calls,
                 completed_tool_call_text=completed_hermes_tool_call_text,
             )
 
-            _log_apc_result(payload, params.model, last)
+            log_apc_result(payload, params.model, last)
 
             return format_response(
                 model_name=params.model,
@@ -155,7 +154,7 @@ def run(  # type: ignore
         text, last = collect_generation(processor, chunks)
         elapsed = time.time() - t0
 
-        _log_apc_result(payload, params.model, last)
+        log_apc_result(payload, params.model, last)
 
         full = prefill + text
         tool_calls = apply_parallel_tool_call_policy(
@@ -185,23 +184,6 @@ def _sampling_kwargs(params: ChatParams) -> dict[str, Any]:
         "top_p": params.top_p,
         "verbose": False,
     }
-
-
-def _log_apc_result(payload: SimpleNamespace, model_name: str, result: Any) -> None:
-    manager = getattr(payload, "apc_manager", None)
-    if manager is None or result is None:
-        return
-    logger.info(
-        "chat APC model=%s prompt_tokens=%s cached_tokens=%s prompt_tps=%.2f "
-        "peak_memory_gb=%.2f resident_bytes=%s stats=%s",
-        model_name,
-        getattr(result, "prompt_tokens", 0),
-        getattr(result, "cached_tokens", 0),
-        float(getattr(result, "prompt_tps", 0.0)),
-        float(getattr(result, "peak_memory", 0.0)),
-        manager.resident_bytes(),
-        manager.stats_snapshot(),
-    )
 
 
 def _build_prompt(  # type: ignore

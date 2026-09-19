@@ -10,7 +10,7 @@ import httpx
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 URL = f"{BASE_URL}/v1/chat/completions"
 DEFAULT_MODEL = "qwen3.6-27b"
-DEFAULT_MODELS = (DEFAULT_MODEL, "qwen3-omni")
+DEFAULT_MODELS = (DEFAULT_MODEL, "qwen3.8-27b", "qwen3-omni")
 
 TOOL_WEATHER = {
     "type": "function",
@@ -301,8 +301,35 @@ def verify_usage_chunk(model: str) -> None:
     if usage_chunk.get("choices") != []:
         raise AssertionError("usage chunk choices must be empty")
     cached_tokens = usage_chunk["usage"]["prompt_tokens_details"]["cached_tokens"]
-    if model == "qwen3.6-27b" and cached_tokens <= 0:
+    if cached_tokens <= 0:
         raise AssertionError("warm text request did not report cached tokens")
+
+
+def verify_nonparallel_tool_call_units(model: str) -> None:
+    chunks, arrivals = stream_chat(
+        {
+            "model": model,
+            "stream": True,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "東京と大阪の天気を調べ、30秒のタイマーも設定してください。",
+                }
+            ],
+            "tools": [TOOL_WEATHER, TOOL_TIMER],
+            "parallel_tool_calls": False,
+            "temperature": 0,
+            "max_completion_tokens": 220,
+        }
+    )
+    entries = tool_call_entries(chunks, arrivals)
+    assert entries and {entry["index"] for _, _, entry in entries} == {0}, entries
+    arguments = "".join(
+        entry.get("function", {}).get("arguments", "") for _, _, entry in entries
+    )
+    assert isinstance(json.loads(arguments), dict)
+    assert finish_reason(chunks) == "tool_calls"
+    print(f"nonparallel_tool_call_units: {model} passed")
 
 
 def main() -> None:
@@ -320,6 +347,7 @@ def main() -> None:
             "tool_name_streams_before_arguments",
             "multi_tool_call_units",
             "usage_chunk",
+            "nonparallel_tool_call_units",
         ),
     )
     args = parser.parse_args()
@@ -333,6 +361,7 @@ def main() -> None:
         "tool_name_streams_before_arguments": verify_tool_name_streams_before_arguments,
         "multi_tool_call_units": verify_multi_tool_call_units,
         "usage_chunk": verify_usage_chunk,
+        "nonparallel_tool_call_units": verify_nonparallel_tool_call_units,
     }
 
     selected_models = DEFAULT_MODELS if len(sys.argv) == 1 else (args.model,)

@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chat: responses report APC reuse through the OpenAI-compatible
   `usage.prompt_tokens_details.cached_tokens` field. Streaming requests support
   `stream_options.include_usage` and emit usage before `[DONE]` when requested.
-- chat: Qwen3.6 and Qwen3.8 text-only requests now use bounded, model-scoped
-  automatic prefix caching to reuse stable system messages, tool schemas, and
-  conversation history across requests.
+- chat: bounded, memory-only automatic prefix caching for Qwen3.6 / Qwen3.8
+  text and images, and Qwen3-Omni text, image, audio, video, and image + video.
+  Media content hashes and video options protect cache identity, and Omni
+  restores complete-prompt positions when reusing media prefixes.
 - chat: `GET /v1/models` returns each model's `context_window`, read from the
   model's `config.json` (`null` until the model is set up).
 
@@ -35,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ones, so the context window bound applies to both.
 
 ### Fixed
+
+- chat: suppress extra streamed tool names when `parallel_tool_calls=false`.
+
+- memory: include idle chat caches in cross-model eviction and transient reservations,
+  and derive active cache headroom from the configured APC capacity.
 
 - chat: `finish_reason` is now `"length"` when generation stops at
   `max_completion_tokens` or the context window. It was always `"stop"`.

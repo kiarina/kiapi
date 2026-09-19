@@ -6,9 +6,12 @@ from kiapi.core.setup import HfSnapshotResource
 
 from .._constants.description import DESCRIPTION
 from .._models import qwen3_5, qwen3_omni
+from .._settings import settings_manager
 
 
 def register() -> None:
+    settings = settings_manager.get_settings()
+    headroom = 4.0 + (settings.apc_memory_max_gb if settings.apc_enabled else 0.0)
     capability_spec_registry.register(
         CapabilitySpec(
             name="chat",
@@ -32,7 +35,7 @@ def register() -> None:
             repo="mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit",
             module=qwen3_omni,
             weight_gb=20.3,  # measured on device (estimate was 22.0)
-            peak_headroom_gb=4.0,  # negligible for text/image; margin for heavy A/V
+            peak_headroom_gb=headroom,
             framework="mlx",
             priority=0,
             aliases=("omni", "qwen3-omni-30b", "qwen3_omni_moe"),
@@ -53,7 +56,7 @@ def register() -> None:
             repo="mlx-community/Qwen3.6-27B-4bit",
             module=qwen3_5,
             weight_gb=15.0,  # measured on device (estimate was 16.0)
-            peak_headroom_gb=20.0,  # 16 GiB APC cap + 4 GB generation margin
+            peak_headroom_gb=headroom,
             framework="mlx",
             priority=0,
             aliases=("qwen3.6",),
@@ -73,7 +76,7 @@ def register() -> None:
             repo="mlx-community/Qwen3.8-27B-4bit",
             module=qwen3_5,
             weight_gb=16.0,
-            peak_headroom_gb=20.0,  # 16 GiB APC cap + 4 GB generation margin
+            peak_headroom_gb=headroom,
             framework="mlx",
             priority=0,
             aliases=("qwen3.8", "qwen3_5", "qwen3-vl", "vlm"),

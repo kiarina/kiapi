@@ -5,7 +5,7 @@ Because the worker is single-flight (one job at a time, see worker.py), the mode
 acquired for the running job is the only one that will generate next, so it is
 correct to budget only *its* peak headroom. Before a model is used we ensure:
 
-    Σ(resident weights, excluding the target)
+    Σ(resident weights + runtime caches, excluding the target)
         + target.weight + target.peak_headroom   ≤  memory_limit_gb
 
 evicting residents until it holds. Eviction order is **(priority asc, last_used
@@ -14,7 +14,7 @@ least-recently-used. So a small model you want resident gets a high ``priority``
 and survives even when a big model churns through.
 
 Two concepts are kept separate:
-  - **resident weights** — long-lived, reusable, evictable (tracked here),
+  - **resident weights and runtime caches** — long-lived and evictable,
   - **peak headroom** — transient memory the *running* job needs on top of
     weights; only one job runs at a time, so only the target's headroom matters.
 
@@ -155,7 +155,7 @@ class MemoryManager:
             for ld in self._loaded.values():
                 ttl = self._effective_ttl(ld.spec)
                 idle = round(now - ld.last_used, 1)
-                resident_total += ld.weight_gb
+                resident_total += ld.weight_gb + self._resident_extra_gb(ld)
                 loaded.append(
                     ResidentModelStats(
                         name=ld.spec.name,
@@ -183,8 +183,17 @@ class MemoryManager:
 
     def _resident_weight_gb(self, exclude_key: ResidentKey | None = None) -> float:
         return sum(
-            ld.weight_gb for key, ld in self._loaded.items() if key != exclude_key
+            ld.weight_gb + self._resident_extra_gb(ld)
+            for key, ld in self._loaded.items()
+            if key != exclude_key
         )
+
+    @staticmethod
+    def _resident_extra_gb(loaded: ResidentModel) -> float:
+        # The hook must be thread-safe and must not evaluate GPU tensors:
+        # /health also calls it from the event-loop thread.
+        extra = getattr(loaded.spec.module, "resident_extra_bytes", None)
+        return max(0, int(extra(loaded.payload))) / _GB if extra else 0.0
 
     def _ensure_budget(self, spec: ModelSpec, target_weight_gb: float) -> None:
         limit = self.memory_limit_gb

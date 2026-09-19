@@ -2,7 +2,10 @@ import sys
 from types import ModuleType, SimpleNamespace
 from typing import Any, ClassVar, cast
 
-from kiapi.capabilities.chat._models import qwen3_5
+import pytest
+
+from kiapi.capabilities.chat._models import qwen3_5, qwen3_omni
+from kiapi.capabilities.chat._settings import settings_manager
 
 
 class _FakeAPCManager:
@@ -11,7 +14,11 @@ class _FakeAPCManager:
     def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
         self.closed = False
+        self.cleared = False
         self.instances.append(self)
+
+    def clear(self) -> None:
+        self.cleared = True
 
     def close(self) -> None:
         self.closed = True
@@ -33,14 +40,17 @@ def _install_fake_apc(monkeypatch: Any) -> None:
     monkeypatch.setitem(sys.modules, "mlx_vlm.apc", module)
 
 
-def test_load_creates_model_scoped_apc_from_settings(monkeypatch: Any) -> None:
+@pytest.mark.parametrize("handler", [qwen3_5, qwen3_omni])
+def test_load_creates_model_scoped_apc_from_settings(
+    monkeypatch: Any, handler: Any
+) -> None:
     _FakeAPCManager.instances.clear()
     _install_fake_apc(monkeypatch)
     payload = SimpleNamespace()
-    monkeypatch.setattr(qwen3_5, "load_mlx_vlm", lambda spec: payload)
-    monkeypatch.setattr(qwen3_5.settings_manager, "get_settings", lambda: _settings())
+    monkeypatch.setattr(handler, "load_mlx_vlm", lambda spec: payload)
+    monkeypatch.setattr(settings_manager, "get_settings", lambda: _settings())
 
-    loaded = qwen3_5.load(cast(Any, SimpleNamespace()))
+    loaded = handler.load(cast(Any, SimpleNamespace()))
 
     manager = _FakeAPCManager.instances[-1]
     assert loaded is payload
@@ -53,24 +63,26 @@ def test_load_creates_model_scoped_apc_from_settings(monkeypatch: Any) -> None:
     }
 
 
-def test_load_can_disable_apc(monkeypatch: Any) -> None:
+@pytest.mark.parametrize("handler", [qwen3_5, qwen3_omni])
+def test_load_can_disable_apc(monkeypatch: Any, handler: Any) -> None:
     payload = SimpleNamespace()
-    monkeypatch.setattr(qwen3_5, "load_mlx_vlm", lambda spec: payload)
+    monkeypatch.setattr(handler, "load_mlx_vlm", lambda spec: payload)
     monkeypatch.setattr(
-        qwen3_5.settings_manager,
+        settings_manager,
         "get_settings",
         lambda: _settings(enabled=False),
     )
 
-    loaded = qwen3_5.load(cast(Any, SimpleNamespace()))
+    loaded = handler.load(cast(Any, SimpleNamespace()))
 
     assert loaded.apc_manager is None
     assert loaded.apc_tenant == "workspace-a"
 
 
-def test_release_closes_apc_manager() -> None:
+@pytest.mark.parametrize("handler", [qwen3_5, qwen3_omni])
+def test_release_closes_apc_manager(handler: Any) -> None:
     manager = _FakeAPCManager()
 
-    qwen3_5.release(SimpleNamespace(apc_manager=manager))
+    handler.release(SimpleNamespace(apc_manager=manager))
 
-    assert manager.closed
+    assert manager.closed and manager.cleared

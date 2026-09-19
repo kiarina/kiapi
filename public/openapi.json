@@ -763,7 +763,7 @@
             "type": "number",
             "minimum": 0.0,
             "title": "Resident Gb",
-            "description": "Total resident model weight currently counted against the budget.",
+            "description": "Total resident model weights and retained runtime caches counted against the budget. Per-model weight_gb excludes runtime caches.",
             "examples": [
               12.0
             ]

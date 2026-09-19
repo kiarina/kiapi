@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from kiapi.capabilities.chat._operations.completed_hermes_tool_call_text import (
     completed_hermes_tool_call_text,
 )
@@ -230,3 +232,28 @@ def test_streams_tool_call_name_before_arguments_are_complete() -> None:
     assert tool_call_deltas[1][0]["index"] == 0
     assert tool_call_deltas[1][0]["id"] == tool_call_deltas[0][0]["id"]
     assert tool_call_deltas[1][0]["function"] == {"arguments": '{"location": "東京"}'}
+
+
+@pytest.mark.parametrize("hermes", [False, True])
+def test_nonparallel_stream_never_emits_second_tool_name(hermes: bool) -> None:
+    events: list[dict[str, Any]] = []
+    if hermes:
+        text = "<tool_call><function=get_weather><parameter=location>Tokyo</parameter></function></tool_call><tool_call><function=get_weather><parameter=location>Osaka</parameter></function></tool_call>"
+        parser = parse_hermes_tool_calls
+    else:
+        text = '<tool_call>{"name":"get_weather","arguments":{"location":"Tokyo"}}</tool_call><tool_call>{"name":"get_weather","arguments":{"location":"Osaka"}}</tool_call>'
+        parser = parse_json_tool_calls
+    _, _, _, calls = emit_streaming_response(
+        model_name="test-model",
+        prefill="",
+        chunks=[SimpleNamespace(text=char) for char in text],
+        emit=events.append,
+        parse_tool_calls=lambda value: parser(value)[:1],
+        buffer_for_tools=True,
+        parallel_tool_calls=False,
+        completed_tool_call_text=completed_hermes_tool_call_text if hermes else None,
+    )
+    assert len(calls) == 1
+    entries = [entry for delta in _tool_call_deltas(events) for entry in delta]
+    assert entries and {entry["index"] for entry in entries} == {0}
+    assert any("Tokyo" in entry["function"].get("arguments", "") for entry in entries)

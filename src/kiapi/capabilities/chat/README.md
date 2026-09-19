@@ -14,15 +14,29 @@ It supports the following functions.
 - tool call
 - tool choice (auto, any, specific)
 - parallel tool calls
-- automatic prefix caching for text-only Qwen3.6 / Qwen3.8 requests
+- automatic prefix caching for Qwen3.6 / Qwen3.8 text and image requests, and Qwen3-Omni text, image, audio, and video requests
 
 ## Automatic Prefix Caching
 
-Qwen3.6 and Qwen3.8 reuse the longest matching token prefix from earlier
-text-only requests. This reduces prefill latency when clients resend a stable
-system message, tool schema, or conversation history. Responses are never
-cached, and `usage.prompt_tokens` continues to report the complete logical
-prompt. Qwen3-Omni and requests containing images are excluded.
+Qwen3.6, Qwen3.8, and Qwen3-Omni reuse matching prefixes from earlier
+requests. Qwen3.6 / Qwen3.8 support text and images; Omni also supports audio,
+video, and image + video. This reduces prefill latency when clients resend
+stable system messages, tool schemas, or conversation history with media.
+Responses are never cached, and `usage.prompt_tokens` reports the complete
+logical prompt.
+
+Media identity includes ordered SHA-256 content hashes and video options
+(`fps`, `use_audio_in_video`), independent of temporary file paths. Upstream
+also hashes processed tensors. An unchanged media prefix followed by new text
+can hit. Adding, replacing, or reordering media, or changing video options,
+recomputes the full prompt. Reuse never stops inside a media span; the remaining
+suffix must contain text only. Preprocessing still runs before cache lookup.
+A hit also requires a matching stored checkpoint. Qwen3.6 removes its empty
+thinking prefill from historical assistant turns, so continuing a short image
+conversation can miss even when the image is unchanged; repeating the same
+request still hits.
+The underlying processor currently accepts one audio clip per request; multiple
+audio clips in conversation history remain unsupported independently of APC.
 
 The cache is scoped to each loaded model, remains in memory only, and is
 released with the model. Hits and memory use are written to the server log as
@@ -34,7 +48,7 @@ empty `choices` array before `[DONE]`.
 
 | Setting | Environment variable | Default | Description |
 |---|---|---:|---|
-| `apc_enabled` | `KIAPI_CHAT_APC_ENABLED` | `true` | Enable text-only APC. |
+| `apc_enabled` | `KIAPI_CHAT_APC_ENABLED` | `true` | Enable APC for supported inputs. |
 | `apc_num_blocks` | `KIAPI_CHAT_APC_NUM_BLOCKS` | `2048` | Maximum blocks per loaded model. |
 | `apc_block_size` | `KIAPI_CHAT_APC_BLOCK_SIZE` | `16` | Tokens per block. |
 | `apc_memory_max_gb` | `KIAPI_CHAT_APC_MEMORY_MAX_GB` | `4.0` | Estimated resident-memory limit per model. |
@@ -42,7 +56,28 @@ empty `choices` array before `[DONE]`.
 
 Changing the tenant makes existing entries unreachable. Disable APC to fall
 back to normal generation. Disk persistence is intentionally not enabled, so a
-server restart starts with an empty prefix cache.
+server restart starts with an empty prefix cache. Model eviction, TTL expiration,
+and shutdown release the cache. The memory budget includes idle models' retained
+cache bytes and the active model's configured cache capacity plus generation margin.
+
+Disk persistence was evaluated and remains disabled: it adds reuse after eviction
+or restart, but does not accelerate an existing memory hit. Its files contain
+recoverable prompt token IDs in plaintext metadata, its capacity limit is eventual
+and per namespace, and some malformed headers escape the corruption fallback.
+There is no kiapi disk-cache setting; upstream `APC_DISK_*` environment variables
+do not enable disk storage in kiapi.
+
+GPU regression measurements (stop the service first):
+
+```sh
+uv run python scripts/capabilities/measure_chat_apc.py qwen3.8-27b --output .verify/apc/qwen38.json
+uv run python scripts/capabilities/measure_chat_apc.py qwen3-omni --output .verify/apc/omni.json
+uv run python scripts/capabilities/measure_chat_apc_disk.py
+```
+
+The measurements include cold/warm responses, partial hits, changed media/options,
+long visual prompts, memory release, and reloading. Inspect response semantics in
+the JSON artifacts; floating-point differences can change wording on cache hits.
 
 ## Client Disconnects
 
@@ -856,3 +891,13 @@ curl -sS "http://localhost:${PORT:-8000}/v1/chat/completions" \
 #   ]
 # }
 ```
+
+### Omni APC compatibility (mlx-vlm 0.7.1)
+
+`ensure_omni_apc_embeddings` adds nested thinker image/video/audio token IDs to
+APC's safe-boundary detection. On a restored text suffix it preserves the complete
+prompt's RoPE positions and skips re-encoding media; upstream otherwise attempts
+to apply full media grids to the short suffix and can raise an index error.
+Omni uses compact, layer-major snapshots for media-safe restoration. This is
+verified together with patches C and H on visual prompts longer than 2048 tokens.
+Re-check this workaround when upgrading mlx-vlm.

@@ -13,7 +13,7 @@ class MemoryStats(BaseModel):
     resident_gb: float = Field(
         ...,
         ge=0.0,
-        description="Total resident model weight currently counted against the budget.",
+        description="Total resident model weights and retained runtime caches counted against the budget. Per-model weight_gb excludes runtime caches.",
         examples=[12.0],
     )
     budget_gb: float = Field(

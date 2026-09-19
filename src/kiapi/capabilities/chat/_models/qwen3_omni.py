@@ -38,16 +38,20 @@ from .._operations.apply_template import apply_template
 from .._operations.cancel_on_request import cancel_on_request
 from .._operations.collect_generation import collect_generation
 from .._operations.emit_streaming_response import emit_streaming_response
+from .._operations.ensure_omni_apc_embeddings import ensure_omni_apc_embeddings
 from .._operations.ensure_omni_deepstack_window import ensure_omni_deepstack_window
 from .._operations.ensure_omni_image_video_join import ensure_omni_image_video_join
 from .._operations.format_response import format_response
+from .._operations.initialize_apc import initialize_apc
 from .._operations.limit_to_context import limit_to_context
+from .._operations.log_apc_result import log_apc_result
 from .._operations.parse_json_tool_calls import parse_json_tool_calls
 from .._operations.parse_messages import parse_messages
 from .._utils.apply_parallel_tool_call_policy import apply_parallel_tool_call_policy
 from .._utils.apply_seed import apply_seed
 from .._utils.load_audio_mono import load_audio_mono
 from .._utils.load_mlx_vlm import load_mlx_vlm
+from .._utils.media_apc_tenant import media_apc_tenant
 from .._utils.warmup_params import warmup_params
 from .._views.chat_params import ChatParams
 
@@ -56,7 +60,23 @@ CONTEXT_WINDOW_KEYS = ("thinker_config", "text_config", "max_position_embeddings
 
 
 def load(spec: ModelSpec) -> SimpleNamespace:
-    return load_mlx_vlm(spec)
+    payload = load_mlx_vlm(spec)
+    initialize_apc(payload)
+    if payload.apc_manager is not None:
+        # Media prefixes require a restorable snapshot, not independent blocks.
+        payload.apc_manager._layer_major_memory_min_tokens = 1
+    return payload
+
+
+def release(payload: SimpleNamespace) -> None:
+    if payload.apc_manager is not None:
+        payload.apc_manager.clear()
+        payload.apc_manager.close()
+
+
+def resident_extra_bytes(payload: SimpleNamespace) -> int:
+    manager = payload.apc_manager
+    return manager.resident_bytes() if manager is not None else 0
 
 
 def warmup(payload: SimpleNamespace) -> None:
@@ -71,6 +91,7 @@ def run(  # type: ignore
 ) -> dict[str, Any]:
     from mlx_vlm import stream_generate
 
+    ensure_omni_apc_embeddings()
     ensure_omni_image_video_join()  # needed for image + video input
     ensure_omni_deepstack_window()  # needed for long image/video prompts
 
@@ -113,11 +134,23 @@ def run(  # type: ignore
                     image=image_paths or None,
                     audio=audio_arrays or None,  # type: ignore[arg-type]  # (A) arrays, not paths
                     video=video_paths or None,
+                    apc_manager=payload.apc_manager,
+                    apc_tenant=media_apc_tenant(
+                        payload.apc_tenant,
+                        image_paths,
+                        audio_paths,
+                        video_paths,
+                        fps=params.fps,
+                        use_audio_in_video=params.use_audio_in_video,
+                    )
+                    if payload.apc_manager is not None
+                    else payload.apc_tenant,
                     **gen_kwargs,
                 ),
                 payload.context_window,
             ),
             cancel_requested,
+            payload.apc_manager.clear if payload.apc_manager is not None else None,
         )
 
         if emit is not None:
@@ -133,8 +166,10 @@ def run(  # type: ignore
                     parse_json_tool_calls(full), params.parallel_tool_calls
                 ),
                 buffer_for_tools=buffer_for_tools,
+                parallel_tool_calls=params.parallel_tool_calls,
             )
 
+            log_apc_result(payload, params.model, last)
             return format_response(
                 model_name=params.model,
                 full_text=full,
@@ -147,6 +182,7 @@ def run(  # type: ignore
         text, last = collect_generation(processor, chunks)
         elapsed = time.time() - t0
 
+        log_apc_result(payload, params.model, last)
         full = prefill + text
         tool_calls = apply_parallel_tool_call_policy(
             parse_json_tool_calls(full), params.parallel_tool_calls

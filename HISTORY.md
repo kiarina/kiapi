@@ -3,6 +3,60 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-19 — Omni と画像・音声・動画の chat APC を実装・検証した
+
+- Qwen3.6 / Qwen3.8の画像入力と、Qwen3-Omniのtext / image / audio / video / image + videoへ
+  memory-only APCを広げた。モデルごとのmanager、無効化設定、cached_tokens、キャンセル時のclearを共通化した
+- Omniではmlx-vlm 0.7.1のAPC境界判定にthinker内のimage/video/audio token IDが欠け、
+  warm imageでfull media gridをtrim済みsuffixへ当ててIndexErrorになることを再現した。
+  専用patchで境界判定を補完し、復元後のtext suffixはmediaを再encodeせずfull-prompt RoPEを保持する。
+  Omniのcacheはlayer-major snapshotを用い、patch C / Hとの組み合わせを長いvisual promptで確認した
+- mediaは種類ごとの順序付きSHA-256内容hashとfps/use_audio_in_videoをcache identityへ含める。
+  同じ内容の別pathは同じkey、同じpathで内容変更は別keyとなることをCPU testで確認。
+  実機でも毎回異なる一時pathでhitし、赤→緑の画像変更ではmissして正しい色を応答した。
+  fps / video audio設定変更と、新しいmediaをsuffixへ追加した場合はwhole-request cold fallbackする
+- 通常のtext suffixはpartial hitできる。Qwen3.6の短い画像会話は、新規assistant用の空think prefillが
+  履歴中では消えるためcheckpointとprefixが一致せずcoldになる場合がある。同一requestの再送はhitする。
+  上流processorの複数audio clip/request非対応も確認し、READMEへ明記した
+- APCのclear / model release / reloadを検証し、各モデルの解放後にMLX active memoryが約1 KiBまで戻ること、
+  再ロード後のcached_tokensが0になることを確認。単なるheadroom予約ではidle modelのcacheが未計上だったため、
+  thread-safeなresident_extra_bytes hookでhealth・eviction・transient reservationへ算入した。
+  active modelのheadroomも固定20 GiBから、APC設定上限 + 4 GiB（無効時4 GiB）へ変更した
+- `scripts/capabilities/measure_chat_apc.py`を追加。Mac Studio M4 Max 128GB、mlx-vlm 0.7.1、
+  temperature=0、seed=42、最大64生成tokens、APC上限4 GiB。モデルロードと初回text kernel warmupを除外し、
+  前処理を含む最初のcontent出力までの時間を計測。warmは同一request 3回の中央値。
+  cold/warmの回答を比較し、画像の色・形、動画の場面、音声の主題が維持されることを確認した。
+  音声等の自由記述は浮動小数点差による言い回しの差があり、文字列完全一致を保証しない
+
+| Model / input | Prompt tokens | Cold TTFT (s) | Warm median (s) | Cached tokens |
+|---|---:|---:|---:|---:|
+| Qwen3.8 text | 2,128 | 8.290 | 0.075 | 2,127 |
+| Qwen3.8 image | 86 | 0.496 | 0.072 | 85 |
+| Qwen3.8 long image | 2,991 | 12.716 | 0.165 | 2,990 |
+| Qwen3.6 text | 2,128 | 8.359 | 0.075 | 2,127 |
+| Qwen3.6 image | 86 | 0.500 | 0.073 | 85 |
+| Qwen3.6 long image | 2,991 | 12.814 | 0.177 | 2,990 |
+| Omni text | 2,124 | 1.310 | 0.115 | 2,112 |
+| Omni image | 82 | 0.198 | 0.052 | 80 |
+| Omni long image | 2,987 | 2.879 | 0.185 | 2,976 |
+| Omni audio | 408 | 0.821 | 0.223 | 400 |
+| Omni video | 3,602 | 4.018 | 0.563 | 3,600 |
+| Omni image + video | 3,670 | 4.051 | 0.595 | 3,664 |
+
+- Disk tierは`measure_chat_apc_disk.py`で別評価し、採用しないと判断した。
+  Qwen3.8 / 3,028 prompt tokensのmemory cold 11.941 s、memory warm 0.078 s、disk reopen 0.115 s。
+  diskを有効にしてもmemory hitは0.078 sで追加効果がなく、効果はeviction / restart後の再利用となる。
+  約640.5 MBのsafetensorsには復元可能なtoken IDsが平文metadataとして含まれる。
+  通常の破損headerはcold fallbackし、1 KiB capではflush後0 bytesへevictされたが、capはnamespace単位の
+  事後制限で、canonical filenameのheaderをJSON arrayにするとTypeErrorがfallback外へ漏れた。
+  kiapiはDiskBlockStoreを作らず、APC_DISK_*環境変数でも永続化を有効にしない
+
+- full verifyの出力確認で、parallel_tool_calls=falseでも2件目のtool名だけ先行送信する既存不具合を発見した。
+  名前の送信にも同じ件数制限を適用し、JSON/HermesのCPU regression testと3 modelのstream検証を追加した。
+- `make`、CPU test 336件、chat full verify（全model・全modality・stream/non-stream）、
+  修正後の3 model stream専用検証が通過した。稼働・キャッシュ破棄の追加確認は運用側の記録を参照。
+
+
 ## 2026-09-19 — chat client切断をjob cancellationへ結線した
 
 - 既存の`JobStatus.CANCELED` / `Job.mark_canceled()`を実処理へ結線した。Jobにthread-safeなcancel signalを

@@ -44,7 +44,7 @@ All capabilities share `KIAPI_MEMORY_LIMIT_GB`. When unset, the effective
 startup budget is 80% of installed memory.
 
 ```text
-other resident weights
+other resident weights + their retained runtime caches
   + current model weight
   + current job peak headroom
   <= memory limit
@@ -53,6 +53,12 @@ other resident weights
 When space is insufficient, residents are released in ascending
 `(priority, last_used)` order. Release functions perform framework-specific
 cleanup for MLX, Torch/MPS, or subprocess payloads.
+
+Handlers with growing runtime caches can expose `resident_extra_bytes(payload)`.
+It returns bytes beyond the load-time weights, without evaluating GPU tensors,
+and must be thread-safe because `/health` also reads it. The memory manager counts
+these bytes for idle residents during acquisition and transient reservations.
+Chat reserves its configured APC capacity in the active model's peak headroom.
 
 ## Idle TTL
 

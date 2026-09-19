@@ -279,3 +279,25 @@ def _last_used(mgr: MemoryManager, spec: ModelSpec) -> float:
 
 def _future(mgr: MemoryManager, spec: ModelSpec) -> float:
     return _last_used(mgr, spec) + 10_000.0
+
+
+def test_idle_runtime_cache_counts_for_eviction_and_health() -> None:
+    mgr = _manager(limit_gb=10)
+    module = _module()
+    retained = [0]
+    module.resident_extra_bytes = lambda payload: retained[0]  # type: ignore[attr-defined]
+    a = _spec("a", weight_gb=3, module=module)
+    mgr.acquire(a)
+    retained[0] = 4 * 1024**3
+    assert mgr.stats().resident_gb == 7
+    mgr.acquire(_spec("b", weight_gb=3, peak_headroom_gb=1))
+    assert _resident_names(mgr) == {"b"}
+
+
+def test_transient_reservation_counts_idle_runtime_cache() -> None:
+    mgr = _manager(limit_gb=10)
+    module = _module()
+    module.resident_extra_bytes = lambda payload: 4 * 1024**3  # type: ignore[attr-defined]
+    mgr.acquire(_spec("a", weight_gb=3, module=module))
+    mgr.reserve(4)
+    assert not _resident_names(mgr)
