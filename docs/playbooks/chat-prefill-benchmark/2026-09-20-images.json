@@ -1,0 +1,793 @@
+{
+  "commit": "3829991539907bb7eba7288fd2b1fa31b58e4fc4",
+  "macos": "26.6.2",
+  "device": {
+    "device_name": "Apple M4 Max",
+    "max_recommended_working_set_size": 115448725504,
+    "memory_size": 137438953472,
+    "architecture": "applegpu_g16s",
+    "max_buffer_length": 86586540032,
+    "resource_limit": 499000
+  },
+  "versions": {
+    "mlx": "0.32.2",
+    "mlx-vlm": "0.7.1"
+  },
+  "engine_source": {
+    "url": "https://github.com/kiarina/mlx-vlm.git",
+    "vcs_info": {
+      "vcs": "git",
+      "commit_id": "3c5bd17c5cff3ad45d80273b366e86ad7df4ed96",
+      "requested_revision": "3c5bd17c5cff3ad45d80273b366e86ad7df4ed96"
+    }
+  },
+  "script_sha256": "6084ecfaf88f30d3d845866ccf75f0101d08ab4c5e248f42a08db6570db52e0d",
+  "arguments": {
+    "steps": [
+      512,
+      2048,
+      8192
+    ],
+    "tokens": [
+      4096,
+      16384
+    ],
+    "repeats": 2,
+    "image_checks": true,
+    "output": ".verify/prefill/images-2026-09-20.json"
+  },
+  "apc_checkpoint_interval_tokens": 2048,
+  "apc_memory_max_bytes": 4294967296,
+  "rows": [
+    {
+      "case": "warmup",
+      "repeat": 0,
+      "step": 2048,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.3429757499980042,
+      "prompt_tps": 63.32002733318372,
+      "elapsed_s": 0.35014854099426884,
+      "usage": {
+        "prompt_tokens": 15,
+        "completion_tokens": 1,
+        "total_tokens": 16,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 16316424392,
+      "resident_bytes": 0,
+      "chunk_histogram": {
+        "14": 1
+      },
+      "text": "Hello"
+    },
+    {
+      "case": "image_base",
+      "repeat": 1,
+      "step": 512,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.203735916002188,
+      "prompt_tps": 245.83069424782082,
+      "elapsed_s": 17.24710704100289,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 17677618716,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "512": 8,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 1,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.11726633299986133,
+      "prompt_tps": 44573.916388310434,
+      "elapsed_s": 0.16060749999451218,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643753048,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 1,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6790033750003204,
+      "prompt_tps": 6628.622962389166,
+      "elapsed_s": 0.7942982919994392,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 1,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.05864366699825,
+      "prompt_tps": 254.06023731457418,
+      "elapsed_s": 17.173770124994917,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 18547881610,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "512": 8,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 1,
+      "step": 512,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.053851833996305,
+      "prompt_tps": 254.1271600045819,
+      "elapsed_s": 17.169078041995817,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 17696656948,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "512": 8,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_base",
+      "repeat": 2,
+      "step": 512,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 16.532233459001873,
+      "prompt_tps": 254.84931874143845,
+      "elapsed_s": 16.575568458996713,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 17677733404,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "512": 8,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 2,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.09291883299738402,
+      "prompt_tps": 59776.2825382641,
+      "elapsed_s": 0.13621666700055357,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643867736,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 2,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6791870000015479,
+      "prompt_tps": 6623.68383725388,
+      "elapsed_s": 0.7941960829994059,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 2,
+      "step": 512,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.06249858299998,
+      "prompt_tps": 253.99648231579732,
+      "elapsed_s": 17.1778344580016,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 18547881610,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "512": 8,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 2,
+      "step": 512,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.054909374994168,
+      "prompt_tps": 254.1114706279159,
+      "elapsed_s": 17.17014124999696,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 17696656948,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "512": 8,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_base",
+      "repeat": 1,
+      "step": 2048,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 16.527577833003306,
+      "prompt_tps": 254.92285587530822,
+      "elapsed_s": 16.57079416700435,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 19523554884,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "2048": 2,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 1,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.09241491699503968,
+      "prompt_tps": 60375.93402957846,
+      "elapsed_s": 0.13575079199654283,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643867736,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 1,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6782137909976882,
+      "prompt_tps": 6628.280581256288,
+      "elapsed_s": 0.7933485000030487,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 1,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.059890875003475,
+      "prompt_tps": 254.0424973134159,
+      "elapsed_s": 17.17482816700067,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 20395495004,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "2048": 2,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 1,
+      "step": 2048,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.051906416993006,
+      "prompt_tps": 254.15292925343851,
+      "elapsed_s": 17.167103874999157,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 19526749788,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "2048": 2,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_base",
+      "repeat": 2,
+      "step": 2048,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 16.5239451669986,
+      "prompt_tps": 254.98364748815015,
+      "elapsed_s": 16.567395459002,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 19523554884,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "2048": 2,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 2,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.09246416600217344,
+      "prompt_tps": 60007.80229835446,
+      "elapsed_s": 0.13597258300433168,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643867736,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 2,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6804276670009131,
+      "prompt_tps": 6613.799881174139,
+      "elapsed_s": 0.7954999169960502,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 2,
+      "step": 2048,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.054093832994113,
+      "prompt_tps": 254.12365280829442,
+      "elapsed_s": 17.16917999999714,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 20395495004,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "2048": 2,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 2,
+      "step": 2048,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.045767625000735,
+      "prompt_tps": 254.24741769061717,
+      "elapsed_s": 17.16068308299873,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 19526749788,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "2048": 2,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_base",
+      "repeat": 1,
+      "step": 8192,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 16.71081587500521,
+      "prompt_tps": 252.12377369338714,
+      "elapsed_s": 16.75416799999948,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22083784274,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "4096": 1,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 1,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.09240258299541892,
+      "prompt_tps": 60302.407045333886,
+      "elapsed_s": 0.13585129100101767,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643867736,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 1,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6792002079964732,
+      "prompt_tps": 6622.062162267151,
+      "elapsed_s": 0.7943339580015163,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 1,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.234059042006265,
+      "prompt_tps": 251.47231082134957,
+      "elapsed_s": 17.349353834004432,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22955724394,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "4096": 1,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 1,
+      "step": 8192,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.238244084001053,
+      "prompt_tps": 251.40692303373834,
+      "elapsed_s": 17.353768041997682,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22086979178,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "4096": 1,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_base",
+      "repeat": 2,
+      "step": 8192,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 16.71762554199813,
+      "prompt_tps": 252.02400230866755,
+      "elapsed_s": 16.76099762499507,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22083784274,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {
+        "4096": 1,
+        "114": 1
+      },
+      "text": "RED"
+    },
+    {
+      "case": "image_warm",
+      "repeat": 2,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.09251299999596085,
+      "prompt_tps": 60061.22337067209,
+      "elapsed_s": 0.13579154200124322,
+      "usage": {
+        "prompt_tokens": 4211,
+        "completion_tokens": 2,
+        "total_tokens": 4213,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 17643867736,
+      "resident_bytes": 852230144,
+      "chunk_histogram": {},
+      "text": "RED"
+    },
+    {
+      "case": "image_append_hit",
+      "repeat": 2,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 0.6799966670005233,
+      "prompt_tps": 6616.705685534518,
+      "elapsed_s": 0.7953412079950795,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 4210
+        }
+      },
+      "peak_bytes": 18083876404,
+      "resident_bytes": 867565568,
+      "chunk_histogram": {
+        "120": 1
+      },
+      "text": "Red, Blue"
+    },
+    {
+      "case": "image_changed",
+      "repeat": 2,
+      "step": 8192,
+      "cold": false,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.250634750002064,
+      "prompt_tps": 251.22469622007392,
+      "elapsed_s": 17.365817375000915,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22955724394,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "4096": 1,
+        "234": 1
+      },
+      "text": "Green, Blue"
+    },
+    {
+      "case": "image_append_cold",
+      "repeat": 2,
+      "step": 8192,
+      "cold": true,
+      "image_prefix_enabled": true,
+      "first_token_s": 17.240422957998817,
+      "prompt_tps": 251.3735035757126,
+      "elapsed_s": 17.355626874996233,
+      "usage": {
+        "prompt_tokens": 4331,
+        "completion_tokens": 4,
+        "total_tokens": 4335,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "peak_bytes": 22086979178,
+      "resident_bytes": 860094464,
+      "chunk_histogram": {
+        "4096": 1,
+        "234": 1
+      },
+      "text": "Red, Blue"
+    }
+  ]
+}

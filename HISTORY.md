@@ -3,6 +3,42 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-20 — Qwen3.8 の prefill chunk 比較を完了し既定2048を維持した
+
+- 依頼範囲は`prefill_step_size`だけ。モデル・量子化・engine pin・画像APC方式・checkpoint間隔は変更せず、
+  **既定2048を維持**した。512/1024の差は試行間のばらつき以下、大きいchunkは遅くメモリも増えた。
+- 条件: Mac Studio M4 Max 128GB、macOS 26.6.2、MLX 0.32.2、Qwen3.8-27B-4bit、
+  kiapi `3829991`、mlx-vlm fork `3c5bd17c`。APC 4 GiB、temperature=0、seed=42、text生成1 token。
+  モデルloadを除外し短いwarmup後に測定。各cold試行前にAPC/MLX allocation cacheをclear。
+  前処理とcheckpoint保存を含む最初のengine tokenまでの時間で、HTTP/SSEの転送時間は含まない。
+- 各条件2回、2回目は逆順。前日に別GPUアプリが起動して汚染された16Kの試行は使わず、全条件を再測定した。
+  再測定中は競合するGPU作業を観測せず、swap使用量0。通常のdesktop appsは開いたまま。
+
+16,402 prompt tokens。TTFTは2回の中央値、peakはMLXが計測したモデル重み込みの最大値（decimal GB）。
+
+| Chunk tokens | TTFT (s) | MLX peak (GB) |
+|---|---:|---:|
+| 512 | 67.397 | 21.01 |
+| 1024 | 67.027 | 21.01 |
+| 2048 | 67.073 | 21.66 |
+| 4096 | 67.790 | 25.44 |
+| 8192 | 69.412 | 33.11 |
+
+- 1024の2048に対する差は約0.07%。1024自身の試行差は0.256秒あり、改善として採用しない。
+  8192は約3.5%遅く、peakが約11.45 GB増えた。
+- 別入力の4,114 tokensでは128=16.741秒、256=16.363秒、2048=16.271秒（各2回中央値）。
+  小さくする方向にも速度の利点なし。前日完了分の512〜8192も約16.0〜16.3秒だった。
+- 画像検証は512/2048/8192の各2回で、同一request再送、画像追加、旧画像変更、cold対照を全て通過。
+  赤→青の画像追加は4,331 prompt tokensのうち4,210を再利用し、TTFT中央値は約0.679〜0.680秒。
+  coldは約17.05〜17.24秒。赤を緑へ変更したケースはcached_tokens=0で`Green, Blue`を返し、
+  unchangedのcold/hitは`Red, Blue`を返した。
+- 画像promptは4,211/4,331 tokensで、8192指定時もcheckpoint境界により実chunkは最大4096。
+  16K textでは実際に8192 chunkを処理したことをhistogramで確認。より長い入力・別モデルの最適値は断定しない。
+- 再利用する計測手順は[playbook](docs/playbooks/chat-prefill-benchmark.md)、
+  scriptは`scripts/capabilities/measure_chat_prefill.py`。生データは同playbookからリンクする。
+  scriptは前日の`make`とCPU tests 339件が通過した版から変更せず、今回GPUの全計画を完走した。
+  productionコード・設定・依存を変更していないため、通常chat full verifyの重複実行は不要と判断した。
+
 ## 2026-09-19 — Qwen3.8 で新しい画像を追加しても既存prefixを再利用できるようにした
 
 - ユーザー合意に基づきmlx-vlm本体で実装し、fork commit `3c5bd17c5cff3ad45d80273b366e86ad7df4ed96`を

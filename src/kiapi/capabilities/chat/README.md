@@ -91,6 +91,16 @@ The measurements include cold/warm responses, partial hits, changed media/option
 long visual prompts, memory release, and reloading. Inspect response semantics in
 the JSON artifacts; floating-point differences can change wording on cache hits.
 
+## Prefill chunk sizing
+
+kiapi retains mlx-vlm's 2048-token prefill step. Chunk size is separate from
+APC block size and checkpoint spacing. On the measured Qwen3.8-27B-4bit / M4 Max
+4K and 16K inputs, changing only chunk size did not meaningfully reduce cold
+prefill latency. Larger chunks used more peak memory.
+
+See the [benchmark procedure and results](../../../../docs/playbooks/chat-prefill-benchmark.md)
+for reproducible comparisons, including image-prefix APC checks.
+
 ## Client Disconnects
 
 When a streaming or non-streaming client disconnects, its chat job requests

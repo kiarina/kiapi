@@ -58,5 +58,23 @@ collected on a Mac Studio M4 Max with 128 GB, macOS 26.6.2, MLX 0.32.2,
 kiapi `5b5ab85`, and mlx-vlm fork `3c5bd17`. The APC budget was 4 GiB.
 The 4,114-token cases completed twice. The 16,402-token sweep was interrupted
 when another GPU application started; its second 2048-token-step result is
-contaminated. No production default was changed. See the active
-[task](../../tasks/chat-prefill-chunk-tuning.md) for remaining validation.
+contaminated. No production default was changed. The completed follow-up is recorded in
+[HISTORY](../../HISTORY.md#2026-09-20--qwen38-の-prefill-chunk-比較を完了し既定2048を維持した).
+
+## Completed comparison (2026-09-20)
+
+The follow-up used the same model, engine pin, hardware, and 4 GiB APC budget,
+with no competing GPU application observed. Source base: kiapi `3829991`.
+The existing 2048-token default was retained: changing chunk size did not
+produce a meaningful cold-prefill speedup on the measured inputs.
+
+- [4K text, smaller chunks](chat-prefill-benchmark/2026-09-20-small.json):
+  128, 256, and 2048, twice each with reversed order on the second pass.
+- [16K text](chat-prefill-benchmark/2026-09-20-long.json):
+  512 through 8192, twice each with reversed order on the second pass.
+- [Image APC checks](chat-prefill-benchmark/2026-09-20-images.json):
+  exact replay, appended image, and changed image at 512, 2048, and 8192.
+
+See HISTORY for medians, memory use, validation results, and limitations.
+These measurements do not establish an optimum for other models, hardware,
+or substantially longer prompts.
