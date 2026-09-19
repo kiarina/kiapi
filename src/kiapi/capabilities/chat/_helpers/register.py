@@ -53,7 +53,7 @@ def register() -> None:
             repo="mlx-community/Qwen3.6-27B-4bit",
             module=qwen3_5,
             weight_gb=15.0,  # measured on device (estimate was 16.0)
-            peak_headroom_gb=4.0,
+            peak_headroom_gb=20.0,  # 16 GiB APC cap + 4 GB generation margin
             framework="mlx",
             priority=0,
             aliases=("qwen3.6",),
@@ -73,7 +73,7 @@ def register() -> None:
             repo="mlx-community/Qwen3.8-27B-4bit",
             module=qwen3_5,
             weight_gb=16.0,
-            peak_headroom_gb=4.0,
+            peak_headroom_gb=20.0,  # 16 GiB APC cap + 4 GB generation margin
             framework="mlx",
             priority=0,
             aliases=("qwen3.8", "qwen3_5", "qwen3-vl", "vlm"),

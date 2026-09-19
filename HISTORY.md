@@ -24,6 +24,9 @@
   stream/non-stream、tool choice、parallel tool calls、画像、Omniのaudio/videoを含む既存経路を確認した
 - Qwen3-Omniとmultimodal APC、disk tierは効果と安全性を独立して判断する。Omni / media hash / patch C・Hとの
   組み合わせは未検証なので、別taskへ分離した
+- 本番のAPC上限を4 GiBから16 GiBへ変更し、Qwen3.6 / Qwen3.8の`peak_headroom_gb`を4から20へ
+  引き上げた。model weightとは別にAPC最大16 GiBと従来の生成margin 4 GBを予約し、他modelとの
+  共存・eviction判断でprefix cacheを無視しないようにした。通常はQwen3.6 / Qwen3.8の片方だけを使う
 
 ## 2026-09-16 — chat の出力上限をサーバーの cap から context window に替えた
 

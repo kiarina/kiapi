@@ -7,9 +7,10 @@ and/or tool calls out. Non-streaming and OpenAI-style SSE streaming are supporte
 
 ``register()`` registers its models and capability OpenAPI metadata.
 ``weight_gb`` / ``peak_headroom_gb`` are seeded from on-device measurement
-(Mac Studio M4 Max, 2026-06): omni weights ~20.3 GB, qwen3.6-27b ~15.0 GB; the
-generation peak over weights was negligible for text and single-image inputs, so
-headroom is a conservative margin for heavy multimodal (video) inputs.
+(Mac Studio M4 Max, 2026-06): omni weights ~20.3 GB, qwen3.6-27b ~15.0 GB.
+Omni reserves a conservative generation margin for heavy multimodal inputs.
+Qwen3.6 / Qwen3.8 reserve their configured 16 GiB APC capacity plus the prior
+4 GB generation margin so global memory-budget decisions include prefix caching.
 """
 
 from importlib import import_module
