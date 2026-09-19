@@ -3,6 +3,42 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-20 — Omni の追加メディアで既存prefixを再利用する
+
+- mlx-vlm fork `98300012bbccc728d0a98e92444cc45bc433e284`を実装・pinし、kiapiへ取り込んだ。
+  上流PR [#2311](https://github.com/Blaizzy/mlx-vlm/pull/2311)はCI成功、review待ち。
+  Qwen3.8画像対応[#2309](https://github.com/Blaizzy/mlx-vlm/pull/2309)に積み重ねた変更。
+- 画像・音声・動画・混在・音声付き動画（既存demux方式）の追加で、変更のない履歴のKVを再利用し、
+  追加mediaだけをencodeする。prefix内の処理済みcontent・grid・長さ・位置・FPSを識別する。
+  Omniのdeepstackをfull-prompt座標へ合わせ、完全なRoPEを保持した。
+- 複数音声をclipごとに特徴抽出・encodeし、長い音声の追加による過去clipのpadding変化を排除した。
+  100-frame境界の長さ計算とchunk maskも修正。旧画像・同一path/同一長さの音声差し替え、FPS変更で
+  対象mediaを再計算し、手前のtextだけを再利用することを確認した。
+- 条件: Mac Studio M4 Max 128GB、macOS26.6.2、MLX0.32.2、Qwen3-Omni-30B-A3B-Instruct-4bit、
+  temperature=0、APC4GiB、最大48生成tokens。各2回の中央値。TTFTはモデルloadを除き前処理を含む。
+
+| 追加media | cold TTFT (s) | hit TTFT (s) | cached / prompt tokens |
+|---|---:|---:|---:|
+| image | 1.719 | 0.174 | 2709 / 2755 |
+| audio | 1.783 | 0.230 | 2713 / 2793 |
+| video | 1.891 | 0.287 | 2791 / 2920 |
+| mixed | 2.035 | 0.359 | 2831 / 3011 |
+| audiovisual | 1.997 | 0.357 | 2813 / 2990 |
+
+- cold/hitの色・合言葉の順序と追加分のみencodeを実機確認。量子化MoEはprefill/encodeの形状によって
+  logitsが完全一致しないため、小型float32実モデルでfull/restore/chunked logitsの一致も検証した。
+- upstream cache/generate/prefix467件、モデル契約3件、kiapi CPU340件、旧engine互換55件、make成功。
+  chat full verifyと具体的な内容anchorを検査するOmni HTTP5種も成功した。
+  異なる画像を追加するstream検証は2,448tokensを再利用し、旧画像変更はcached=0で正しい色を返した。
+- 曖昧な質問でUnderstood.だけ返す現象はcoldでも同じで、質問を具体化して実際の前回答を履歴に使う検証にした。
+  Qwen用enable_thinking=FalseはOmniに流用しない。
+- Native interleaved audio/videoとbatchは今回の対象外。公式0.7.1では従来の全media単位の識別へfallbackする。
+  複数音声はforkが必要。Qwen3.8既存対応とprefill既定2048は維持。
+- サーバー機へ依存を同期して再起動し、private network経由でもHTTP5種を全て確認した。
+  cached tokensはimage105、audio432、video1833、audiovisual2228、mixed2291。最終healthはok、queue_len=0。
+- 仕様はchat README、実機probeはmlx-vlm `examples/verify_omni_media_prefix.py`、API回帰は
+  `scripts/capabilities/verify_chat_omni_prefix.py`。raw結果は`.verify/omni-prefix-98300012/`に保存。
+
 ## 2026-09-20 — Qwen3.8 の prefill chunk 比較を完了し既定2048を維持した
 
 - 依頼範囲は`prefill_step_size`だけ。モデル・量子化・engine pin・画像APC方式・checkpoint間隔は変更せず、

@@ -182,4 +182,5 @@ mise run verify --kiapi --family embedding --fast
 
 - [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
 
-- [Omni の追加メディアでも既存prefixを再利用する](tasks/chat-omni-media-prefix-reuse.md)
+
+- [Omni media prefix再利用の上流取り込みを追う](tasks/mlx-vlm-omni-media-prefix-upstream.md)
