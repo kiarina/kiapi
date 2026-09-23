@@ -16,7 +16,29 @@ mlx-vlm は #2032（2026-08-26 merge）で `qwen4_exp` に対応済み。**現�
   model card 上は M4 Max で常駐 68 GB（n-gram 表を NVMe から streaming すると 39 GB）、stock mlx-vlm で約 28 tok/s。
   REAP の校正は agentic-coding の通信のみで、公開評価は HumanEval（93.9→91.5）だけ。日本語・知識・vision は未評価
 
-どちらを既定にするかは、labs での劣化評価（agent リポジトリの tasks が追跡）の結果で決める。
+## labs での評価結果（2026-09-24）
+
+正典: labs `2026/09/24/qwen38-flash-next-reap-eval`。サーバー機、fork と同じ base の upstream mlx-vlm `e79b0e04`、thinking 無効。
+
+| | 日本語 32 問 | needle 32K / 128K / 240K | エージェント 4 題 | load peak |
+|---|---:|---|---:|---:|
+| Qwen3.8-27B | 30 | 全問正解 / 全問 / 全問 | 4 | 16.1 GB |
+| Flash-Next 4bit | 32 | 正解（prefill 256）/ OOM / 未実施 | 4（prefill 256・APC 1 GB） | 111.5 GB |
+| REAP-288 | 12（知識 1/16） | 全問正解 / 全問 / 全問 | 3 | 41.5 GB |
+
+- **REAP-288 は日本語の用途に使えない。** 一般知識が言語を問わず崩れ、中国語へ流れる（コード中の「時間」を「时间」に書き換えた）。
+  長い context の検索と prefill 速度（約 560〜600 tok/s、27B は 114〜217）は優秀
+- **4bit のフル版は、既定の GPU wired limit では 128K まで扱えない**（Metal OOM）。`iogpu.wired_limit_mb` を上げる案は未検証
+- 上流の APC は `qwen4_exp` でも turn をまたいで prefix を再利用した（REAP-288 で確認）
+- load には `ulimit -n` の引き上げが要る（n-gram 表の shard を全部 mmap するため。既定 256 では `Too many open files`）。
+  launchd で動かすなら plist の `SoftResourceLimits` などで上げる
+
+## 次の判断（ユーザーと相談して決める）
+
+- この task を続けるか、保留にするか。続けるなら、どの重みを使うか:
+  - 4bit のフル版 + GPU wired limit の引き上げ（システム設定の変更。他のモデルとは共存できない）
+  - より大きい REAP（384 など）や、日本語を含む校正で作った別の pruning を探して評価し直す
+  - 3bit 前後の量子化版（ddalcu iQ-MLX 3.3bpw 86.4 GB など）を評価する
 
 ## やること
 
