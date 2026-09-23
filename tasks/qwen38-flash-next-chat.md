@@ -33,10 +33,26 @@ mlx-vlm は #2032（2026-08-26 merge）で `qwen4_exp` に対応済み。**現�
 - load には `ulimit -n` の引き上げが要る（n-gram 表の shard を全部 mmap するため。既定 256 では `Too many open files`）。
   launchd で動かすなら plist の `SoftResourceLimits` などで上げる
 
+## n-gram 表（PLE）を mmap にした追試（2026-09-24）
+
+正典: labs `2026/09/24/qwen38-flash-next-ple-mmap`。mlx-vlm の `prepare_external_ple_model` で、4bit のフル版に
+`ple-store.json` を付けた view を作った（非 PLE の重みは hard link、payload のコピーなし）。
+
+- load peak は 111.5 → **79.5 GB**（PLE の 32.0 GB がちょうど抜けた）。decode は 47.1 → 40.2 tok/s（約 15% 低下、27B の 34.3 よりは速い）
+- **既定の設定（prefill 2048、APC 8 GB）で全 suite が通った。** needle 32K / 128K / 240K を全問正解（prefill 530〜580 tok/s、
+  peak 83.6 / 89.9 / 96.0 GB）、エージェント 4/4（APC も効いた）、日本語 32/32
+- 実行中にスワップは増えなかった
+- kiapi へ組み込むなら、この view（`ple-store.json` + `ple_storage` を入れた config）を作る処理を setup に持たせる必要がある。
+  hard link なので HF cache と同じ filesystem に置く。240K で 96 GB に達するので、ロード中は他のモデルと共存できない前提で
+  `weight_gb` / `peak_headroom_gb` を決める。起動直後の page cache が冷えた状態の decode 速度は未計測
+
 ## 次の判断（ユーザーと相談して決める）
 
+- **有力: 4bit のフル版 + PLE の mmap。** 品質を落とさず 128 GB で長い context まで動く。残る懸念は、96 GB を占めて他の family と
+  同時に載らないことと、expert の SSD offload（`mlx_vlm/moe_offload.py`）まで重ねるかどうか
+
 - この task を続けるか、保留にするか。続けるなら、どの重みを使うか:
-  - 4bit のフル版 + GPU wired limit の引き上げ（システム設定の変更。他のモデルとは共存できない）
+  - 4bit のフル版 + GPU wired limit の引き上げ（システム設定の変更。PLE の mmap で不要になった可能性が高い）
   - より大きい REAP（384 など）や、日本語を含む校正で作った別の pruning を探して評価し直す
   - 3bit 前後の量子化版（ddalcu iQ-MLX 3.3bpw 86.4 GB など）を評価する
 
