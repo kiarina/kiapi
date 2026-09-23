@@ -17,6 +17,6 @@
 - Qwen3.8の画像追加・旧画像変更・text-only、Omniを含むchat full verifyを通す。
 - #2309単体はsingle-request qwen3_5 text/image限定。Omniは#2311の対応範囲を確認し、batchへ無条件に広げない。
 - fork baseでC/Hの上流修正を使っているため、公式版へ戻すときは
-  `tasks/goal/mlx-vlm-omni-deepstack-upstream.md`と互換patchの状態も合わせて確認する。
+  `tasks/mlx-vlm-omni-deepstack-upstream.md`と互換patchの状態も合わせて確認する。
 
 Omni側の追跡: [mlx-vlm-omni-media-prefix-upstream.md](mlx-vlm-omni-media-prefix-upstream.md)。

@@ -39,31 +39,30 @@ Google 認証が必要な機能を実装する場合、下記を把握してく�
 
 ## タスク管理
 
-- `tasks/` — タスク。1 タスク 1 ファイルで、背景・やること・進捗・申し送りを
-  そのファイルに直接記載する。**直下にはファイルを置かず、終わりがあるかどうかで次の 2 つへ振り分ける**
-  - `tasks/goal/` — ゴール。達成したら終わり、ファイルを消す。今すぐ着手できるか、何かを
-    待っているかは入れ替わるので、ディレクトリでは分けず、ファイルの中で表す
-  - `tasks/routine/` — ルーチン。監視・保守・終わりのない統括など、繰り返し実行して終わらない。
-    必要になったときに作る
+- `tasks/` — タスク。**終わりがあり、達成したらファイルを消すもの。** 1 タスク 1 ファイルで、背景・やること・
+  進捗・申し送りをそのファイルに直接記載する。今すぐ着手できるか、何かを待っているかは入れ替わるので、
+  ディレクトリでは分けず、ファイルの中で表す
+- `routines/` — ルーチン。**監視・保守・終わりのない統括など、繰り返し実行して終わらないもの。**
+  1 ルーチン 1 ファイルで、目的・手順・現在の状態を保つ。必要になったときにリポジトリのルートに作る
 - `HISTORY.md` — 完了した作業、実測値、過去の意思決定
 - 仕様・設計・手順の正典は従来どおり `docs/` と各 README
 
-どちらに置くか迷ったら、**完了条件を 1 行で書けるか**で決めます。書けるならゴール、書けないなら
-ルーチンです。ルーチンの中から完了条件のある作業が生まれたら、ゴールとして切り出します。
+どちらに置くか迷ったら、**完了条件を 1 行で書けるか**で決めます。書けるならタスク、書けないなら
+ルーチンです。ルーチンの中から完了条件のある作業が生まれたら、タスクとして切り出します。
 
 運用ルール:
 
 - タスクに着手したら、進捗・未検証の懸念・踏んだ落とし穴・次の一手を該当の
   `tasks/` ファイルへ直接追記する
-- 新しいタスク（今すぐ着手しない将来候補も含む）は `tasks/goal/` か `tasks/routine/` に
+- 新しいタスク（今すぐ着手しない将来候補も含む）は `tasks/` に、新しいルーチンは `routines/` に
   ファイルを作り、下の「タスク一覧」へ 1 行追記する
-- **ゴールを達成したら、実測値・意思決定を `HISTORY.md` へ、再利用する知見を該当する
+- **タスクが完了したら、実測値・意思決定を `HISTORY.md` へ、再利用する知見を該当する
   `docs/` へ移した上で、タスクファイルを削除し、「タスク一覧」から行を消す。**
   削除したファイルの全文は git 履歴で辿れるため、転記は要点だけで良い
-- ルーチンの実行の記録は `HISTORY.md` に残し、タスクファイルには次回も使う目的・手順・
+- ルーチンの実行の記録は `HISTORY.md` に残し、ルーチンのファイルには次回も使う目的・手順・
   現在の状態だけを保つ
 - ルーチン自体が不要になったときは、終了理由と必要な実測値・意思決定を `HISTORY.md` へ
-  移した上で、タスクファイルと「タスク一覧」の行を削除する
+  移した上で、ルーチンのファイルと「タスク一覧」の行を削除する
 - `HISTORY.md` に記録するときは、作業日を含める
 - 公開リポジトリなので、PC 名・ホスト名・アカウント名など、ローカル環境にしか意味の
   ない呼称は `tasks/` にも `HISTORY.md` にも書かない。運用中のマシンを指す必要が
@@ -185,10 +184,10 @@ mise run verify --kiapi --family embedding --fast
 各タスクの内容は `tasks/` のファイルだけに書き、ここはポインタ（1 ファイル 1 行）に保ちます。
 ファイルの追加・削除のたびにこの一覧を更新してください。
 
-- [seedvr2 の upscale が mflux 0.19.1 + mlx 0.32.2 で失敗する](tasks/goal/seedvr2-mflux-repeat-error.md)
-- [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/goal/chat-prefill-cancellation.md)
-- [上流で Omni の deepstack 修正が出たら patch H を外す](tasks/goal/mlx-vlm-omni-deepstack-upstream.md)
-- [Qwen3.8 の投機的デコードを chat に組み込む](tasks/goal/qwen38-speculative-decoding.md)
-- [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/goal/ltx25-mlx-video-upstream-pin.md)
-- [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/goal/mlx-vlm-image-prefix-upstream.md)
-- [Omni media prefix再利用の上流取り込みを追う](tasks/goal/mlx-vlm-omni-media-prefix-upstream.md)
+- [seedvr2 の upscale が mflux 0.19.1 + mlx 0.32.2 で失敗する](tasks/seedvr2-mflux-repeat-error.md)
+- [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
+- [上流で Omni の deepstack 修正が出たら patch H を外す](tasks/mlx-vlm-omni-deepstack-upstream.md)
+- [Qwen3.8 の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
+- [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
+- [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
+- [Omni media prefix再利用の上流取り込みを追う](tasks/mlx-vlm-omni-media-prefix-upstream.md)
