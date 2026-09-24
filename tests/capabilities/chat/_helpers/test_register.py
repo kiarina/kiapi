@@ -7,7 +7,9 @@ from kiapi.core.capability import CapabilitySpecRegistry
 from kiapi.core.model import ModelRegistry
 
 
-@pytest.mark.parametrize("model", ["qwen3-omni", "qwen3.6-27b", "qwen3.8-27b"])
+@pytest.mark.parametrize(
+    "model", ["qwen3-omni", "qwen3.6-27b", "qwen3.8-27b", "qwen3.8-flash-next"]
+)
 @pytest.mark.parametrize(
     "enabled,cap,expected", [(True, 16.0, 20.0), (True, 2.5, 6.5), (False, 16.0, 4.0)]
 )

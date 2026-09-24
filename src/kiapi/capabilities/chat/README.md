@@ -3,6 +3,7 @@
 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) provides an OpenAI-compatible chat completion API.
 
 - **vlm** (text + image):
+  - Qwen3.8-Flash-Next-4bit
   - Qwen3.8-27B-4bit
   - Qwen3.6-27B-4bit
 - **omni** (text + image + audio + video):
@@ -149,10 +150,46 @@ different from a disconnect: a timed-out job continues and can be polled.
 | Model | License | Terms | Size | Mem | Description |
 |---|---|---|---:|---:|---|
 | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (default). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
+| [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) | Qwen Community License 1.0 | Separate license for commercial Model-as-a-Service use | 111.5 GB | ~80 GB (+~16 GB at 240K tokens) | `qwen3.8-flash-next` (`model_type: qwen4_exp`, 125B MoE, 6B active). Same generation flow as `qwen3.8-27b`: text + image, tool-call prefill=Hermes/XML, reasoning OFF by default. Loaded with a memory-mapped PLE table; see [Qwen3.8-Flash-Next](#qwen38-flash-next). |
 | [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b`. Same handler as `qwen3.6-27b` (`model_type: qwen3_5`): text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~19 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 
 - **HTTP 400** when sending a part of a modality that is not supported by the selected model.
+
+## Qwen3.8-Flash-Next
+
+Qwen3.8-Flash-Next carries a ~32 GB n-gram (PLE) embedding table of which each
+token reads only a few rows. The mlx-community conversion ships without the
+`ple-store.json` manifest that lets mlx-vlm memory-map that table, so loading it
+as-is keeps all 111.5 GB resident and fails with Metal out-of-memory errors on
+128 GB machines once prompts reach ~32K tokens.
+
+On load, kiapi builds a view of the snapshot under the user cache directory
+(`chat/external-ple/`): it symlinks the non-PLE weight files, writes a config
+with `text_config.ple_storage`, and indexes the PLE byte ranges inside the
+snapshot. No weights are copied, and the view is rebuilt when the snapshot
+revision changes. Loading also raises the process's open-file soft limit, because
+the mapped table keeps 128 shards open.
+
+Measured on an M4 Max 128 GB with the pinned engine: 79.5 GB after load, 83.6 /
+89.9 / 96.0 GB peaks at 32K / 128K / 240K-token prompts, prefill 530-580 tok/s
+at every length, decode about 40 tok/s. See the labs write-ups for
+[the comparison with Qwen3.8-27B and REAP-288](https://github.com/kiarina/labs/tree/main/2026/09/24/qwen38-flash-next-reap-eval)
+and [the memory-mapped PLE run](https://github.com/kiarina/labs/tree/main/2026/09/24/qwen38-flash-next-ple-mmap).
+
+The model reserves the same peak headroom as the other chat models (4 GB plus the
+APC capacity). A near-full context together with a full APC can exceed that
+estimate; very long prompts may still need a smaller `KIAPI_CHAT_APC_MEMORY_MAX_GB`.
+
+With tools offered and `tool_choice` left at `auto`, the model calls tools more
+eagerly than Qwen3.8-27B: a bare 「こんにちは」 with a weather and a timer tool
+returned a `get_weather` call at temperature 0 and in 3 of 4 sampled runs at
+0.7 (one with a malformed parameter). State in the system message when tools
+should not be used.
+
+The Qwen Community License 1.0 requires a separate license from Qwen for
+commercial Model-as-a-Service or AI-work-assistant businesses, except for
+internal use that does not expose the model to third parties.
 
 ## Notes
 

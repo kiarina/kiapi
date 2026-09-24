@@ -12,7 +12,7 @@ import httpx
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 URL = f"{BASE_URL}/v1/chat/completions"
 DEFAULT_MODEL = "qwen3.6-27b"
-DEFAULT_MODELS = (DEFAULT_MODEL, "qwen3.8-27b", "qwen3-omni")
+DEFAULT_MODELS = (DEFAULT_MODEL, "qwen3.8-27b", "qwen3-omni", "qwen3.8-flash-next")
 
 TOOL_WEATHER = {
     "type": "function",

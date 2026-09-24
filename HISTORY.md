@@ -3,6 +3,30 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-24 — chat に Qwen3.8-Flash-Next を追加した
+
+- `qwen3.8-flash-next`（`mlx-community/Qwen3.8-Flash-Next-4bit`、`model_type: qwen4_exp`、125B MoE・6B active）を追加。
+  alias は `qwen3.8-flash`、`flash-next`、`qwen4_exp`。既定モデルと既存 alias（`qwen3.8` / `vlm` など）は変えていない
+- 生成は `qwen3_5` handler をそのまま使う（chat template・Hermes/XML の tool call・thinking の切り替えが同じ）。
+  load だけが違い、n-gram 表（PLE、約 32 GB）を mmap にする view をユーザーの cache dir（`chat/external-ple/`）に作る。
+  非 PLE の重みは snapshot への symlink、`ple-store.json` は snapshot 内の byte 範囲を指すので、重みのコピーはない。
+  mapped PLE が 128 shard を開くので、load 時にプロセスの open-file の soft limit を 65536 へ上げる
+- 事前評価（labs `2026/09/24/qwen38-flash-next-reap-eval`、`2026/09/24/qwen38-flash-next-ple-mmap`、サーバー機
+  Mac Studio M4 Max 128GB）: PLE を常駐させると 111.5 GB で 32K から Metal OOM。mmap にすると load 79.5 GB、
+  needle 32K / 128K / 240K を全問正解（peak 83.6 / 89.9 / 96.0 GB、prefill 530〜580 tok/s）、エージェント 4/4、
+  日本語 32/32、decode 約 40 tok/s（常駐時 47.1、Qwen3.8-27B 34.3）。expert を削った REAP-288 は日本語の知識が崩れたので不採用
+- `weight_gb=79.5`、`peak_headroom_gb` は他の chat モデルと同じ 4 GB + APC 上限。240K 近い context と満杯の APC が重なると
+  見積もりを超えうる（README に記載）
+- サーバー機で chat の full verify（`verify_chat`・`verify_chat_omni_prefix`・`verify_chat_stream`）が全モデル通過。
+  Flash-Next は text・max tokens・並列 tool call・tool_choice any / specific・parallel_tool_calls=false・continuation・画像を
+  通常とストリーミングで確認した
+- 観測: tool を渡して `tool_choice=auto` のとき、Flash-Next は「こんにちは」だけでも tool を呼びやすい
+  （temperature 0 で `get_weather`、0.7 で 4 回中 3 回。1 回は引数が崩れた）。README に記載
+- 未対応: 画像を追加したときの prefix 再利用（fork の `apc_image_prefix`）は `qwen3_5` 専用のまま。text の APC は
+  upstream の実装で `qwen4_exp` にも効く。expert の SSD offload（`mlx_vlm/moe_offload.py`）は試していない
+- ライセンスは Qwen Community License 1.0。商用の Model-as-a-Service / AI work assistant 事業には Qwen の別ライセンスが要る
+  （外部に出さない内部利用は対象外）。README に記載
+
 ## 2026-09-20 — Omni の追加メディアで既存prefixを再利用する
 
 - mlx-vlm fork `98300012bbccc728d0a98e92444cc45bc433e284`を実装・pinし、kiapiへ取り込んだ。

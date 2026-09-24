@@ -5,7 +5,7 @@ from kiapi.core.model import ModelSpec, model_registry
 from kiapi.core.setup import HfSnapshotResource
 
 from .._constants.description import DESCRIPTION
-from .._models import qwen3_5, qwen3_omni
+from .._models import qwen3_5, qwen3_omni, qwen4_exp
 from .._settings import settings_manager
 
 
@@ -84,6 +84,27 @@ def register() -> None:
                 HfSnapshotResource(
                     repo="mlx-community/Qwen3.8-27B-4bit",
                     disk_gb=16.1,
+                ),
+            ),
+        )
+    )
+    model_registry.register(
+        ModelSpec(
+            name="qwen3.8-flash-next",
+            family="chat",
+            domain="chat",
+            repo="mlx-community/Qwen3.8-Flash-Next-4bit",
+            module=qwen4_exp,
+            # Measured with the memory-mapped PLE table; 111.5 GB when resident.
+            weight_gb=79.5,
+            peak_headroom_gb=headroom,
+            framework="mlx",
+            priority=0,
+            aliases=("qwen3.8-flash", "flash-next", "qwen4_exp"),
+            setup_resources=(
+                HfSnapshotResource(
+                    repo="mlx-community/Qwen3.8-Flash-Next-4bit",
+                    disk_gb=111.5,
                 ),
             ),
         )
