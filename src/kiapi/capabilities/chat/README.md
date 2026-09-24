@@ -26,7 +26,11 @@ stable system messages, tool schemas, or conversation history with media.
 Responses are never cached, and `usage.prompt_tokens` reports the complete
 logical prompt.
 
-With the pinned mlx-vlm fork used by this checkout, Qwen3.8 reuses unchanged
+Qwen3.8-Flash-Next reuses prefixes for text and for requests whose image set is
+unchanged; appending an image starts a new cache namespace and prefills the whole
+request again (the image-append reuse below is specific to `qwen3_5`).
+
+With the pinned mlx-vlm fork used by this checkout, Qwen3.8-27B reuses unchanged
 history when images are appended, and Omni does the same for images, audio clips,
 videos and mixtures. Each checkpoint identifies only the processed media content,
 grid/length, positions and video FPS inside that prefix. After a hit, only suffix

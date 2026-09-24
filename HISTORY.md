@@ -5,6 +5,9 @@
 
 ## 2026-09-24 — chat に Qwen3.8-Flash-Next を追加した
 
+- 追記: 本番 kiapi で画像入り会話の APC を実測（system 約 1K tokens + 画像 1 枚、temperature 0）。Flash-Next は
+  同一 request の再送で 1000/1001、同じ画像のままテキスト追加で 1000/1048 を再利用したが、画像を 1 枚追加すると 0/1333
+  （全量 prefill）。Qwen3.8-27B は同じ操作で 1046/1332 を再利用した。README の APC 節に記載
 - `qwen3.8-flash-next`（`mlx-community/Qwen3.8-Flash-Next-4bit`、`model_type: qwen4_exp`、125B MoE・6B active）を追加。
   alias は `qwen3.8-flash`、`flash-next`、`qwen4_exp`。既定モデルと既存 alias（`qwen3.8` / `vlm` など）は変えていない
 - 生成は `qwen3_5` handler をそのまま使う（chat template・Hermes/XML の tool call・thinking の切り替えが同じ）。
