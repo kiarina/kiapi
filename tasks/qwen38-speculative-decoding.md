@@ -1,4 +1,4 @@
-# Qwen3.8 の投機的デコードを chat に組み込む
+# Qwen3.8-27B の投機的デコードを chat に組み込む
 
 ## 背景
 
@@ -13,3 +13,7 @@ mlx-vlm 0.7.1 には投機的デコード（`mlx_vlm/speculative/`）があり�
   `draft_model` / `draft_kind` の受け渡しを `qwen3_5` handler に組み込む
 - サーバー機で速度（token/s）と出力の一致を実測し、chat の full verify で確認する
 - メモリ（drafter 分）と既定で有効にするかを決める
+
+注: 2026-09-24 から alias の `qwen3.8` / `vlm` は Qwen3.8-Flash-Next を指す。このタスクは `qwen3.8-27b` が対象。
+Flash-Next にも MTP 層がある（config の `mtp_num_hidden_layers: 1`、MTP 付きの変換も公開されている）が、
+`qwen4_exp` の投機的デコード対応は未調査なので、やるなら別タスクにする。

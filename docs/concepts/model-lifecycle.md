@@ -34,7 +34,10 @@ Every servable variant is a `ModelSpec` in one global registry.
 | `priority`, `default` | eviction priority and family default |
 
 `resolve(family, model)` resolves variants inside one family. Omitting `model`
-selects the family default. A resident model stays loaded until TTL expiry or
+selects the family default. A capability may instead require `model` in its
+request schema; chat does, because its models differ in accepted modalities and
+memory footprint, so an implicit default would silently evict other models or
+reject media. A resident model stays loaded until TTL expiry or
 eviction; a non-resident model reserves memory for one run and releases it
 immediately.
 

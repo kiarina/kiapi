@@ -2,12 +2,14 @@
 
 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) provides an OpenAI-compatible chat completion API.
 
-- **vlm** (text + image):
-  - Qwen3.8-Flash-Next-4bit
-  - Qwen3.8-27B-4bit
-  - Qwen3.6-27B-4bit
-- **omni** (text + image + audio + video):
-  - Qwen3-Omni-30B-A3B-Instruct-4bit
+- **text + image**:
+  - Qwen3.8-Flash-Next-4bit (`qwen3.8-flash-next`, alias `vlm`)
+  - Qwen3.8-27B-4bit (`qwen3.8-27b`)
+  - Qwen3.6-27B-4bit (`qwen3.6-27b`)
+- **text + image + audio + video**:
+  - Qwen3-Omni-30B-A3B-Instruct-4bit (`qwen3-omni`, alias `omni`)
+
+Every request must name its model; there is no default chat model.
 
 It supports the following functions.
 
@@ -90,6 +92,7 @@ GPU regression measurements (stop the service first):
 
 ```sh
 uv run python scripts/capabilities/measure_chat_apc.py qwen3.8-27b --output .verify/apc/qwen38.json
+uv run python scripts/capabilities/measure_chat_apc.py qwen3.8-flash-next --output .verify/apc/flash-next.json
 uv run python scripts/capabilities/measure_chat_apc.py qwen3-omni --output .verify/apc/omni.json
 uv run python scripts/capabilities/measure_chat_apc_disk.py
 ```
@@ -97,6 +100,17 @@ uv run python scripts/capabilities/measure_chat_apc_disk.py
 The measurements include cold/warm responses, partial hits, changed media/options,
 long visual prompts, memory release, and reloading. Inspect response semantics in
 the JSON artifacts; floating-point differences can change wording on cache hits.
+
+Judge cache correctness against the model's own chunking noise, not a fixed
+tolerance. Qwen3.8-27B's cold and cached first-token distributions agree within
+KL 0.001, but Qwen3.8-Flash-Next's first token already moves with the prefill
+step size alone (symmetric KL up to 0.13 between cold runs at 2048 / 896 / 512 /
+384 / 256 with the same top token and text), so a single cold/cached comparison
+can exceed 0.05 while the cached result sits inside that spread. Compare a cached
+result with cold runs at several step sizes, as the pinned engine's
+`examples/verify_image_prefix_apc.py` does. Content checks that depend on
+secondary wording (for example whether an answer also lists a second, unchanged
+image) vary the same way; assert the property under test instead.
 
 ## Prefill chunk sizing
 
@@ -207,7 +221,7 @@ Details are in the docstring.
 | A | Pass audio as a float32 array instead of a path | `_models/qwen3_omni.py` | omni |
 | B | Avoid stereo audio resampling inconsistency by loading it yourself | `_utils/load_audio_mono.py` | omni |
 | C | Join the image and video deepstack rows by position | `_operations/ensure_omni_image_video_join.py` | omni (image+video simultaneously) |
-| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 / qwen3.8 (stream) |
+| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 / qwen3.8 / Flash-Next (stream) |
 | H | Window the deepstack inputs per prefill chunk | `_operations/ensure_omni_deepstack_window.py` | omni (image / video) |
 
 **A. Pass the audio as a float32 array:**
@@ -248,7 +262,7 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   matches; the unit test fails in that case so the pin cannot move silently.
 - **Trigger**: Only when image and video are passed to omni **at the same time**.
 
-**F. Text recovery from token ID (qwen3.6 / qwen3.8 stream):**
+**F. Text recovery from token ID (qwen3.6 / qwen3.8 / Flash-Next stream):**
 - **Location**: `_operations/stream_text_from_tokens.py`
 - **Reason**: More of a compatibility wrapper than a bug avoidance. `_ServerTokenStreamer` / in mlx-vlm
   If `make_streaming_detokenizer` is available, it will extract the text from the token ID.

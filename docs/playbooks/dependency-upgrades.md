@@ -1,7 +1,8 @@
 # Verifying dependency and patch changes
 
 How to change a model engine (mlx-vlm, mflux, mlx-audio, …), a pinned version, or a
-capability's compatibility patch without shipping an unverified combination.
+capability's compatibility patch without shipping an unverified combination. Use the
+same worktree flow for any change that needs a GPU verify, such as adding a model.
 
 ## Work in a git worktree
 
@@ -11,7 +12,7 @@ the next restart, verified or not. Do the work in a separate worktree with its o
 environment:
 
 ```sh
-git worktree add --detach ../kiapi-wip HEAD
+git worktree add -b wip ../kiapi-wip main
 cd ../kiapi-wip
 ln -s "$OLDPWD/tests/assets" tests/assets   # gitignored, so not in the worktree
 uv sync --inexact
@@ -65,16 +66,29 @@ fault) also leaves a crash report in `~/Library/Logs/DiagnosticReports/`.
 
 ## Move the verified change back
 
-Stage explicit paths in the worktree so the `tests/assets` symlink is not included,
-then apply the diff to the main checkout:
+Commit in the worktree, staging explicit paths so the `tests/assets` symlink is not
+included, then fast-forward the main checkout to that commit:
 
 ```sh
 git -C ../kiapi-wip add CHANGELOG.md pyproject.toml uv.lock src tests/capabilities
-git -C ../kiapi-wip diff --cached HEAD > /tmp/change.patch
-git apply --index /tmp/change.patch
+git -C ../kiapi-wip commit -m "..."
+git pull --ff-only
+git merge --ff-only wip
+cmp uv.lock ../kiapi-wip/uv.lock
+uv sync --inexact
 ```
 
-If `git apply` fails, it can leave files partly written. A half-written `uv.lock`
-no longer matches `pyproject.toml`, and the next `uv run` silently re-resolves it to
-newer versions than the ones you verified. After moving the change, confirm the lock
-is byte-identical to the verified one (`cmp`) before syncing and committing.
+Rebase the worktree branch first if `main` moved. Avoid moving the change as a
+patch: `git apply` can stop halfway (a `tests/assets` symlink did once), and a
+half-written `uv.lock` no longer matches `pyproject.toml`, so the next `uv run`
+silently re-resolves it to versions you did not verify. `cmp` confirms the lock is
+the verified one. `--inexact` keeps packages installed outside the lock, such as
+ltx2's `mlx-video`. Restart the service, then remove the worktree and the branch.
+
+## Verifying on the serving machine
+
+The verify driver stops a running launchd service, serves the worktree on port 8000,
+and restarts the service with its installed plist afterwards; it does not repoint the
+service at the worktree. Outside the driver, only one kiapi can run on a machine
+(`instance.lock` in the user cache directory), so an ad-hoc worktree server needs the
+service stopped first.

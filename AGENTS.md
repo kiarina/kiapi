@@ -187,7 +187,7 @@ mise run verify --kiapi --family embedding --fast
 - [seedvr2 の upscale が mflux 0.19.1 + mlx 0.32.2 で失敗する](tasks/seedvr2-mflux-repeat-error.md)
 - [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
 - [上流で Omni の deepstack 修正が出たら patch H を外す](tasks/mlx-vlm-omni-deepstack-upstream.md)
-- [Qwen3.8 の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
+- [Qwen3.8-27B の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [mlx-video#52 がマージされたら LTX-2.5 の pin を上流へ戻す](tasks/ltx25-mlx-video-upstream-pin.md)
 - [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
 - [Omni media prefix再利用の上流取り込みを追う](tasks/mlx-vlm-omni-media-prefix-upstream.md)
