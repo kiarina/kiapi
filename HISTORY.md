@@ -3,6 +3,15 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-24 — chat から qwen3.6-27b を外した
+
+- ユーザーの判断で `qwen3.6-27b`（alias `qwen3.6`）を削除した。`qwen3.8-27b` が同じ handler・modalities・容量で置き換えられ、
+  重み（16.1 GB）と verify の時間が減る
+- 呼び出し側を先に移した: kiarina-python 2.33.0 で `kiarina-agi-text` の `qwen3.6` / `qwen3.6-fast` preset を
+  `qwen3.8-flash-next` / `-fast` に置き換え（`local` alias も移動）、Spirits Garden の本番 Brain を Flash-Next へ deploy してから削除した
+- Qwen3.6 固有の記述（空 think prefill を履歴から消すための APC の注意、計測 script の分岐）も消した。warmup と
+  `verify_chat_stream` の既定は `qwen3.8-27b` にした。`enable_thinking` の例は既定（off）に合わせて「on にする」例へ直した
+
 ## 2026-09-24 — chat の model を必須にし、vlm / qwen3.8 を Flash-Next へ移した
 
 - ユーザーと相談して、chat には既定モデルを置かないと決めた。モデルごとに受け付ける入力（音声・動画は `qwen3-omni` だけ）と
