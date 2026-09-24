@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from kiapi.capabilities.chat._models import qwen3_5, qwen3_omni
+from kiapi.capabilities.chat._models import qwen3_5, qwen3_omni, qwen4_exp
 from kiapi.capabilities.chat._views.chat_params import ChatParams
 from kiapi.core.model import ModelSpec
 
@@ -21,22 +21,28 @@ def media_part(kind: str, path: Path, mime: str) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("model", choices=["qwen3-omni", "qwen3.6-27b", "qwen3.8-27b"])
+    parser.add_argument(
+        "model",
+        choices=["qwen3-omni", "qwen3.6-27b", "qwen3.8-27b", "qwen3.8-flash-next"],
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     import mlx.core as mx
     from mlx_vlm import stream_generate
 
     image_prefix_enabled = (
-        args.model == "qwen3.8-27b"
+        args.model in qwen3_5.IMAGE_PREFIX_MODELS
         and "apc_image_prefix" in inspect.signature(stream_generate).parameters
     )
 
-    handler = qwen3_omni if args.model == "qwen3-omni" else qwen3_5
+    handler = {"qwen3-omni": qwen3_omni, "qwen3.8-flash-next": qwen4_exp}.get(
+        args.model, qwen3_5
+    )
     repos = {
         "qwen3-omni": "Qwen3-Omni-30B-A3B-Instruct-4bit",
         "qwen3.6-27b": "Qwen3.6-27B-4bit",
         "qwen3.8-27b": "Qwen3.8-27B-4bit",
+        "qwen3.8-flash-next": "Qwen3.8-Flash-Next-4bit",
     }
     spec = ModelSpec(
         name=args.model,

@@ -53,6 +53,9 @@ from .._utils.warmup_params import warmup_params
 from .._views.chat_params import ChatParams
 
 FEATURES = {"text", "image", "tools"}
+# Models whose engine can reuse history when images are appended (mlx-vlm
+# ``apc_image_prefix``). Qwen3.6 keeps whole-request media identity.
+IMAGE_PREFIX_MODELS = {"qwen3.8-27b", "qwen3.8-flash-next"}
 CONTEXT_WINDOW_KEYS = ("text_config", "max_position_embeddings")
 
 
@@ -106,7 +109,7 @@ def run(  # type: ignore
         apply_seed(params.seed)
         apc_manager = payload.apc_manager
         image_prefix_enabled = (
-            params.model == "qwen3.8-27b"
+            params.model in IMAGE_PREFIX_MODELS
             and "apc_image_prefix" in inspect.signature(stream_generate).parameters
         )
         prefix_kwargs: dict[str, Any] = (

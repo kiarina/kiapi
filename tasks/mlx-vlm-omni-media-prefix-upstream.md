@@ -3,7 +3,8 @@
 ## 状態（2026-09-20）
 
 - PR: https://github.com/Blaizzy/mlx-vlm/pull/2311 （CI成功、review待ち）
-- fork branch: `codex/omni-media-prefix-reuse`、実装commit `98300012`。
+- fork branch: `codex/omni-media-prefix-reuse`、実装commit `98300012`。2026-09-24 に親PR #2309 の
+  Flash-Next 対応 `f54ccb9a` を cherry-pick した `6581ba8c` が現在の先頭（force push はしていない）。
 - 親PR #2309に依存する。現在のpinは`pyproject.toml` / `uv.lock`を正典とする。
 - 実装・検証完了記録はHISTORY 2026-09-20、仕様はchat README。
 

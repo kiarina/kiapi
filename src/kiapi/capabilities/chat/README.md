@@ -26,12 +26,8 @@ stable system messages, tool schemas, or conversation history with media.
 Responses are never cached, and `usage.prompt_tokens` reports the complete
 logical prompt.
 
-Qwen3.8-Flash-Next reuses prefixes for text and for requests whose image set is
-unchanged; appending an image starts a new cache namespace and prefills the whole
-request again (the image-append reuse below is specific to `qwen3_5`).
-
-With the pinned mlx-vlm fork used by this checkout, Qwen3.8-27B reuses unchanged
-history when images are appended, and Omni does the same for images, audio clips,
+With the pinned mlx-vlm fork used by this checkout, Qwen3.8-27B and
+Qwen3.8-Flash-Next reuse unchanged history when images are appended, and Omni does the same for images, audio clips,
 videos and mixtures. Each checkpoint identifies only the processed media content,
 grid/length, positions and video FPS inside that prefix. After a hit, only suffix
 media is encoded. Changing or reordering old media invalidates checkpoints
@@ -50,7 +46,7 @@ prompt. All models avoid restoring a checkpoint inside a media span.
 
 The source checkout pins [Omni PR #2311](https://github.com/Blaizzy/mlx-vlm/pull/2311),
 built on [Qwen image PR #2309](https://github.com/Blaizzy/mlx-vlm/pull/2309), at
-`98300012bbccc728d0a98e92444cc45bc433e284` through `tool.uv.sources`.
+`6581ba8c2f2dbc8b994cb0a350532a4bec59abc2` through `tool.uv.sources`.
 Published kiapi wheels still depend on official mlx-vlm 0.7.1. Without the new
 engine capability, handlers retain conservative whole-request media invalidation;
 multiple audio clips also require the pinned fork. No request API or new user

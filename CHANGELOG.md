@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chat: Qwen3.8-Flash-Next reuses unchanged history when images are appended,
+  like Qwen3.8-27B, through the pinned mlx-vlm fork (`6581ba8c`).
+
 - chat: added the `qwen3.8-flash-next` model (`mlx-community/Qwen3.8-Flash-Next-4bit`,
   aliases `qwen3.8-flash`, `flash-next`, `qwen4_exp`). It loads through a view that
   memory-maps its n-gram (PLE) table, which keeps about 80 GB resident instead of

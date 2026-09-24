@@ -370,7 +370,7 @@ requires-dist = [
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
-    { name = "mlx-vlm", git = "https://github.com/kiarina/mlx-vlm.git?rev=98300012bbccc728d0a98e92444cc45bc433e284" },
+    { name = "mlx-vlm", git = "https://github.com/kiarina/mlx-vlm.git?rev=6581ba8c2f2dbc8b994cb0a350532a4bec59abc2" },
     { name = "numpy" },
     { name = "pillow" },
     { name = "psutil" },
@@ -651,7 +651,7 @@ wheels = [
 [[package]]
 name = "mlx-vlm"
 version = "0.7.1"
-source = { git = "https://github.com/kiarina/mlx-vlm.git?rev=98300012bbccc728d0a98e92444cc45bc433e284#98300012bbccc728d0a98e92444cc45bc433e284" }
+source = { git = "https://github.com/kiarina/mlx-vlm.git?rev=6581ba8c2f2dbc8b994cb0a350532a4bec59abc2#6581ba8c2f2dbc8b994cb0a350532a4bec59abc2" }
 dependencies = [
     { name = "fastapi", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "jinja2", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },

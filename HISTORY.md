@@ -3,6 +3,25 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-24 — Qwen3.8-Flash-Next でも画像追加時に既存prefixを再利用する
+
+- mlx-vlm fork の `apc_images.ImagePrefixContext` の対象を `qwen3_5` から `qwen3_5` / `qwen4_exp` に広げた（`f54ccb9a`）。
+  `qwen4_exp.Model` は Qwen3.5 の vision tower・`get_input_embeddings`・RoPE を継承しているので、同じ識別がそのまま使える。
+  checkpoint の名前空間はモデル種別ごと（`qwen3_5-v1` は据え置きで既存の disk checkpoint を無効にしない）。
+  上流 PR #2309 に同梱し、title・説明を更新。Omni の #2311 branch へ cherry-pick した `6581ba8c` に kiapi の pin を更新
+- kiapi は `qwen3_5.IMAGE_PREFIX_MODELS`（`qwen3.8-27b`、`qwen3.8-flash-next`）で `apc_image_prefix` を有効にする
+- 実機 probe（fork の `examples/verify_image_prefix_apc.py`、Mac Studio M4 Max 128GB、temperature 0）:
+  Flash-Next は 1 枚追加で TTFT 4.765→0.496 s（2,897 tokens 再利用、新しい画像だけ encode）、2 枚追加で 4.882→0.705 s。
+  古い画像の差し替え・並べ替えでは画像より前の 2,048 tokens だけ再利用し、両方の画像を encode し直した
+- 落とし穴: Flash-Next の first-token 分布は prefill の刻み幅だけで動く（cold 同士で対称 KL 最大 0.129、top token と生成文は同じ）。
+  27B（KL < 0.001）向けの「cold と KL < 0.05」は Flash-Next では落ちるので、probe は cold を 2048 / 512 / 256 の刻みで回し、
+  いずれかと 0.05 未満であることを求める形にした（Flash-Next の cache hit は最寄りの cold と 0.005〜0.009）。
+  古い画像を差し替えたときに 2 枚目の色まで答えるかも刻み幅で揺れる（cold 2048 でも「Blue.」だけ）ので、
+  probe と `verify_chat_stream` は「差し替え後の色がある・古い色がない」を確認する形にした
+- fork tests: image-prefix 22 件、cache / generate / prefix / Omni 周辺 583 件が通過（`test_processors` の `qwen4_exp`
+  processor routing 1 件は base でも失敗する既存の失敗）。kiapi は `make`、CPU tests 351 件、chat の full verify
+  （`verify_chat_stream` の `image_prefix` で Flash-Next: append cached=2499、changed old image cached=0）が通過
+
 ## 2026-09-24 — chat に Qwen3.8-Flash-Next を追加した
 
 - 追記: 本番 kiapi で画像入り会話の APC を実測（system 約 1K tokens + 画像 1 枚、temperature 0）。Flash-Next は

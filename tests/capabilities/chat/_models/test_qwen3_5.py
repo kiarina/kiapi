@@ -92,6 +92,7 @@ def test_release_closes_apc_manager(handler: Any) -> None:
     "model,engine_support,expected",
     [
         ("qwen3.8-27b", True, True),
+        ("qwen3.8-flash-next", True, True),
         ("qwen3.6-27b", True, False),
         ("qwen3.8-27b", False, False),
     ],
