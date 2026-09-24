@@ -25,7 +25,9 @@ kiapi の `qwen3_5` handler の `apc_image_prefix=True`（`params.model == "qwen
   image prefix の schema 名（`qwen3_5-v1`）を model type ごとに分けるか決める
 - fork の tests に `qwen4_exp` の小さな config を足し、画像追加・旧画像の差し替え・text only を確認する。
   量子化 MoE は prefill の形で logits が完全一致しないので、27B のときと同じく色や合言葉の順序で cold / hit の一致を見る
-- 上流 PR #2309 へ追加するか、別 PR にするかを決める（#2309 は review 待ちなので、範囲を広げると review が重くなる）
+- **上流 PR #2309 に混ぜる**（2026-09-24 にユーザーと決定）。Flash-Next 対応は mlx-vlm にとって優先度が高く、
+  Qwen3.5 系だけの変更より、Flash-Next まで効く変更として出したほうがマージされやすいという判断。
+  PR の title・説明・テストの範囲も `qwen3_5` / `qwen4_exp` の両方を扱う形に更新する
 - kiapi の `qwen3_5.run` の `image_prefix_enabled` を Flash-Next にも有効にし、pin を更新して chat の full verify を通す
 - 本番で上の実測をやり直し、画像追加で再利用されることを HISTORY に記録する
 
