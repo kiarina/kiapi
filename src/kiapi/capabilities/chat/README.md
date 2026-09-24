@@ -149,11 +149,12 @@ different from a disconnect: a timed-out job continues and can be polled.
 
 | Model | License | Terms | Size | Mem | Description |
 |---|---|---|---:|---:|---|
-| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (default). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
-| [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) | Qwen Community License 1.0 | Separate license for commercial Model-as-a-Service use | 111.5 GB | ~80 GB (+~16 GB at 240K tokens) | `qwen3.8-flash-next` (`model_type: qwen4_exp`, 125B MoE, 6B active). Same generation flow as `qwen3.8-27b`: text + image, tool-call prefill=Hermes/XML, reasoning OFF by default. Loaded with a memory-mapped PLE table; see [Qwen3.8-Flash-Next](#qwen38-flash-next). |
-| [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b`. Same handler as `qwen3.6-27b` (`model_type: qwen3_5`): text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
+| [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (alias `omni`). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
+| [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) | Qwen Community License 1.0 | Separate license for commercial Model-as-a-Service use | 111.5 GB | ~80 GB (+~16 GB at 240K tokens) | `qwen3.8-flash-next` (aliases `vlm`, `qwen3.8`, `qwen3.8-flash`, `flash-next`; `model_type: qwen4_exp`, 125B MoE, 6B active). Same generation flow as `qwen3.8-27b`: text + image, tool-call prefill=Hermes/XML, reasoning OFF by default. Loaded with a memory-mapped PLE table; see [Qwen3.8-Flash-Next](#qwen38-flash-next). |
+| [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b` (aliases `qwen3_5`, `qwen3-vl`). Same handler as `qwen3.6-27b` (`model_type: qwen3_5`): text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 | [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~19 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 
+- `model` is required; there is no default chat model, because the models differ in accepted input modalities and memory footprint. Omitting it returns **HTTP 422**.
 - **HTTP 400** when sending a part of a modality that is not supported by the selected model.
 
 ## Qwen3.8-Flash-Next
@@ -270,6 +271,7 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
 
 ## Quickstart
 ```bash
+MODEL=vlm
 MODEL=qwen3.8-27b
 MODEL=qwen3.6-27b
 MODEL=qwen3-omni

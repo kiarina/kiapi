@@ -39,7 +39,6 @@ def register() -> None:
             framework="mlx",
             priority=0,
             aliases=("omni", "qwen3-omni-30b", "qwen3_omni_moe"),
-            default=True,
             setup_resources=(
                 HfSnapshotResource(
                     repo="mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit",
@@ -79,7 +78,7 @@ def register() -> None:
             peak_headroom_gb=headroom,
             framework="mlx",
             priority=0,
-            aliases=("qwen3.8", "qwen3_5", "qwen3-vl", "vlm"),
+            aliases=("qwen3_5", "qwen3-vl"),
             setup_resources=(
                 HfSnapshotResource(
                     repo="mlx-community/Qwen3.8-27B-4bit",
@@ -100,7 +99,7 @@ def register() -> None:
             peak_headroom_gb=headroom,
             framework="mlx",
             priority=0,
-            aliases=("qwen3.8-flash", "flash-next", "qwen4_exp"),
+            aliases=("vlm", "qwen3.8", "qwen3.8-flash", "flash-next"),
             setup_resources=(
                 HfSnapshotResource(
                     repo="mlx-community/Qwen3.8-Flash-Next-4bit",

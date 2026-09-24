@@ -5,14 +5,19 @@ POST OpenAI Chat Completions to `/v1/chat/completions`.
 ## Upstream docs
 - [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) — the multimodal MLX engine kiapi runs
 - [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) — `qwen3-omni` weights
+- [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) — `qwen3.8-flash-next` weights
 - [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) — `qwen3.8-27b` weights
 - [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) — `qwen3.6-27b` weights
 
 ## Choosing A Model
-`model` selects a registered chat model (full catalog and aliases:
-`GET /v1/chat/models`). The currently served models differ by input modality, so
-choose by what you send:
-- **qwen3-omni** (default) — text + image + **audio + video**. Use it for any
+`model` is required and selects a registered chat model (full catalog and
+aliases: `GET /v1/chat/models`). The currently served models differ by input
+modality and memory footprint, so choose by what you send:
+- **qwen3.8-flash-next** (aliases `vlm`, `qwen3.8`, `qwen3.8-flash`,
+  `flash-next`) — text + image only. The strongest general model; about 74 GiB
+  resident, so loading it may evict other models. With tools offered it calls
+  them eagerly; say in the system message when tools should not be used.
+- **qwen3-omni** (alias `omni`) — text + image + **audio + video**. Use it for any
   audio/video input. On video with a sound track, the audio is auto-demuxed and
   also fed as audio, so the model both sees and hears the clip.
   there is no audio/speech output (Qwen3-Omni's Talker is not exposed).
@@ -86,11 +91,12 @@ schema:
 
 ## Examples
 
-### Text (default model)
+### Text
 ```sh
 curl -sS http://HOST:PORT/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
   -d '{
+    "model": "vlm",
     "messages": [{"role": "user", "content": "こんにちは"}]
   }'
 ```
@@ -140,6 +146,7 @@ curl -sS http://HOST:PORT/v1/chat/completions \\
 curl -sS http://HOST:PORT/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
   -d '{
+    "model": "vlm",
     "messages": [{"role": "user", "content": "大阪の天気は?"}],
     "tools": [
       {

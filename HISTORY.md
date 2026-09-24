@@ -3,6 +3,17 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-24 — chat の model を必須にし、vlm / qwen3.8 を Flash-Next へ移した
+
+- ユーザーと相談して、chat には既定モデルを置かないと決めた。モデルごとに受け付ける入力（音声・動画は `qwen3-omni` だけ）と
+  メモリ（`qwen3.8-flash-next` は約 74 GiB 常駐）が大きく違い、暗黙の既定は他のモデルの eviction や media の拒否を
+  予想外に起こすため。OpenAI の Chat Completions でも `model` は必須。他の family の既定モデルの仕組み（core）は変えていない
+- 比較した案: (1) 既定を Flash-Next にする、(2) 既定を Flash-Next にし、音声・動画があるときだけ Omni へ振り分ける、
+  (3) model を必須にする。(3) は振り分けの特別処理が要らず、既定の選び直しも不要なので採用
+- `ChatRequest.model` を必須（省略は FastAPI の検証で HTTP 422）にし、`qwen3-omni` の `default=True` を外した。
+  alias は `qwen3.8-flash-next` が `vlm` / `qwen3.8` / `qwen3.8-flash` / `flash-next`、`qwen3.8-27b` が `qwen3_5` / `qwen3-vl`
+- 利用側で model を省いていたのは atelier の `docs/kiapi-content-creation.md` の例だけだった（同日に修正）
+
 ## 2026-09-24 — Qwen3.8-Flash-Next でも画像追加時に既存prefixを再利用する
 
 - mlx-vlm fork の `apc_images.ImagePrefixContext` の対象を `qwen3_5` から `qwen3_5` / `qwen4_exp` に広げた（`f54ccb9a`）。

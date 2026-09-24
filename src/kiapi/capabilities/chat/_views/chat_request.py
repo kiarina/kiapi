@@ -30,7 +30,7 @@ class ChatRequest(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "model": "qwen3-omni",
+                    "model": "vlm",
                     "messages": [
                         {"role": "system", "content": "You are a helpful assistant."},
                         {
@@ -66,14 +66,16 @@ class ChatRequest(BaseModel):
             "(see GET /v1/models)."
         ),
     )
-    model: str | None = Field(
-        default=None,
+    model: str = Field(
+        ...,
+        min_length=1,
         description=(
-            "Registered chat model name, alias, or repo id. When omitted, the "
-            "family default chat model answers. See GET /v1/models for the "
-            "servable list and each model's accepted input modalities."
+            "Registered chat model name, alias, or repo id. Required: chat models "
+            "differ in accepted input modalities and memory footprint, so there is "
+            "no implicit default. See GET /v1/models for the servable list and "
+            "each model's accepted input modalities."
         ),
-        examples=["qwen3-omni"],
+        examples=["vlm"],
     )
     tools: list[dict[str, Any]] | None = Field(
         default=None,

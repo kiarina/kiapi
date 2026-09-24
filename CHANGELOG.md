@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chat: **`model` is now required** on `/v1/chat/completions`; there is no default
+  chat model. Requests without it return HTTP 422. The chat models differ in
+  accepted input modalities (only `qwen3-omni` takes audio/video) and memory
+  footprint (`qwen3.8-flash-next` keeps about 74 GiB resident), so an implicit
+  default could silently evict other models or reject media.
+- chat: the aliases `vlm` and `qwen3.8` now select `qwen3.8-flash-next`
+  (previously `qwen3.8-27b`). `qwen3.8-flash-next` also answers to
+  `qwen3.8-flash` and `flash-next`; its `qwen4_exp` alias was removed.
+  `qwen3.8-27b` keeps `qwen3_5` and `qwen3-vl`.
+
 ### Added
 
 - chat: Qwen3.8-Flash-Next reuses unchanged history when images are appended,
