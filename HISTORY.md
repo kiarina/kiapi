@@ -21,6 +21,7 @@
 - fork tests: image-prefix 22 件、cache / generate / prefix / Omni 周辺 583 件が通過（`test_processors` の `qwen4_exp`
   processor routing 1 件は base でも失敗する既存の失敗）。kiapi は `make`、CPU tests 351 件、chat の full verify
   （`verify_chat_stream` の `image_prefix` で Flash-Next: append cached=2499、changed old image cached=0）が通過
+- 本番（tailnet 経由、system 約 1K tokens + 画像 1 枚、temperature 0）で画像を 1 枚追加したときの再利用が 0/1333 → 1047/1333 になった
 
 ## 2026-09-24 — chat に Qwen3.8-Flash-Next を追加した
 
