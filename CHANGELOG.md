@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- chat: removed the `qwen3.6-27b` model (alias `qwen3.6`). `qwen3.8-27b` uses the
+  same handler, modalities and memory footprint; `vlm` selects `qwen3.8-flash-next`.
+  Remove the downloaded weights with `kiapi deactivate --repo mlx-community/Qwen3.6-27B-4bit`.
+
 ### Changed
 
 - chat: **`model` is now required** on `/v1/chat/completions`; there is no default

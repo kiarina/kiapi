@@ -60,7 +60,7 @@ dependencies = [
     # as a PythonPackageResource to keep PyPI metadata free of direct URLs.
     # --- chat capability (mlx-vlm) ---
     # mlx-vlm supports BOTH model_types we use in one install:
-    #   qwen3_omni_moe (Qwen3-Omni) and qwen3_5 (Qwen3.6 / Qwen3.8-27B).
+    #   qwen3_omni_moe (Qwen3-Omni), qwen3_5 (Qwen3.8-27B) and qwen4_exp (Qwen3.8-Flash-Next).
     # Pinned exactly because the chat capability patches its internals;
     # remaining workarounds tracked in src/kiapi/capabilities/chat/README.md.
     "mlx-vlm==0.7.1",

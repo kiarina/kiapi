@@ -6,7 +6,7 @@ module:
 
   - the **JSON** tool-call *prefill* in :func:`_build_prompt` (how a JSON call is
     requested). The parse itself is shared (``parse_json_tool_calls``) because
-    Qwen3.6's Hermes parser falls back to it. (Qwen3.6 uses a different, Hermes/XML
+    the Qwen3.8 Hermes parser falls back to it. (Qwen3.8 uses a different, Hermes/XML
     prefill — see ``qwen3_5``.)
 
 Other Omni-specific workarounds (distilled from the test-qwen3-omni investigation):

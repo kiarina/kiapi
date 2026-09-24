@@ -23,7 +23,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "model",
-        choices=["qwen3-omni", "qwen3.6-27b", "qwen3.8-27b", "qwen3.8-flash-next"],
+        choices=["qwen3-omni", "qwen3.8-27b", "qwen3.8-flash-next"],
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -40,7 +40,6 @@ def main() -> None:
     )
     repos = {
         "qwen3-omni": "Qwen3-Omni-30B-A3B-Instruct-4bit",
-        "qwen3.6-27b": "Qwen3.6-27B-4bit",
         "qwen3.8-27b": "Qwen3.8-27B-4bit",
         "qwen3.8-flash-next": "Qwen3.8-Flash-Next-4bit",
     }
@@ -175,10 +174,7 @@ def main() -> None:
             },
         ]
         partial = request(label, "partial", continuation)
-        # Qwen3.6 removes the empty <think> prefill from historical assistant
-        # turns. A short hybrid checkpoint can therefore legitimately miss.
-        if args.model != "qwen3.6-27b" or label == "text":
-            assert cached(partial) > 0
+        assert cached(partial) > 0
         manager.clear()
         partial_cold = request(label, "partial_cold", continuation)
         assert cached(partial_cold) == 0

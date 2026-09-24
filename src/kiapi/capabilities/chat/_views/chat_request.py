@@ -144,7 +144,7 @@ class ChatRequest(BaseModel):
         description=(
             "kiapi extension (non-OpenAI). Extra kwargs forwarded verbatim to "
             "the tokenizer's `apply_chat_template`, e.g. "
-            "`{'enable_thinking': false}` to turn off Qwen3.6's reasoning. "
+            "`{'enable_thinking': true}` to turn on Qwen3.8's reasoning. "
             "Mirrors the vLLM/SGLang "
             "`extra_body={'chat_template_kwargs': {...}}` convention."
         ),

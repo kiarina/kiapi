@@ -665,7 +665,7 @@ def main():  # type: ignore
             print("\n[FAST MODE] Exiting early.")
             sys.exit(0)
 
-    models_common = ["qwen3.8-27b", "qwen3.6-27b", "qwen3-omni", "qwen3.8-flash-next"]
+    models_common = ["qwen3.8-27b", "qwen3-omni", "qwen3.8-flash-next"]
     common_cases = [
         ("text", test_text),
         ("max_completion_tokens", test_max_completion_tokens),

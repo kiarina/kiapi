@@ -7,7 +7,6 @@ POST OpenAI Chat Completions to `/v1/chat/completions`.
 - [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) — `qwen3-omni` weights
 - [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) — `qwen3.8-flash-next` weights
 - [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) — `qwen3.8-27b` weights
-- [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) — `qwen3.6-27b` weights
 
 ## Choosing A Model
 `model` is required and selects a registered chat model (full catalog and
@@ -21,10 +20,8 @@ modality and memory footprint, so choose by what you send:
   audio/video input. On video with a sound track, the audio is auto-demuxed and
   also fed as audio, so the model both sees and hears the clip.
   there is no audio/speech output (Qwen3-Omni's Talker is not exposed).
-- **qwen3.8-27b** — text + image only. The newer 27B model; same modalities and
-  request options as qwen3.6-27b.
-- **qwen3.6-27b** — text + image only. Lighter on memory for text/image work;
-  sending audio or video to it returns HTTP 400.
+- **qwen3.8-27b** — text + image only. Lighter on memory (about 16 GB) for
+  text/image work; sending audio or video to it returns HTTP 400.
 
 ## Audio Input
 Formats:
@@ -101,12 +98,12 @@ curl -sS http://HOST:PORT/v1/chat/completions \\
   }'
 ```
 
-### Image + text on qwen3.6-27b
+### Image + text on qwen3.8-27b
 ```sh
 curl -sS http://HOST:PORT/v1/chat/completions \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "model": "qwen3.6-27b",
+    "model": "qwen3.8-27b",
     "messages": [
       {
         "role": "user",
@@ -165,12 +162,13 @@ curl -sS http://HOST:PORT/v1/chat/completions \\
   }'
 ```
 
-### Disable Qwen3.6 thinking (OpenAI SDK)
+### Enable Qwen3.8 thinking (OpenAI SDK)
+Thinking is off by default; turn it on per request.
 ```python
 client.chat.completions.create(
-    model="qwen3.6-27b",
+    model="vlm",
     messages=[...],
-    extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+    extra_body={"chat_template_kwargs": {"enable_thinking": True}},
 )
 ```
 """

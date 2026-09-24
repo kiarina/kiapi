@@ -3,7 +3,7 @@
 Resolves the sampling knobs and fills multimodal defaults once, here, so the
 per-model ``run`` works purely from :class:`ChatParams`. ``max_tokens`` is not
 capped here; the model's ``run`` stops at its context window. Model-specific
-template switches (e.g. Qwen3.6's ``enable_thinking`` default) stay in the model;
+template switches (e.g. Qwen3.8's ``enable_thinking`` default) stay in the model;
 this only passes ``chat_template_kwargs`` through verbatim.
 """
 

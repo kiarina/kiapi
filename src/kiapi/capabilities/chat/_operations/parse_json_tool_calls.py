@@ -1,7 +1,7 @@
 """Shared helper: parse the JSON ``<tool_call>`` tool-call format.
 
 This is Qwen3-Omni's native tool-call format
-(``<tool_call>{"name":...,"arguments":{...}}``). It is *shared* because Qwen3.6's
+(``<tool_call>{"name":...,"arguments":{...}}``). It is *shared* because the Qwen3.8
 Hermes/XML parser falls back to it when no XML call is present (a variant that
 emits JSON still works), so both models reach it. The prefill that *requests* a
 JSON call is still model-specific and lives in each model.

@@ -69,7 +69,7 @@ class ChatSettings(BaseSettings):
         default=True,
         title="Enable automatic prefix caching",
         description=(
-            "Reuse matching prompt prefixes between Qwen3.6, Qwen3.8, and "
+            "Reuse matching prompt prefixes between Qwen3.8 and "
             "Qwen3-Omni requests, including supported media inputs."
         ),
     )

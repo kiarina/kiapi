@@ -5,7 +5,6 @@
 - **text + image**:
   - Qwen3.8-Flash-Next-4bit (`qwen3.8-flash-next`, alias `vlm`)
   - Qwen3.8-27B-4bit (`qwen3.8-27b`)
-  - Qwen3.6-27B-4bit (`qwen3.6-27b`)
 - **text + image + audio + video**:
   - Qwen3-Omni-30B-A3B-Instruct-4bit (`qwen3-omni`, alias `omni`)
 
@@ -17,12 +16,12 @@ It supports the following functions.
 - tool call
 - tool choice (auto, any, specific)
 - parallel tool calls
-- automatic prefix caching for Qwen3.6 / Qwen3.8 text and image requests, and Qwen3-Omni text, image, audio, and video requests
+- automatic prefix caching for Qwen3.8 text and image requests, and Qwen3-Omni text, image, audio, and video requests
 
 ## Automatic Prefix Caching
 
-Qwen3.6, Qwen3.8, and Qwen3-Omni reuse matching prefixes from earlier
-requests. Qwen3.6 / Qwen3.8 support text and images; Omni also supports audio,
+Qwen3.8 models and Qwen3-Omni reuse matching prefixes from earlier
+requests. Qwen3.8 models support text and images; Omni also supports audio,
 video, and image + video. This reduces prefill latency when clients resend
 stable system messages, tool schemas, or conversation history with media.
 Responses are never cached, and `usage.prompt_tokens` reports the complete
@@ -42,9 +41,10 @@ independently so a longer appended clip cannot change old audio features.
 Native mlx-vlm audiovisual token interleaving is excluded from prefix reuse;
 kiapi uses its existing separate video/audio representation instead.
 
-Qwen3.6 retains whole-request media identity: ordered SHA-256 content hashes,
-independent of temporary paths. Adding or replacing its media recomputes the full
-prompt. All models avoid restoring a checkpoint inside a media span.
+Without the pinned engine's prefix-local identity, a model falls back to
+whole-request media identity: ordered SHA-256 content hashes, independent of
+temporary paths, so adding or replacing media recomputes the full prompt. All
+models avoid restoring a checkpoint inside a media span.
 
 The source checkout pins [Omni PR #2311](https://github.com/Blaizzy/mlx-vlm/pull/2311),
 built on [Qwen image PR #2309](https://github.com/Blaizzy/mlx-vlm/pull/2309), at
@@ -54,10 +54,7 @@ engine capability, handlers retain conservative whole-request media invalidation
 multiple audio clips also require the pinned fork. No request API or new user
 setting is needed.
 
-A hit also requires a matching stored checkpoint. Qwen3.6 removes its empty
-thinking prefill from historical assistant turns, so continuing a short image
-conversation can miss even when the image is unchanged; repeating the same
-request still hits.
+A hit also requires a matching stored checkpoint.
 
 The cache is scoped to each loaded model, remains in memory only, and is
 released with the model. Hits and memory use are written to the server log as
@@ -165,8 +162,7 @@ different from a disconnect: a timed-out job continues and can be polled.
 |---|---|---|---:|---:|---|
 | [mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit](https://huggingface.co/mlx-community/Qwen3-Omni-30B-A3B-Instruct-4bit) | Apache-2.0 | Not required | 21.8 GB | ~24 GB | `qwen3-omni` (alias `omni`). text + image + audio + video, tool-call prefill=JSON. Talker (audio *output*) is private and only outputs text/tool-calls. Maximum of **1** audio input per request (including demux audio for video with audio). |
 | [mlx-community/Qwen3.8-Flash-Next-4bit](https://huggingface.co/mlx-community/Qwen3.8-Flash-Next-4bit) | Qwen Community License 1.0 | Separate license for commercial Model-as-a-Service use | 111.5 GB | ~80 GB (+~16 GB at 240K tokens) | `qwen3.8-flash-next` (aliases `vlm`, `qwen3.8`, `qwen3.8-flash`, `flash-next`; `model_type: qwen4_exp`, 125B MoE, 6B active). Same generation flow as `qwen3.8-27b`: text + image, tool-call prefill=Hermes/XML, reasoning OFF by default. Loaded with a memory-mapped PLE table; see [Qwen3.8-Flash-Next](#qwen38-flash-next). |
-| [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b` (aliases `qwen3_5`, `qwen3-vl`). Same handler as `qwen3.6-27b` (`model_type: qwen3_5`): text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
-| [mlx-community/Qwen3.6-27B-4bit](https://huggingface.co/mlx-community/Qwen3.6-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~19 GB | `qwen3.6-27b`. text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
+| [mlx-community/Qwen3.8-27B-4bit](https://huggingface.co/mlx-community/Qwen3.8-27B-4bit) | Apache-2.0 | Not required | 16.1 GB | ~20 GB | `qwen3.8-27b` (aliases `qwen3_5`, `qwen3-vl`). `model_type: qwen3_5`: text + image only, tool-call prefill=Hermes/XML. Reasoning is OFF by default. |
 
 - `model` is required; there is no default chat model, because the models differ in accepted input modalities and memory footprint. Omitting it returns **HTTP 422**.
 - **HTTP 400** when sending a part of a modality that is not supported by the selected model.
@@ -221,7 +217,7 @@ Details are in the docstring.
 | A | Pass audio as a float32 array instead of a path | `_models/qwen3_omni.py` | omni |
 | B | Avoid stereo audio resampling inconsistency by loading it yourself | `_utils/load_audio_mono.py` | omni |
 | C | Join the image and video deepstack rows by position | `_operations/ensure_omni_image_video_join.py` | omni (image+video simultaneously) |
-| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.6 / qwen3.8 / Flash-Next (stream) |
+| F | Text recovery from token ID (stream) | `_operations/stream_text_from_tokens.py` | qwen3.8 / Flash-Next (stream) |
 | H | Window the deepstack inputs per prefill chunk | `_operations/ensure_omni_deepstack_window.py` | omni (image / video) |
 
 **A. Pass the audio as a float32 array:**
@@ -262,7 +258,7 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
   matches; the unit test fails in that case so the pin cannot move silently.
 - **Trigger**: Only when image and video are passed to omni **at the same time**.
 
-**F. Text recovery from token ID (qwen3.6 / qwen3.8 / Flash-Next stream):**
+**F. Text recovery from token ID (qwen3.8 / Flash-Next stream):**
 - **Location**: `_operations/stream_text_from_tokens.py`
 - **Reason**: More of a compatibility wrapper than a bug avoidance. `_ServerTokenStreamer` / in mlx-vlm
   If `make_streaming_detokenizer` is available, it will extract the text from the token ID.
@@ -287,7 +283,6 @@ To demux to monaural 16kHz from the beginning with ffmpeg `-ac 1 -ar 16000`,
 ```bash
 MODEL=vlm
 MODEL=qwen3.8-27b
-MODEL=qwen3.6-27b
 MODEL=qwen3-omni
 ```
 

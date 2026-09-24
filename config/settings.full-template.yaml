@@ -139,7 +139,7 @@ kiapi.capabilities.chat:
   # use_audio_in_video: true
   #--------------------------------------------------
   # Enable automatic prefix caching: bool
-  #   Reuse matching prompt prefixes between Qwen3.6, Qwen3.8, and Qwen3-Omni requests, including supported media inputs.
+  #   Reuse matching prompt prefixes between Qwen3.8 and Qwen3-Omni requests, including supported media inputs.
   # apc_enabled: true
   #--------------------------------------------------
   # Automatic prefix cache blocks: int

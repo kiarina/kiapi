@@ -49,26 +49,6 @@ def register() -> None:
     )
     model_registry.register(
         ModelSpec(
-            name="qwen3.6-27b",
-            family="chat",
-            domain="chat",
-            repo="mlx-community/Qwen3.6-27B-4bit",
-            module=qwen3_5,
-            weight_gb=15.0,  # measured on device (estimate was 16.0)
-            peak_headroom_gb=headroom,
-            framework="mlx",
-            priority=0,
-            aliases=("qwen3.6",),
-            setup_resources=(
-                HfSnapshotResource(
-                    repo="mlx-community/Qwen3.6-27B-4bit",
-                    disk_gb=16.1,
-                ),
-            ),
-        )
-    )
-    model_registry.register(
-        ModelSpec(
             name="qwen3.8-27b",
             family="chat",
             domain="chat",

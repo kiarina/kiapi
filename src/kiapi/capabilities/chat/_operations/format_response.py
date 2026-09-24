@@ -2,7 +2,7 @@
 
 Identical across models, so it lives here and each model's ``run()`` calls it
 after generating. **Tool-call parsing is the model's job** (it's format-specific:
-JSON for Qwen3-Omni, Hermes/XML for Qwen3.6) — the model passes the already-parsed
+JSON for Qwen3-Omni, Hermes/XML for Qwen3.8) — the model passes the already-parsed
 ``tool_calls`` in. The natural-language preamble is derived from the shared
 ``<tool_call>`` opening tag (``strip_tool_calls``).
 """

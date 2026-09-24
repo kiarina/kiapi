@@ -1,4 +1,6 @@
-"""Handler for Qwen3.6 / Qwen3.8 27B (``model_type: qwen3_5``, ``Qwen3_5ForConditionalGeneration``).
+"""Handler for Qwen3.8-27B (``model_type: qwen3_5``, ``Qwen3_5ForConditionalGeneration``).
+
+Qwen3.8-Flash-Next (``qwen4_exp``) reuses this generation flow; see ``qwen4_exp``.
 
 A text + image vision-language model (the config also defines video tokens; we
 keep v1 to image and can add video later). No audio. Owns its own generate flow;
@@ -54,7 +56,7 @@ from .._views.chat_params import ChatParams
 
 FEATURES = {"text", "image", "tools"}
 # Models whose engine can reuse history when images are appended (mlx-vlm
-# ``apc_image_prefix``). Qwen3.6 keeps whole-request media identity.
+# ``apc_image_prefix``). Other models keep whole-request media identity.
 IMAGE_PREFIX_MODELS = {"qwen3.8-27b", "qwen3.8-flash-next"}
 CONTEXT_WINDOW_KEYS = ("text_config", "max_position_embeddings")
 
@@ -78,7 +80,7 @@ def resident_extra_bytes(payload: SimpleNamespace) -> int:
 
 
 def warmup(payload: SimpleNamespace) -> None:
-    run(payload, warmup_params("qwen3.6-27b"))
+    run(payload, warmup_params("qwen3.8-27b"))
 
 
 def run(  # type: ignore
@@ -96,7 +98,7 @@ def run(  # type: ignore
             params.messages, tmp_dir, allow=FEATURES
         )
 
-        # Qwen3.6 / 3.8 emit Hermes/XML tool calls (not JSON) — use that format's
+        # Qwen3.8 models emit Hermes/XML tool calls (not JSON) — use that format's
         # prefill + parser.
         prompt, prefill = _build_prompt(
             processor,

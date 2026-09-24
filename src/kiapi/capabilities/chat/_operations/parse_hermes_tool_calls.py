@@ -1,6 +1,6 @@
 """Shared helper: parse the Hermes/XML ``<function=...>`` tool-call format.
 
-This is Qwen3.6's native tool-call format — a reasoning model that emits:
+This is the Qwen3.8 models' native tool-call format; they emit:
 
     <tool_call>
     <function=get_weather>
@@ -10,7 +10,7 @@ This is Qwen3.6's native tool-call format — a reasoning model that emits:
     </function>
     </tool_call>
 
-Only Qwen3.6 emits it, but the parse is a self-contained text→structured decode
+Only the ``qwen3_5`` flow emits it, but the parse is a self-contained text→structured decode
 of the same nature as :func:`parse_json_tool_calls`, so both formats live here
 side by side. The prefill that *requests* a Hermes call is model-specific and
 stays in ``qwen3_5``. If no XML call is present, this falls back to the JSON
