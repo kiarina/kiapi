@@ -29,6 +29,10 @@ from .image.seedvr2.router import router as seedvr2_router
 from .image.zimage.router import router as zimage_router
 from .jobs.router import router as jobs_router
 from .models.router import router as models_router
+from .setup.router import router as setup_router
+from .ui.router import ASSETS_PATH as ui_assets_path
+from .ui.router import assets as ui_assets
+from .ui.router import router as ui_router
 from .video.ltx2.router import router as ltx2_router
 from .web.router import router as web_router
 
@@ -38,6 +42,7 @@ COMMON_OPENAPI_PATHS = (
     "/health",
     "/v1/files",
     "/v1/jobs",
+    "/v1/setup",
 )
 CAPABILITY_DESCRIPTION_DOMAIN_ORDER = (
     "chat",
@@ -151,3 +156,6 @@ app.include_router(acestep_router)
 app.include_router(audiogen_router)
 app.include_router(ltx2_router)
 app.include_router(web_router)
+app.include_router(setup_router)
+app.include_router(ui_router)
+app.mount(ui_assets_path, ui_assets, name="ui")

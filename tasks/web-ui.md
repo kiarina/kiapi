@@ -90,10 +90,15 @@ Web UI を kiapi 自身が配る。
 
 ## やること
 
-### 段階 1: 読み取り専用
+### 段階 1: 読み取り専用（2026-09-26 に実装）
 
-- `GET /v1/setup`（全モデルのセットアップ状態）を足す
-- ダッシュボード、ジョブ、ファイル、モデル（コマンド案内付き）、ファミリーのカタログ
+- [x] `GET /v1/setup`（全モデルのセットアップ状態）を足す
+- [x] ダッシュボード、ジョブ、ファイル、モデル（コマンド案内付き）、ファミリーのガイドと API
+- [ ] 非商用バッジ: `ModelSpec` にライセンスの情報が無いので未実装。`license` と商用可否を ModelSpec に足し、
+  `/v1/setup`（または family の models）で返す
+- [ ] 出力例の見本を GitHub Pages に置き、自分の生成物が無い family で出す
+- [ ] ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。
+  生成時に `meta.family` を書くようにすると確実になる
 
 ### 段階 2: 実行
 
@@ -116,3 +121,12 @@ Web UI を kiapi 自身が配る。
   見出しは Instrument Serif、本文は Geist / Geist Mono。ユーザーの確認待ち
 - 2026-09-26: 夜の庭・墨硝子の案と、ライトの対になるダーク案をキャンバスに足して比べ、ライトとダークの切り替えに決めた。
   トークンは上の「デザイントークン」。スマホのジョブ詳細もライトとダークで描き直した。技術構成（上）も合意。次は `GET /v1/setup` とフロントエンドの雛形
+- 2026-09-26: 段階 1 を実装した。`GET /v1/setup`、`/` での UI 配信（`src/kiapi/api/ui`、資産は `/_ui`）、
+  `web/`（React 19 + Vite 8 + TypeScript 7、フォントは @fontsource で同梱）、mise の `web:build` / `web:dev`、
+  build・release・setup への組み込み、hatch の sdist と wheel の `artifacts`（`uv build` は sdist から wheel を
+  作るので、sdist にも入れないと wheel から UI が落ちる）。画面は Overview・Models・Jobs・Files・family の Guide / API。
+  ライトとダーク、スマホ幅（375px）で横スクロールが出ないことをブラウザで確かめた
+  - 確かめ方: 稼働中の kiapi（:8500）は single instance の lock を持つので、`XDG_CACHE_HOME` だけ一時ディレクトリに
+    向け、`HF_HOME` を本来の場所に固定して 2 つ目を :8600 で起動した（warmup 無しなのでモデルは載らない）
+  - `/v1/setup` は Docker と venv の確認でおよそ 5 秒かかる。UI では Models を開いたときと Refresh のときだけ取る
+  - 稼働中のサービスへ反映するには、そのマシンで `mise run web:build` してから kiapi を再起動する（ビルド成果物は git に無い）

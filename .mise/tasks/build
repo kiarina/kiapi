@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+mise run web:build
 echo "🏗️  Building kiapi..."
 uv build
 echo "✅ kiapi built successfully in dist/"

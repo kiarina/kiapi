@@ -13,6 +13,7 @@ if [ "$project_version" != "$version" ]; then
 fi
 
 rm -rf dist
+mise run web:build
 echo "🏗️  Building kiapi $version..."
 uv build --out-dir dist
 echo "✅ Release artifacts built in dist/"

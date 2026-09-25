@@ -9,6 +9,7 @@
 - `src/kiapi/` … パッケージのソース
 - `tests/` … 単体テスト
 - `scripts/` … GPU を使う検証スクリプトと API ドキュメント生成
+- `web/` … Web UI のソース（React + Vite）。`mise run web:build` で `src/kiapi/api/ui/static` へビルドし、wheel に同梱する
 
 バージョンは `pyproject.toml` の `version` で管理します。リリースタグは `v<version>` 形式で、これが GitHub Release と PyPI 公開を起動します。CHANGELOG はルートの `CHANGELOG.md` だけを持ちます。
 

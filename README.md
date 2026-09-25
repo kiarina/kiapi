@@ -117,6 +117,8 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  | openapi | `GET /openapi.json` | Return the common API and each capability documentation URL. |
 |  |  | `GET /v1/{domain}/{family}/openapi.json` | Return detailed input/output specs, usage, tips, and examples for each family. |
 |  | health | `GET /health` | Return server status, warmup status, queue length, and memory usage. |
+|  | setup | `GET /v1/setup` | Return every model with its setup state and the command that activates a missing resource. |
+|  | web UI | `GET /` | Serve the web UI. |
 
 See: [kiapi API Docs](https://kiarina.github.io/kiapi/)
 
@@ -184,6 +186,11 @@ with the theme 'a person walking in the rain'.
 open ~/Downloads/bgm.wav
 ```
 
+**Use from a browser:**
+Open `http://localhost:8000/` while kiapi runs. The web UI shows the server
+status, jobs, and files, what each family can do, and which models still need
+`kiapi activate`.
+
 **Run as a background service:**
 ```sh
 # kiapi
@@ -236,6 +243,7 @@ make upgrade  # Upgrade dependencies
 make       # Format, type-check, and regenerate dynamic documentation
 make test  # Unit tests
 make dev   # Start the development server with auto-reload
+make web-dev  # Start the web UI dev server against `make dev` (needs Node and pnpm via mise)
 
 # GPU-backed functional and regression tests
 make verify        # Choose the capability family interactively

@@ -31,6 +31,7 @@ def test_root_openapi_documents_common_paths_and_capability_links() -> None:
         "/v1/files/{file_id}/download",
         "/v1/jobs",
         "/v1/jobs/{job_id}",
+        "/v1/setup",
     ]
     assert "/v1/chat/completions" not in schema["paths"]
     assert "x-kiapi-capabilities" not in schema

@@ -332,6 +332,25 @@
           }
         }
       }
+    },
+    "/v1/setup": {
+      "get": {
+        "summary": "Get Setup",
+        "description": "List every model with its setup state, like `kiapi status`.\n\nThe server never downloads or removes resources itself. For a missing\nresource, run its activate_command in a terminal, then call this endpoint\nagain. Checking Docker images and Python environments runs local commands,\nso a call can take a few seconds.",
+        "operationId": "get_setup_v1_setup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -889,6 +908,247 @@
         ],
         "title": "ResidentModelStats",
         "description": "Snapshot of one resident model held in the memory budget."
+      },
+      "SetupModelState": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Modality bucket.",
+            "examples": [
+              "image"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Family identifier.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name.",
+            "examples": [
+              "base"
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the family's default variant.",
+            "examples": [
+              false
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "missing",
+              "none"
+            ],
+            "title": "Status",
+            "description": "ready when every resource is present, missing when any is absent, none when the model needs no setup.",
+            "examples": [
+              "missing"
+            ]
+          },
+          "size_gb": {
+            "type": "number",
+            "title": "Size Gb",
+            "description": "Approximate total on-disk size of the model's resources in GB.",
+            "examples": [
+              19.0
+            ]
+          },
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/SetupResourceState"
+            },
+            "type": "array",
+            "title": "Resources",
+            "description": "Setup resources the model needs."
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "family",
+          "name",
+          "default",
+          "status",
+          "size_gb"
+        ],
+        "title": "SetupModelState"
+      },
+      "SetupResourceState": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Resource kind, such as hf_snapshot, docker_image, or python_venv.",
+            "examples": [
+              "hf_snapshot"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label accepted by kiapi activate/deactivate --repo.",
+            "examples": [
+              "Tongyi-MAI/Z-Image"
+            ]
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready",
+            "description": "Whether the resource is present on this machine.",
+            "examples": [
+              false
+            ]
+          },
+          "disk_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disk Gb",
+            "description": "Approximate on-disk size in GB, when known.",
+            "examples": [
+              19.0
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Where the resource was found, or why it is missing.",
+            "default": "",
+            "examples": [
+              "/cache/models--Tongyi-MAI--Z-Image"
+            ]
+          },
+          "activate_command": {
+            "type": "string",
+            "title": "Activate Command",
+            "description": "CLI command that sets up this resource.",
+            "examples": [
+              "kiapi activate --repo Tongyi-MAI/Z-Image"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "ready",
+          "activate_command"
+        ],
+        "title": "SetupResourceState"
+      },
+      "SetupResponse": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "description": "OpenAI-style list envelope marker.",
+            "default": "list",
+            "examples": [
+              "list"
+            ]
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SetupSummary",
+            "description": "Totals across every model."
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SetupModelState"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "Every registered model with its setup state, ordered by domain and family."
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "title": "SetupResponse"
+      },
+      "SetupSummary": {
+        "properties": {
+          "models_total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Models Total",
+            "description": "Registered models.",
+            "examples": [
+              26
+            ]
+          },
+          "models_ready": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Models Ready",
+            "description": "Models whose resources are all present.",
+            "examples": [
+              23
+            ]
+          },
+          "resources_total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Resources Total",
+            "description": "Distinct setup resources.",
+            "examples": [
+              29
+            ]
+          },
+          "resources_ready": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Resources Ready",
+            "description": "Distinct setup resources present.",
+            "examples": [
+              26
+            ]
+          },
+          "installed_gb": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Installed Gb",
+            "description": "Approximate size of present resources in GB.",
+            "examples": [
+              686.51
+            ]
+          },
+          "total_gb": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Total Gb",
+            "description": "Approximate size of all resources in GB.",
+            "examples": [
+              790.01
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "models_total",
+          "models_ready",
+          "resources_total",
+          "resources_ready",
+          "installed_gb",
+          "total_gb"
+        ],
+        "title": "SetupSummary"
       },
       "ValidationError": {
         "properties": {

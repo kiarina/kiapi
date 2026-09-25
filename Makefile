@@ -1,5 +1,5 @@
 .PHONY: init list sync update upgrade format lint check test build clean ci config pages
-.PHONY: dev staging verify verify-fast verify-kiapi
+.PHONY: dev web-dev staging verify verify-fast verify-kiapi
 .DEFAULT_GOAL := check
 #--------------------------------------------------
 init:
@@ -44,6 +44,8 @@ check:
 ci:
 	mise run ci
 #--------------------------------------------------
+web-dev:
+	mise run web:dev
 dev:
 	uv run kiapi run --host 127.0.0.1 --port 8000 --debug
 staging:

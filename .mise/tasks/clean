@@ -5,6 +5,7 @@ set -euo pipefail
 
 echo "🧹 Cleaning artifacts..."
 rm -rf dist build .mypy_cache .pytest_cache .ruff_cache
+rm -rf src/kiapi/api/ui/static
 rm -f .coverage .coverage.* coverage.xml
 for dir in src tests scripts; do
     find "$dir" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

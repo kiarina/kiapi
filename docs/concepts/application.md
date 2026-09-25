@@ -11,6 +11,7 @@ The repository is a single Python package:
 src/kiapi/  # Apple Silicon / MLX inference API server
 tests/      # CPU-only unit tests mirroring src/kiapi/
 scripts/    # GPU-backed verification and API docs generation
+web/        # Web UI source (React + Vite), built into src/kiapi/api/ui/static
 ```
 
 ## Source Layout

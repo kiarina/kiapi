@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Build the web UI into src/kiapi/api/ui/static"
+
+set -euo pipefail
+
+echo "🎨 Building the web UI..."
+pnpm --dir web install --frozen-lockfile
+pnpm --dir web build
+echo "✅ Web UI built in src/kiapi/api/ui/static/"

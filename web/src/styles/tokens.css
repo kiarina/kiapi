@@ -1,0 +1,74 @@
+/* Design tokens. Both themes share type, spacing, radii and layout; only colors change. */
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f6f2;
+  --sidebar: #efeee8;
+  --surface: #ffffff;
+  --surface-2: #edebe4;
+  --surface-head: #fafaf7;
+  --stage: #efeee8;
+  --stage-dot: #e2e0d8;
+  --line: #e4e2da;
+  --line-soft: #efeee8;
+  --control: #dad8cf;
+  --text: #18181b;
+  --text-2: #52525b;
+  --text-3: #6b6b73;
+  --text-4: #8a8a92;
+  --ink: #18181b;
+  --on-ink: #ffffff;
+  --accent: #2f54eb;
+  --accent-hover: #1d3bc4;
+  --accent-soft: #eaefff;
+  --ok: #16a374;
+  --ok-text: #0f7a55;
+  --ok-soft: #e4f3ec;
+  --warn: #d9a441;
+  --nc-text: #92400e;
+  --nc-soft: #fef3c7;
+  --fail: #d9480f;
+  --shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow-lg: 0 20px 50px rgba(24, 24, 27, 0.18), 0 2px 6px rgba(24, 24, 27, 0.08);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #151513;
+  --sidebar: #1b1b19;
+  --surface: #1e1e1b;
+  --surface-2: #262622;
+  --surface-head: #232320;
+  --stage: #10100f;
+  --stage-dot: #2a2a26;
+  --line: #2e2e2a;
+  --line-soft: #262622;
+  --control: #3a3a35;
+  --text: #edece8;
+  --text-2: #b4b3ac;
+  --text-3: #8f8e87;
+  --text-4: #77766f;
+  --ink: #edece8;
+  --on-ink: #151513;
+  --accent: #7c9bff;
+  --accent-hover: #a3b8ff;
+  --accent-soft: rgba(124, 155, 255, 0.14);
+  --ok: #3fcf8e;
+  --ok-text: #5bd99e;
+  --ok-soft: rgba(63, 207, 142, 0.12);
+  --warn: #e0b155;
+  --nc-text: #f5c66a;
+  --nc-soft: rgba(245, 198, 106, 0.12);
+  --fail: #ff7a59;
+  --shadow: none;
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+:root {
+  --font-sans: "Geist Sans", "Hiragino Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --r-card: 14px;
+  --r-control: 10px;
+  --r-small: 7px;
+}

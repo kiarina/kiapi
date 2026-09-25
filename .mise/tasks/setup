@@ -11,6 +11,9 @@ echo "📦 Syncing dependencies..."
 # mlx-video) that aren't in uv.lock. Use `make sync` for an exact reconcile.
 uv sync --inexact --all-extras --all-groups
 
+echo "📦 Installing web UI dependencies..."
+pnpm --dir web install --frozen-lockfile
+
 echo "📥 Downloading test assets..."
 mise run test-assets:download
 

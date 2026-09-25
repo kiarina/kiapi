@@ -32,3 +32,6 @@ tests/assets/
 
 # Node modules (pnpm-managed dev tooling, e.g. firebase-tools)
 node_modules/
+
+# Web UI build output (`mise run web:build`)
+/src/kiapi/api/ui/static/

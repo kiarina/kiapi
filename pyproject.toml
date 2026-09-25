@@ -88,10 +88,16 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kiapi"]
-artifacts = ["src/kiapi/capabilities/web/resources/searxng/settings.yml"]
+artifacts = [
+    "src/kiapi/capabilities/web/resources/searxng/settings.yml",
+    # Built by `mise run web:build`; gitignored, so listed explicitly.
+    "src/kiapi/api/ui/static/**",
+]
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src"]
+# `uv build` makes the wheel from the sdist, so the built UI must ride along here too.
+artifacts = ["src/kiapi/api/ui/static/**"]
 
 [tool.hatch.metadata]
 allow-direct-references = true

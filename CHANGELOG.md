@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web UI** at `/`: a dashboard (server, queue, memory, setup), model setup
+  status with copyable `kiapi activate` commands, jobs, files with previews, and a
+  guide and API reference for every family, in light and dark themes. Families
+  cannot be run from the UI yet.
+- `GET /v1/setup`: every model with its setup state, like `kiapi status`.
 - qwen: added the `image-2.1` model (`Qwen/Qwen-Image-2.1`, aliases
   `qwen-image-2.1`, `qwen-2.1`). One resident model serves both `/generate`
   (text-to-image) and `/edit` (up to 10 reference images), outputs RGBA, and
