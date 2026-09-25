@@ -22,9 +22,12 @@ txt2img / img2img（`QwenImage21`）しかなく、編集・RGBA 出力・複数
 - CI の `tests` だけ失敗。member の fxd0h のコメントでは、CI 仮想 Metal の MPS OOM と float32 の atol（1e-4 に対し 1.23e-4）で、
   実装の誤りではないという見立て。block-causal attention・prefix cache・参照 latent の差し込みは誰も diffusers と突き合わせていない
 - 作者自身の報告: 1024² の一部の編集（雪景色化・2 体合成）は指示に従わず、公式 diffusers でも同様に失敗する
-- **踏んだ落とし穴（上流に未報告）**: `mflux.models.qwen21.variants.edit.qwen_image_21_edit` を直接 import すると
-  循環 import で失敗する（`reference/__init__.py` が同じ module を import し返す）。`mflux.models.qwen21.reference`
-  経由なら通るので、kiapi はそちらを使う。PR へ報告するときは、送信前に日本語訳でユーザーの承認を取る
+- **踏んだ落とし穴（上流に未報告、軽微）**: `mflux.models.qwen21.variants.edit.qwen_image_21_edit` を最初に import すると
+  循環 import で失敗する（その module が `reference.latent_creator` を import → `reference/__init__.py` が読み込み途中の同じ module から
+  `QwenImage21Edit` を取り出そうとする）。2026-09-25 に kiapi と無関係の新しい venv でも再現した。PR の CLI・README・テストはすべて
+  `mflux.models.qwen21.reference` 経由なので文書どおりの使い方では起きないが、mflux の他の model は variant の module を直接 import
+  するのが慣例なので、その書き方だと踏む。kiapi は `reference` 経由で import している。報告するなら「`reference/__init__.py` の
+  再 export を遅延させれば直る」程度の軽い指摘にし、送信前に日本語訳でユーザーの承認を取る
 
 ## やること
 
