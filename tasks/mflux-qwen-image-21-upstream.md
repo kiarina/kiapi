@@ -9,6 +9,7 @@ txt2img / img2img（`QwenImage21`）しかなく、編集・RGBA 出力・複数
 - fork: [kiarina/mflux](https://github.com/kiarina/mflux) の `qwen-image-2.1-edit` branch。
   PR head `144a6becfb587bcaa0139758131faf0a7930ae18`（`v.0.20.0` + PR の 2 commit）をそのまま置いている。
   kiapi の pin を到達可能に保つための branch なので force-push しない
+- 作業 checkout は `~/src/github.com/kiarina/mflux`（`origin` = fork、`upstream` = mflux-community/mflux）
 - kiapi は `pyproject.toml` の `[tool.uv.sources]` と `uv.lock` で固定している。公開 wheel の依存は
   `mflux>=0.20.0` のままで、公式 mflux では `mflux.models.qwen21.reference` が無いので
   `register.py` が `image-2.1` を登録しない
