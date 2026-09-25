@@ -29,9 +29,9 @@ export function Hint({ label, text }: { label: string; text: string }) {
   );
 }
 
-function Frame({ field, children, aside }: { field: Field; children: ReactNode; aside?: ReactNode }) {
+function Frame({ field, children, aside, flash }: { field: Field; children: ReactNode; aside?: ReactNode; flash?: boolean }) {
   return (
-    <div className="field">
+    <div className={`field${flash ? " flash" : ""}`}>
       <div className="field-head">
         <label className="field-label" htmlFor={`f-${field.name}`}>
           {field.label}
@@ -219,11 +219,13 @@ export function FieldInput({
   value,
   onChange,
   ctx,
+  flash,
 }: {
   field: Field;
   value: unknown;
   onChange: (v: unknown) => void;
   ctx: FieldContext;
+  flash?: boolean;
 }) {
   const id = `f-${field.name}`;
   const placeholder = field.required
@@ -236,13 +238,14 @@ export function FieldInput({
     case "model":
       if (ctx.models.length === 0) break;
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <ModelInput value={String(value ?? "")} onChange={onChange} ctx={ctx} />
         </Frame>
       );
     case "prompt":
       return (
         <Frame
+          flash={flash}
           field={field}
           aside={
             ctx.onWrite && (
@@ -266,6 +269,7 @@ export function FieldInput({
     case "number":
       return (
         <Frame
+          flash={flash}
           field={field}
           aside={
             field.name === "seed" && (
@@ -296,7 +300,7 @@ export function FieldInput({
       );
     case "enum":
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <select id={id} className="input" value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>
             <option value="">{placeholder === "auto" ? "Default" : `Default (${placeholder})`}</option>
             {field.options?.map((o) => (
@@ -310,7 +314,7 @@ export function FieldInput({
     case "boolean": {
       const state = value === undefined || value === "" ? "default" : value ? "on" : "off";
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <div className="seg" role="radiogroup" aria-label={field.label} title={field.description}>
             {(["default", "on", "off"] as const).map((s) => (
               <button
@@ -330,7 +334,7 @@ export function FieldInput({
     case "file":
     case "files":
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <FilesInput
             field={field}
             value={field.kind === "file" ? (value ? [String(value)] : []) : ((value as string[]) ?? [])}
@@ -340,19 +344,19 @@ export function FieldInput({
       );
     case "loras":
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <LorasInput field={field} value={(value as Lora[]) ?? []} onChange={onChange} />
         </Frame>
       );
     case "tags":
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <TagsInput field={field} value={(value as string[]) ?? []} onChange={onChange} />
         </Frame>
       );
     case "json":
       return (
-        <Frame field={field}>
+        <Frame field={field} flash={flash}>
           <textarea
             id={id}
             className="input textarea mono"
@@ -365,7 +369,7 @@ export function FieldInput({
       );
   }
   return (
-    <Frame field={field}>
+    <Frame field={field} flash={flash}>
       <input
         id={id}
         className="input"

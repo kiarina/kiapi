@@ -152,3 +152,8 @@ Web UI を kiapi 自身が配る。
     固定表示になった。浮かぶ窓は `.helper` にした
 - 2026-09-26: chat を他の Playground と同じ 2 列にした（左がモデル・system prompt・stream を含む全パラメータ、右がタイムラインと
   その下の入力欄）。狭い画面ではパラメータを右から出す。chat の画面では質問ボタンを入力欄から離して上げた
+- 2026-09-26: 質問チャットから form を埋められるようにした。Playground が `formBridge` に操作とフィールドを登録し、
+  質問チャットは操作ごとに `fill_<op>_form` の tool を作って渡す。返った引数は、名前・型・範囲・enum・`file_` 接頭辞が
+  合うものだけ入れ、合わないものは skipped として model に返す（送信はしない）。1 往復目だけ tool を許し、2 往復目は
+  `tool_choice: none` で説明させる。Z-Image（prompt・width・height・seed）と chat（tools・temperature・max tokens）で確かめた。
+  chat の質問ボタンは、入力欄の下の余白と同じだけ上に空けて置く（入力欄の位置を測って決める）

@@ -46,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request parameter (tools, tool choice, parallel tool calls, token limits,
   sampling, template kwargs, streaming on or off), tool-call results, and token
   usage. A "?" beside each field shows its full description, and a floating
-  assistant answers questions about the current family from its OpenAPI document.
+  assistant answers questions about the current family from its OpenAPI document
+  and, when asked, fills in the form through tool calls (it never submits).
 - `GET /v1/setup`: every model with its setup state, like `kiapi status`.
 - qwen: added the `image-2.1` model (`Qwen/Qwen-Image-2.1`, aliases
   `qwen-image-2.1`, `qwen-2.1`). One resident model serves both `/generate`

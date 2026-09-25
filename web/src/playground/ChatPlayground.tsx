@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 
 import type { OpenApiDoc, SetupModel } from "../api";
@@ -16,7 +16,8 @@ import {
   type Usage,
 } from "./chat";
 import { FieldInput, Hint } from "./fields";
-import { buildPayload, operationsOf, type Values } from "./schema";
+import { setFormBridge } from "./formBridge";
+import { buildPayload, operationsOf, type Field, type Values } from "./schema";
 
 interface Attachment {
   name: string;
@@ -126,6 +127,30 @@ export function ChatPlayground({ doc, models }: { doc: OpenApiDoc; models: Setup
   const log = useRef<HTMLDivElement>(null);
   const height = useFillViewport(root);
   useStickToBottom(log, turns);
+
+  useEffect(() => {
+    if (!op) return;
+    const synthetic: Field[] = [
+      { name: "model", kind: "model", label: "Model", description: "Chat model to answer.", required: false, defaultValue: undefined, advanced: false },
+      { name: "system_prompt", kind: "prompt", label: "System prompt", description: "System prompt for the conversation.", required: false, defaultValue: undefined, advanced: false },
+      { name: "stream", kind: "boolean", label: "Stream", description: "Stream the answer as it is generated.", required: false, defaultValue: true, advanced: false },
+    ];
+    setFormBridge({
+      family: "chat",
+      operations: [{ ...op, name: "chat", fields: [...synthetic, ...fields] }],
+      current: "chat",
+      models: models.filter((m) => m.status !== "missing").map((m) => m.name),
+      apply: (_name, filled) => {
+        const { model: m, system_prompt: sp, stream: st, ...rest } = filled;
+        if (typeof m === "string") setModel(m);
+        if (typeof sp === "string") setSystem(sp);
+        if (typeof st === "boolean") setStream(st);
+        setParams((p) => ({ ...p, ...rest }));
+      },
+    });
+    return () => setFormBridge(null);
+    // `fields` derives from `op`.
+  }, [op, models]);
 
   const extra = useMemo(() => {
     if (!op) return {};

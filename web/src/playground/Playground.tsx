@@ -10,6 +10,7 @@ import { useApi, useFileSrc, useNow } from "../hooks";
 import { useToken } from "../session";
 import { FieldInput } from "./fields";
 import { acceptFor } from "./FilePicker";
+import { setFormBridge } from "./formBridge";
 import { buildPayload, operationsOf, valuesFromParams, type Field, type Operation, type Values } from "./schema";
 import { WriteWithChat } from "./WriteWithChat";
 
@@ -48,7 +49,27 @@ export function Playground({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<Error>();
   const [outcome, setOutcome] = useState<Outcome>();
+  const [flash, setFlash] = useState<Set<string>>(new Set());
   const { jobs } = useData();
+
+  useEffect(() => {
+    setFormBridge({
+      family,
+      operations: ops,
+      current: ops[opIndex]?.name ?? "",
+      models: models.filter((m) => m.status !== "missing").map((m) => m.name),
+      apply: (name, filled) => {
+        const index = ops.findIndex((o) => o.name === name);
+        if (index === -1) return;
+        setOpIndex(index);
+        setValuesByOp((s) => ({ ...s, [ops[index].path]: { ...(s[ops[index].path] ?? {}), ...filled } }));
+        if (ops[index].fields.some((f) => f.advanced && f.name in filled)) setShowAdvanced(true);
+        setFlash(new Set(Object.keys(filled)));
+        window.setTimeout(() => setFlash(new Set()), 2400);
+      },
+    });
+    return () => setFormBridge(null);
+  }, [family, ops, opIndex, models]);
 
   const op: Operation | undefined = ops[opIndex];
   const values = (op && valuesByOp[op.path]) ?? {};
@@ -155,6 +176,7 @@ export function Playground({
         {basic.map((f) => (
           <FieldInput
             key={f.name}
+            flash={flash.has(f.name)}
             field={f}
             value={values[f.name]}
             onChange={(v) => setValue(f.name, v)}
@@ -173,6 +195,7 @@ export function Playground({
               advanced.map((f) => (
                 <FieldInput
                   key={f.name}
+                  flash={flash.has(f.name)}
                   field={f}
                   value={values[f.name]}
                   onChange={(v) => setValue(f.name, v)}

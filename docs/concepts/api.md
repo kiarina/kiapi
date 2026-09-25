@@ -68,7 +68,10 @@ description, the operation description, and the field description to
 `/v1/chat/completions` as the system prompt, so a person gets the same guidance
 an LLM agent reads. The floating assistant does the same for questions: it
 sends the current family's `openapi.json` (or the root one outside family
-pages) to a chat model as the system prompt.
+pages) to a chat model as the system prompt. On a Playground it also passes one
+`fill_<operation>_form` tool per operation, built from the same form fields;
+the UI copies only the arguments that match a field's name, type, and range
+into the form and never submits it.
 
 The UI never changes the machine's setup. For a missing resource it shows the
 `kiapi activate` command to run in a terminal; `GET /v1/setup` reports the

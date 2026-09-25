@@ -1621,10 +1621,6 @@ select.input {
 .fab:hover {
   transform: scale(1.06);
 }
-/* On the chat page the button sits clear above the message console. */
-.fab.raised {
-  bottom: 168px;
-}
 .helper {
   position: fixed;
   right: 24px;
@@ -1640,11 +1636,6 @@ select.input {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: pop 0.16s ease;
-}
-.fab.raised + .helper,
-.helper:has(+ .fab.raised) {
-  bottom: 232px;
-  height: min(520px, calc(100vh - 256px));
 }
 @keyframes pop {
   from {
@@ -1736,13 +1727,38 @@ select.input {
     right: 16px;
     bottom: 16px;
   }
-  .helper,
-  .fab.raised + .helper,
-  .helper:has(+ .fab.raised) {
+  .helper {
     right: 8px;
     left: 8px;
     bottom: 80px;
     width: auto;
     height: min(70vh, calc(100vh - 100px));
+  }
+}
+
+.fill-note {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--ok-soft);
+  color: var(--ok-text);
+  font-size: 12px;
+}
+.field.flash {
+  animation: flash 2.4s ease;
+  border-radius: 10px;
+}
+@keyframes flash {
+  0%,
+  40% {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 8px var(--accent-soft);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 8px transparent;
   }
 }
