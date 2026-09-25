@@ -23,6 +23,7 @@ of the architecture; detailed design notes live under
 | [Model Lifecycle](docs/concepts/model-lifecycle.md) | Setup resources, model registry, memory budget, TTL, and subprocess isolation |
 | [Jobs and Files](docs/concepts/jobs-and-files.md) | Processing flow, worker serialization, progress, files, and response negotiation |
 | [API](docs/concepts/api.md) | Endpoint organization, model discovery, and two-layer OpenAPI documentation |
+| [Web UI](docs/concepts/web-ui.md) | The browser UI at `/`, schema-driven forms, chat-assisted features, and the design system |
 
 ## Documentation Types
 

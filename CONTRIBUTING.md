@@ -32,11 +32,23 @@ GPU feature and regression checks live in `scripts/capabilities/verify_*.py` and
 running kiapi server plus the relevant activated models.
 
 ```sh
-make verify
-make verify-fast
-make verify-one
-make verify-{capability}
+make verify         # choose families interactively
+make verify-fast    # the same, first case of each script only
+make verify-kiapi   # every capability, non-interactively
+mise run verify --kiapi --family embedding --fast   # one family
 ```
+
+## Web UI
+
+The browser UI lives in `web/` (React, Vite, TypeScript). Node and pnpm come
+from `mise.toml`.
+
+```sh
+make web-dev          # dev server against `make dev`
+mise run web:build    # type check and build into src/kiapi/api/ui/static
+```
+
+See [Web UI development](docs/playbooks/web-ui-development.md).
 
 ## Pull Requests
 
@@ -45,7 +57,7 @@ Before opening a pull request, please run:
 ```sh
 make test
 make
-make build
+make build   # also builds the web UI
 ```
 
 For bug reports and fixes, include:

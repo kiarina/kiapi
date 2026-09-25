@@ -2,158 +2,46 @@
 
 ## 背景
 
-kiapi は LLM エージェントから使う前提のため、人が見ても何ができるか分かりにくく、すぐには
-使いにくい。`/` は今は何も返していない。人が直接、全 family を試せて、何ができるかも分かる
-Web UI を kiapi 自身が配る。
+kiapi は LLM エージェント向けで、人には何ができるか分かりにくく、すぐ使いにくい。エージェントが読む
+`openapi.json` を元データにして、人が全 family を試せる UI を kiapi 自身が配る。
 
-エージェント向けに整えた情報源（`/openapi.json` と `/v1/{domain}/{family}/openapi.json` の
-説明・tips・スキーマ、`x-kiapi-domain` / `x-kiapi-capability`）をそのまま UI の元データにする。
-
-## 方針（2026-09-25 にユーザーと合意）
-
-- **画面構成**
-  - トップ: ダッシュボード。状態（`/health`: warm、キュー長、常駐モデル、メモリ予算）、設定、
-    最近のジョブ、最近のファイル
-  - サイドバーは 2 段。コアメニュー（モデル、ジョブ、ファイル）と、ファミリーメニュー
-    （全 family を domain ごとにグループ化）
-- **モデル**: 全モデルとセットアップ状態を表示するだけ。UI からは activate / deactivate / check を
-  実行せず、対応する CLI コマンドを表示してコピーできるようにする
-  - CLI の絞り込みは `--domain` / `--family` / `--repo` / `--all` で、モデル単位の指定は無い。
-    モデルの行には足りないリソースごとの `--repo` コマンド、family の見出しには `--family` の
-    まとめコマンドを出す
-  - 状態は `kiapi status` と同じく `SetupManager` と `model_registry` から読む。読み取り専用の
-    API（例: `GET /v1/setup`）を新設する。CLI で activate しても UI は気づかないので、再取得ボタンを置く
-  - UI からのモデル管理（長時間ジョブ化、管理レーン、CSRF 対策）は必要になるまでやらない
-- **ジョブ / ファイル**: 一覧と詳細。成果物（画像・音声・動画・テキスト）はその場でプレビューする
-- **ファミリー**: 各 family のフル機能を使える。何ができるかが分かることも同じくらい重要
-  - family ごとにカタログを置く: 説明（openapi の description を整形）、エンドポイント、model の
-    選択肢、必要メモリとディスク、ライセンス（**非商用のものはバッジで明示**）、出力例
-  - フォームは OpenAPI のスキーマから自動生成し、手書きは差分だけにする（画像入力とマスク、
-    音声・動画の再生、chat のストリーミング、LoRA 学習など）。family を足しても UI が遅れないことを優先する
-  - 生成リクエストは非同期で投げてジョブの進捗を追う形に統一する
-- **プロンプト生成**: エージェントに書かせる前提のプロンプトは、UI から `/v1/chat` で作る。
-  family の openapi の説明を system prompt に渡し、エージェントと同じ情報源を使う
-  - chat モデルと生成モデルはメモリ予算の中で入れ替わるので、ロード待ちを UI に見せる
-  - ltx2 の `enhance_prompt` との使い分けを決める
-- **配布**: UI はビルドした静的ファイルを wheel に同梱し、FastAPI から `/` で配る。既存の
-  `/docs`・`/openapi.json`・`/v1/*` と衝突させない。ビルドはリリース workflow に組み込む
-
-## 見た目
-
-シンプルでありながら、美麗で現代的にする。見た目は成果物の一部として設計し、既定のスタイルのまま出さない。
-
-- 主役は生成物とフォーム。枠や装飾を足すのではなく、主役以外を引く
-- 配色・書体・余白・角丸・影をデザイントークンとして最初に決め、全画面で揃える
-- ライトとダークの両方に対応する
-- 生成物のギャラリー（カタログの出力例、ファイル一覧）は画として気持ちよく見せる
-- 待ち時間（キュー、ロード、進捗）は動きで伝え、止まっているように見せない
-- スマートフォンからも使える（`tailscale serve` 経由の利用を想定）
-- 実装前にダッシュボードとファミリー画面のモックを作り、ユーザーと方向を合わせる
-
-### デザイントークン（2026-09-26 にユーザーと合意）
-
-ライトとダークを切り替える。両テーマで書体・余白・角丸・レイアウトは共通で、色の値だけを差し替える
-（CSS 変数の値の差し替えで切り替わる構成にする）。Spirits Garden の「夜の庭」、Tokyo Canvas の「墨硝子」に
-寄せる案も比べたが、見やすさでライトとその対のダークを選んだ。
-
-| 役割 | ライト | ダーク |
-|---|---|---|
-| 地 | `#F7F6F2` | `#151513` |
-| サイドバー | `#EFEEE8` | `#1B1B19` |
-| カード | `#FFFFFF` | `#1E1E1B` |
-| 入力・表の見出し | `#EDEBE4` / `#FAFAF7` | `#262622` / `#232320` |
-| 生成物のプレビュー台 | `#EFEEE8` | `#10100F` |
-| 境界線 / 入力の枠 | `#E4E2DA` / `#DAD8CF` | `#2E2E2A` / `#3A3A35` |
-| 文字 主 / 補助 / 控えめ | `#18181B` / `#52525B` / `#6B6B73` | `#EDECE8` / `#B4B3AC` / `#8F8E87` |
-| 主ボタン | 墨 `#18181B` に白文字 | 白 `#EDECE8` に墨文字 |
-| アクセント（リンク・進捗） | `#2F54EB` | `#7C9BFF` |
-| 準備済み | `#16A374` | `#3FCF8E` |
-| 非商用 | `#92400E` on `#FEF3C7` | `#F5C66A` on 12% |
-| 失敗 | `#D9480F` | `#FF7A59` |
-
-- 地は両テーマとも暖かい中立色で、青みを入れない
-- ダークでは影が見えないので、面は明るさの段と境界線で分ける
-- 書体: 見出し Instrument Serif、本文 Geist、ID・コマンド Geist Mono（日本語は Hiragino Sans へ落とす）
-- 角丸: カード 14px、ボタン・入力 8〜10px。アイコンは 1.6px の線画
-- テーマの切り替えはサイドバーの下端のボタン（ライトでは月、ダークでは太陽）
-
-## 技術構成（2026-09-26 にユーザーと合意）
-
-- React の SPA を Vite でビルドし、成果物を wheel に同梱して FastAPI から `/` で配る
-- テーマは CSS 変数の値の差し替えで切り替える（トークンは上の「デザイントークン」）
-- UI の表示言語は英語のみ。OpenAPI の説明・tips を訳さずにそのまま出せる。翻訳は必要になったら足す
-- ガイドの出力例は、その family で作った自分のファイルを優先し、無ければ GitHub Pages に置いた見本を出す。
-  wheel には見本を入れない（重くなるうえ、非商用ライセンスの model の出力を配ることになるため）
-- 「Write with chat」の既定の model は `qwen3.8-27b`（約 16 GB で、生成 model と同時に予算へ収まる）。UI で切り替えられる
-- Node は mise で入れる。ビルド成果物は git に commit せず、CI とリリース workflow の中でビルドして wheel に入れる
-  （hatch の `artifacts` に追加する）。開発時は Vite の dev server から kiapi へ proxy する
+段階 1（読み取り）と段階 2（実行、chat、質問チャット）は 2026-09-26 に実装した。経緯と実測は `HISTORY.md`、
+設計の正典は `docs/concepts/web-ui.md`、開発手順と落とし穴は `docs/playbooks/web-ui-development.md`。
 
 ## やること
 
-### 段階 1: 読み取り専用（2026-09-26 に実装）
+### 次: README で見せて、0.8.0 としてリリースする（ユーザーと合意、2026-09-26）
 
-- [x] `GET /v1/setup`（全モデルのセットアップ状態）を足す
-- [x] ダッシュボード、ジョブ、ファイル、モデル（コマンド案内付き）、ファミリーのガイドと API
-- [ ] 非商用バッジ: `ModelSpec` にライセンスの情報が無いので未実装。`license` と商用可否を ModelSpec に足し、
-  `/v1/setup`（または family の models）で返す
-- [ ] 出力例の見本を GitHub Pages に置き、自分の生成物が無い family で出す
-- [ ] ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。
-  生成時に `meta.family` を書くようにすると確実になる
+- 撮影用に、**商用可の model**（Z-Image turbo、Qwen Image の `image`（Apache-2.0）、ERNIE など）で見栄えのする
+  生成物を作る。非商用の model（Qwen Image 2.1、FLUX.2 klein 9B、Ideogram 4）の出力と、みぃねこ関連は画面に映さない
+- `localhost` で開いて撮る（サイドバーとアドレスバーにホスト名を出さない）
+  - README の冒頭: Playground で生成結果が出ている画面。ライトとダークを `<picture>` で出し分ける
+  - 「Web UI」節: Overview、Models（コマンド案内）、質問チャットがフォームを埋める場面の 3 枚
+  - できれば、質問チャットがフォームを埋めて光る 10 秒ほどの GIF
+- 画像はリポジトリに置き、README からは絶対 URL で参照する（PyPI は相対パスの画像を出さない）
+- README はリリースと同じタイミングで出す（PyPI の 0.7.0 には UI が無いため）。リリースは実行直前にユーザーへ確認する
 
-### 段階 2: 実行（2026-09-26 に実装）
+### その後（必要になったら）
 
-- [x] OpenAPI からのフォーム自動生成（全 22 操作。POST の JSON と、web fetch の GET クエリ）
-- [x] `/v1/chat` によるプロンプト生成（「Write with chat」。prompt・negative_prompt・lyrics）
-- [x] chat 画面（ストリーミング、画像・音声・動画の添付、system prompt）
-- [ ] family ごとの差分: 今は汎用フォームだけで、サイズのプリセット、画像の範囲指定、音声の波形表示などは無い。
-  使ってみて欲しくなったものから足す
-- [ ] 実行中ジョブの中断: kiapi に中断の API が無い（`DELETE /v1/jobs/{id}` は実行中を止めない）ので UI にも無い
+- 非商用バッジ: `ModelSpec` にライセンスの情報が無い。`license` と商用可否を ModelSpec に足し、`/v1/setup` で返して
+  Models・Guide・Playground のモデル選択に出す
+- 出力例の見本を GitHub Pages に置き、自分の生成物が無い family の Guide に出す
+- ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。生成時に
+  `meta.family` を書くと確実になる
+- family ごとの工夫（サイズのプリセット、音声の波形など）: 汎用フォームで一通り使えるので、使って欲しくなったものから足す
+- 実行中ジョブの中断: kiapi に中断の API が無い（`DELETE /v1/jobs/{id}` は実行中を止めない）ので UI にも無い
+- ltx2 の `enhance_prompt` と「Write with chat」の使い分けは未検討
 
 ## 完了条件
 
-- `kiapi run` だけで `/` に UI が出て、全 family をフォームから実行し、成果物をその場で確認できる
-- 各 family で何ができるか（用途、model、ライセンス、出力例）が UI だけで分かる
-- 全モデルのセットアップ状態と、足りないものを入れる CLI コマンドが UI で分かる
-- ライトとダーク、デスクトップとスマートフォンで崩れない
-- PyPI から入れた kiapi でも UI が配られる
+- `kiapi run` だけで `/` に UI が出て、全 family をフォームから実行し、成果物をその場で確認できる（達成）
+- 各 family で何ができるか（用途、model、ライセンス、出力例）が UI だけで分かる（ライセンスと見本が未達）
+- 全モデルのセットアップ状態と、足りないものを入れる CLI コマンドが UI で分かる（達成）
+- ライトとダーク、デスクトップとスマートフォンで崩れない（達成）
+- PyPI から入れた kiapi でも UI が配られる（0.8.0 のリリースで達成）
 
-## 進捗
+## 申し送り
 
-- 2026-09-25: モック v1（ダッシュボード、Qwen Image のプレイグラウンドとガイド、モデル、スマホのジョブ詳細（ダーク）、
-  共通サイドバー）を Claude の Design キャンバスに作った。見た目は暖かい白地、墨色の主ボタン、青のアクセント、
-  見出しは Instrument Serif、本文は Geist / Geist Mono。ユーザーの確認待ち
-- 2026-09-26: 夜の庭・墨硝子の案と、ライトの対になるダーク案をキャンバスに足して比べ、ライトとダークの切り替えに決めた。
-  トークンは上の「デザイントークン」。スマホのジョブ詳細もライトとダークで描き直した。技術構成（上）も合意。次は `GET /v1/setup` とフロントエンドの雛形
-- 2026-09-26: 段階 1 を実装した。`GET /v1/setup`、`/` での UI 配信（`src/kiapi/api/ui`、資産は `/_ui`）、
-  `web/`（React 19 + Vite 8 + TypeScript 7、フォントは @fontsource で同梱）、mise の `web:build` / `web:dev`、
-  build・release・setup への組み込み、hatch の sdist と wheel の `artifacts`（`uv build` は sdist から wheel を
-  作るので、sdist にも入れないと wheel から UI が落ちる）。画面は Overview・Models・Jobs・Files・family の Guide / API。
-  ライトとダーク、スマホ幅（375px）で横スクロールが出ないことをブラウザで確かめた
-  - 確かめ方: 稼働中の kiapi（:8500）は single instance の lock を持つので、`XDG_CACHE_HOME` だけ一時ディレクトリに
-    向け、`HF_HOME` を本来の場所に固定して 2 つ目を :8600 で起動した（warmup 無しなのでモデルは載らない）
-  - `/v1/setup` は Docker と venv の確認でおよそ 5 秒かかる。UI では Models を開いたときと Refresh のときだけ取る
-  - 稼働中のサービスへ反映するには、そのマシンで `mise run web:build` してから kiapi を再起動する（ビルド成果物は git に無い）
-- 2026-09-26: 段階 2 を実装した。各 family のタブに Playground を足して既定にした。フォームは capability の
-  `openapi.json` から作り（`web/src/playground/schema.ts`）、生成は `mode: "async"` で投げてジョブを追う。
-  FileRef は既存ファイルからの選択とアップロード、LoRA は file と scale の組、真偽値は「既定 / On / Off」。
-  「Write with chat」は family・操作・項目の説明を system prompt にして既定 `qwen3.8-27b` に書かせる。
-  :8500 で Z-Image の生成、Qwen Image の Write with chat、chat、web fetch、embedding を実際に通し、
-  スマホ幅で横スクロールが出ないことも確かめた
-  - 踏んだ落とし穴: `useEffect(() => el.scrollIntoView(...))` のように式で返すと、戻り値が cleanup と
-    見なされて React が落ちることがある。effect の本体は必ずブロックで書く
-- 2026-09-26: ユーザーの指摘で chat を作り直した。ログを独立したスクロール領域にし、末尾にいるときだけ追従する
-  （`useStickToBottom`。以前は描画のたびに scrollIntoView して揺れ、sticky の入力欄と重なっていた）。
-  パラメータを ChatRequest から作るパネルに出し、tools・tool_choice・parallel_tool_calls・max_completion_tokens・
-  chat_template_kwargs・stream の有無まで試せるようにした。tool call は index ごとに組み立てて表示し、結果を返して
-  続きを生成できる。全フォームの項目に「?」を付け、hover・focus・tap で説明全文を出す。右下の丸ボタンで、
-  今の family の `openapi.json`（family 以外では root）を system prompt にした質問用の小さなチャットを開ける。
-  qwen3.8-27b で最初の回答はおよそ 35 秒（8K tokens ほどの prefill）
-  - 踏んだ落とし穴: 浮かぶ質問窓の class を `.assistant` にしたら、chat の `.bubble.assistant` にも当たって吹き出しが
-    固定表示になった。浮かぶ窓は `.helper` にした
-- 2026-09-26: chat を他の Playground と同じ 2 列にした（左がモデル・system prompt・stream を含む全パラメータ、右がタイムラインと
-  その下の入力欄）。狭い画面ではパラメータを右から出す。chat の画面では質問ボタンを入力欄から離して上げた
-- 2026-09-26: 質問チャットから form を埋められるようにした。Playground が `formBridge` に操作とフィールドを登録し、
-  質問チャットは操作ごとに `fill_<op>_form` の tool を作って渡す。返った引数は、名前・型・範囲・enum・`file_` 接頭辞が
-  合うものだけ入れ、合わないものは skipped として model に返す（送信はしない）。1 往復目だけ tool を許し、2 往復目は
-  `tool_choice: none` で説明させる。Z-Image（prompt・width・height・seed）と chat（tools・temperature・max tokens）で確かめた。
-  chat の質問ボタンは、入力欄の下の余白と同じだけ上に空けて置く（入力欄の位置を測って決める）
+- UI の変更は、稼働中の kiapi には `mise run web:build` だけで反映される（再起動不要）。Python 側の変更は再起動が要る
+- 質問チャットの最初の回答は 30〜60 秒かかる（model の load と文書の prefill）。同じページの 2 問目からは速い
+- `/v1/setup` は 1 回 3〜5 秒。UI は Models を開いたときと Refresh のときだけ取る

@@ -3,6 +3,28 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-26 — `/` に全 family を使える Web UI を足した（段階 1・2）
+
+- 目的: kiapi は LLM エージェント向けで、人には何ができるか分かりにくく、すぐ使いにくかった。エージェントが読む `openapi.json`
+  をそのまま元データにして、人が全 family を試せる UI を kiapi 自身が配る。設計の正典は `docs/concepts/web-ui.md`、
+  開発手順と落とし穴は `docs/playbooks/web-ui-development.md`
+- ユーザーと決めたこと
+  - モデルは表示だけ。activate / deactivate / check は UI から実行せず、コマンドを案内する（長時間ジョブ・管理レーン・
+    CSRF 対策を避けるため）。状態は新設の `GET /v1/setup` で返す
+  - 見た目はライトとダークの切り替え。Spirits Garden の「夜の庭」、Tokyo Canvas の「墨硝子」に寄せる案もモックで比べたが、
+    見やすさで暖かい中立色のライトと、その対のダークにした
+  - 技術は React + Vite + TypeScript。成果物は git に入れず、build とリリースでビルドして wheel に入れる。表示は英語のみ。
+    「Write with chat」と質問チャットの既定 model は `qwen3.8-27b`（約 16 GB で生成 model と同時に予算へ収まる）。
+    ガイドの出力例は自分の生成物を優先し、見本は wheel に入れない（非商用 model の出力を配らないため）
+- 作ったもの: Overview・Models・Jobs・Files、各 family の Playground（OpenAPI から作るフォーム、非同期ジョブの追跡、
+  ファイル選択とアップロード）・Guide・API、chat の全パラメータと tool call の往復、項目ごとの「?」、右下の質問チャット
+  （family の `openapi.json` を読ませて答え、`fill_<op>_form` の tool でフォームを埋める。送信はしない）
+- 実測（Mac Studio M4 Max 128GB）: `/v1/setup` は Docker と venv の確認でおよそ 3〜5 秒。質問チャットの最初の回答は
+  model の load と 6〜8K tokens の prefill でおよそ 35〜60 秒、2 問目からは prompt cache が効いて速い。
+  JS は gzip でおよそ 120 KB
+- 確認: サーバー機の :8500 で Z-Image の生成、Qwen Image の Write with chat、chat の並列 tool call と結果の返送、web fetch、
+  embedding、質問チャットによるフォーム入力（Z-Image と chat）を通した。ライト・ダーク・スマホ幅（375px）で横スクロールなし
+
 ## 2026-09-25 — qwen に Qwen-Image-2.1（`image-2.1`）を足し、mflux を 0.20.0 + #741 の fork に上げた
 
 - ユーザーと検討して、既存の `image` / `edit-2509` は残し、2.1 を並べて足すと決めた。2.1 の重みは Qwen Research License

@@ -138,6 +138,9 @@ src/kiapi/capabilities/{family}/
 make
 ```
 
+`web/` を変更した場合は、`mise run web:build` で型検査とビルドを行い、ブラウザでライト・ダーク・スマホ幅を確認してください。
+手順と落とし穴は `docs/playbooks/web-ui-development.md` を参照。
+
 ## テスト方針
 
 kiapi のテストは、実行速度の観点から下記を明確に分離します。
