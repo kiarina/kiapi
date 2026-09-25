@@ -62,6 +62,30 @@ shares the settings and the file store with the running server.
 
 ## Screenshots for public pages
 
-kiapi is public. When capturing the UI for the README or articles, open it on
-`localhost` so no host name shows, and show outputs of models whose licenses
-allow commercial use.
+The README shows `docs/images/web-ui/<page>-<theme>.webp` (2880x2000, light and
+dark) through absolute `raw.githubusercontent.com` URLs, because PyPI does not
+show relative images. They only appear after they are pushed to `main`.
+
+kiapi is public, so the shots must not show a host name, your own files, or
+outputs of models that forbid commercial use. To retake them:
+
+1. Start a clean instance on the README's port, with an empty file store:
+
+   ```sh
+   XDG_CACHE_HOME=/tmp/kiapi-shots/cache HF_HOME=~/.cache/huggingface \
+   KIAPI_FILES_ROOT=/tmp/kiapi-shots/files uv run kiapi run --port 8000
+   ```
+
+2. Generate the pictures with models whose licenses allow commercial use, such
+   as Z-Image `turbo` and ERNIE-Image `turbo`. Not Qwen Image `image-2.1`,
+   FLUX.2 `klein-9b` / `klein-base-9b`, Ideogram 4, or AudioGen.
+3. Capture with Chrome driven by puppeteer-core at 1440x1000 and a device scale
+   factor of 2. Switch themes by emulating `prefers-color-scheme`, hide the
+   floating assistant button except in its own shot, and wait until every
+   sidebar family name has loaded before capturing.
+4. For the Overview, start one generation first and capture both themes while
+   it runs. Each extra run adds a file and a job; delete them with
+   `DELETE /v1/files/{id}` and `DELETE /v1/jobs/{id}` so the gallery keeps six
+   pictures.
+5. Convert to WebP (quality about 86; each image stays under 250 KB) and stop
+   the instance.
