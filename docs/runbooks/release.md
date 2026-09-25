@@ -21,7 +21,7 @@ Commit the prepared release, then create and push the version tag:
 ```bash
 git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "chore(release): prepare v<version>"
-git tag v<version>
+git tag -a v<version> -m v<version>
 git push origin main --tags
 ```
 

@@ -3,6 +3,19 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-26 — 0.8.0 をリリースし、README で Web UI を紹介した
+
+- README の冒頭に Playground の画面、新設の「Web UI」節に Overview・Models・質問チャットの画面を載せた（ライトとダークを
+  `<picture>` で出し分け。WebP 2880×2000、1 枚 150〜200 KB）。写す生成物は商用可の Z-Image turbo と ERNIE-Image turbo だけで作り、
+  `KIAPI_FILES_ROOT` を空にした 2 つ目の kiapi を `localhost:8000` で起動して、puppeteer-core から撮った
+- 踏んだ落とし穴: テーマを localStorage に事前に書くと reload のたびに上書きされ、ダークが撮れなかった。`prefers-color-scheme`
+  のエミュレートで切り替えた。生成中に撮ると family の名前（各 `openapi.json` の title）の取得が遅れるので、揃うまで待つ
+- 0.8.0（Web UI、`GET /v1/setup`、Qwen Image 2.1、`qwen3.8-flash-next`、chat の APC と切断時のキャンセル、`model` の必須化と
+  `max_tokens_cap` の削除など）を PyPI と GitHub Release に出した。PyPI の wheel に UI の 30 ファイルが入っていることを確かめた。
+  mflux の fork の指定は `[tool.uv.sources]` だけなので、公開する依存は `mflux>=0.20.0` のまま
+- リリース前に CHANGELOG の Unreleased で重複していた `### Changed` を 1 つにまとめた。`git tag` はこのリポジトリの設定で
+  メッセージを求めるので、`git tag -a v<version> -m v<version>` で付ける
+
 ## 2026-09-26 — `/` に全 family を使える Web UI を足した（段階 1・2）
 
 - 目的: kiapi は LLM エージェント向けで、人には何ができるか分かりにくく、すぐ使いにくかった。エージェントが読む `openapi.json`
