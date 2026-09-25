@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-26
+
 ### Dependencies
 
 - mflux 0.19.1 -> 0.20.0, pinned to a kiarina fork commit (`144a6bec`) that adds
@@ -33,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (previously `qwen3.8-27b`). `qwen3.8-flash-next` also answers to
   `qwen3.8-flash` and `flash-next`; its `qwen4_exp` alias was removed.
   `qwen3.8-27b` keeps `qwen3_5` and `qwen3-vl`.
+- **BREAKING**: chat: removed the `max_tokens_cap` setting
+  (`KIAPI_CHAT_MAX_TOKENS_CAP`, 4096). `max_completion_tokens` is no longer
+  capped by the server; generation stops at `max_completion_tokens` or when the
+  prompt plus the output fills the model's context window, whichever comes first.
+- chat: the default `max_completion_tokens` is now 1024 (was 512).
+- chat: non-streaming requests now run through `stream_generate` like streaming
+  ones, so the context window bound applies to both.
 
 ### Added
 
@@ -87,16 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   restores complete-prompt positions when reusing media prefixes.
 - chat: `GET /v1/models` returns each model's `context_window`, read from the
   model's `config.json` (`null` until the model is set up).
-
-### Changed
-
-- **BREAKING**: chat: removed the `max_tokens_cap` setting
-  (`KIAPI_CHAT_MAX_TOKENS_CAP`, 4096). `max_completion_tokens` is no longer
-  capped by the server; generation stops at `max_completion_tokens` or when the
-  prompt plus the output fills the model's context window, whichever comes first.
-- chat: the default `max_completion_tokens` is now 1024 (was 512).
-- chat: non-streaming requests now run through `stream_generate` like streaming
-  ones, so the context window bound applies to both.
 
 ### Fixed
 
