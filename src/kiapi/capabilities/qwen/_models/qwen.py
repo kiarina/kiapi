@@ -8,8 +8,8 @@ from typing import Any
 from kiapi.capabilities import attach_mflux_progress
 from kiapi.core.file import FileStore
 from kiapi.core.model import ModelSpec
-from kiapi.core.workdir import create_work_dir
 
+from .._operations.store_image import store_image
 from .._views.edit_params import EditParams
 from .._views.generate_params import GenerateParams
 
@@ -82,36 +82,6 @@ def warmup(payload: SimpleNamespace) -> None:
     )
 
 
-def _store_image(
-    image: Any,
-    *,
-    fmt: str,
-    quality: int,
-    files: FileStore,
-    meta: dict[str, Any],
-) -> dict[str, Any]:
-    pil = getattr(image, "image", image)
-    ext = "jpg" if fmt == "jpeg" else fmt
-    tmp_dir = create_work_dir("image/qwen")
-    out_path = tmp_dir / f"image.{ext}"
-    save_kwargs: dict[str, Any] = {}
-    if fmt in ("jpeg", "webp"):
-        save_kwargs["quality"] = quality
-    if fmt == "jpeg":
-        pil = pil.convert("RGB")
-    pil.save(out_path, format=fmt.upper(), **save_kwargs)
-    if not out_path.exists():
-        raise RuntimeError("generation finished but no image file was produced")
-    rec = files.put_path(
-        out_path,
-        filename=f"qwen_{int(time.time())}.{ext}",
-        content_type=f"image/{fmt}",
-        meta=meta,
-        move=True,
-    )
-    return {"file_id": rec.file_id, "image_bytes": rec.size, **meta}
-
-
 def _generate(model: Any, params: GenerateParams, files: FileStore) -> dict[str, Any]:
     t0 = time.time()
     attach_mflux_progress(model)
@@ -136,7 +106,7 @@ def _generate(model: Any, params: GenerateParams, files: FileStore) -> dict[str,
         "height": params.height,
         "timings": {"total_s": total_s},
     }
-    return _store_image(
+    return store_image(
         image, fmt=params.format, quality=params.quality, files=files, meta=meta
     )
 
@@ -165,7 +135,7 @@ def _edit(model: Any, params: EditParams, files: FileStore) -> dict[str, Any]:
         "height": params.height,
         "timings": {"total_s": total_s},
     }
-    return _store_image(
+    return store_image(
         image, fmt=params.format, quality=params.quality, files=files, meta=meta
     )
 

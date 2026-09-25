@@ -9,14 +9,19 @@ instruction-following edits.
 - [mflux — Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) — the MLX engine kiapi runs
 - [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) — generate weights
 - [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) — edit weights
+- [Qwen/Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) — unified generate/edit weights (non-commercial)
 
 ## Models
 - **image** (default) — text-to-image / img2img. The only variant `/generate`
   accepts.
-- **edit-2509** — instruction-based editing. The only variant `/edit` accepts.
+- **edit-2509** — instruction-based editing. The default for `/edit`.
+- **image-2.1** — Qwen-Image-2.1, accepted by both `/generate` and `/edit`.
+  One resident model, RGBA output, up to 10 reference images, up to 2752 px.
+  Its weights are under the Qwen Research License: **non-commercial use only**.
+  Listed only when the server runs the mflux build with 2.1 editing.
 
-Each endpoint is pinned to its variant, so `model` is effectively fixed per
-operation; discover variants at `GET /v1/image/qwen/models`. Omitted
+Omit `model` for each endpoint's default; discover variants at
+`GET /v1/image/qwen/models`. Omitted
 `steps`/`guidance`/`quantize`/size are filled in server-side and the resolved
 values are recorded in the result `params`.
 
@@ -25,6 +30,17 @@ values are recorded in the result `params`.
   in 0..1) to seed an img2img run from one image.
 - **edit** takes a list of reference `images` for single- or multi-image editing
   / composition under one natural-language prompt.
+
+## image-2.1
+- Defaults: `steps` 40, `guidance` 1.0 (trained guidance-free), q8. With
+  `guidance` above 1, `negative_prompt` drives true CFG at about twice the time.
+- Size: multiples of 32, up to 2752x2752. An edit without `width`/`height` takes
+  the last image's aspect ratio at about 1024x1024 pixels.
+- Transparency: ask for it in the prompt, e.g. "This is an RGBA image with
+  transparency. ... The background is transparent." `png`/`webp` keep alpha;
+  `jpeg` flattens onto white.
+- Not supported: `init_image` (pass the image in `images` on `/edit`), `loras`,
+  and `scheduler` (ignored).
 
 ## Resident vs transient runs
 The warmed, resident model uses the server-default quantization (q8). A request
@@ -40,7 +56,8 @@ Apply adapters by passing their `file` ids in `loras` (up to 4, each
 ## TIPS
 - For a quick image, call `sync` without `Accept: application/json` to get the
   raw bytes straight back (`curl -o out.png`).
-- `width`/`height` must be multiples of 16 and at most 2048x2048 (default 1024).
+- `width`/`height` must be multiples of 16 and at most 2048x2048 (default 1024);
+  `image-2.1` needs multiples of 32 and allows up to 2752.
 - Qwen-Image renders legible text well — describe the wanted text explicitly in
   the prompt.
 - First use downloads the Qwen weights (~58 GB full); run `kiapi activate` ahead

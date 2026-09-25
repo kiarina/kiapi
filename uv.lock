@@ -366,7 +366,7 @@ requires-dist = [
     { name = "httpx" },
     { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
-    { name = "mflux", specifier = ">=0.18.0" },
+    { name = "mflux", git = "https://github.com/kiarina/mflux.git?rev=144a6becfb587bcaa0139758131faf0a7930ae18" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
@@ -510,8 +510,8 @@ wheels = [
 
 [[package]]
 name = "mflux"
-version = "0.19.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.20.0"
+source = { git = "https://github.com/kiarina/mflux.git?rev=144a6becfb587bcaa0139758131faf0a7930ae18#144a6becfb587bcaa0139758131faf0a7930ae18" }
 dependencies = [
     { name = "filelock", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "fonttools", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
@@ -535,10 +535,6 @@ dependencies = [
     { name = "tqdm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "transformers", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "urllib3", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5e/95/b4944c86a0e255ea292ce8172bbb5bd1a4e66a60d12a194ec553607a5408/mflux-0.19.1.tar.gz", hash = "sha256:f44577d4be2ec385c28f2107c41662eefc100f1c74df34e53f87fcd3dc217281", size = 969307, upload-time = "2026-08-26T01:54:06.018Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/0e/b0c08a5867e744317cfa400d336f02f6b2b7e32031288994384c2cbca583/mflux-0.19.1-py3-none-any.whl", hash = "sha256:e56f1e28e2cbad1153272ad87d3077f82442015f60214cdbc9b322c6003db513", size = 1304907, upload-time = "2026-08-26T01:54:04.269Z" },
 ]
 
 [[package]]

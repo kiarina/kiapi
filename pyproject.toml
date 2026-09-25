@@ -69,7 +69,7 @@ dependencies = [
     "torch",
     "torchvision",
     "torchaudio",
-    "mflux>=0.18.0",
+    "mflux>=0.20.0",
     "pydantic-settings-manager>=3.8.0",
 ]
 
@@ -104,6 +104,8 @@ environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 # Opt-in Qwen3.8 image and Omni media-prefix APC, pending upstream releases.
 # Published wheels retain the official 0.7.1 dependency and conservative fallback.
 mlx-vlm = { git = "https://github.com/kiarina/mlx-vlm.git", rev = "6581ba8c2f2dbc8b994cb0a350532a4bec59abc2" }
+# Qwen-Image-2.1 editing and RGBA output (mflux-community/mflux#741), pending upstream release.
+mflux = { git = "https://github.com/kiarina/mflux.git", rev = "144a6becfb587bcaa0139758131faf0a7930ae18" }
 
 [dependency-groups]
 dev = [

@@ -6,6 +6,7 @@ from kiapi.core.file import FileID
 from kiapi.core.job import JobResult
 from kiapi.core.model import model_registry
 
+from .._constants.image_21 import IMAGE_21_VARIANT
 from .._settings import settings_manager
 from .._views.generate_request import GenerateRequest
 from .is_quantize_override import is_quantize_override
@@ -25,12 +26,15 @@ def handle_generate(
         else None
     )
     lora_params = resolve_lora_params(ctx, req.loras)
-    override = is_quantize_override(settings, req)
+    override = is_quantize_override(settings, req, variant=spec.name)
     params = resolve_generate_params(
         settings, req, variant=spec.name, init_image_path=init_image_path
     )
 
-    if lora_params.paths or override:
+    if spec.name == IMAGE_21_VARIANT and override:
+        ctx.memory_manager.reserve(spec.weight_gb + spec.peak_headroom_gb)
+        result = spec.module.run_generate_transient(spec, params, ctx.file_store)
+    elif lora_params.paths or override:
         ctx.memory_manager.reserve(spec.weight_gb + spec.peak_headroom_gb)
         result = spec.module.run_generate_transient(
             spec,

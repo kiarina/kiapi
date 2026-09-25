@@ -1,9 +1,10 @@
 """qwen family — Qwen Image generation/editing via mflux.
 
 Endpoints: ``POST /v1/image/qwen/{generate,edit}``. ``generate`` is txt2img by
-default and img2img when ``init_image_file_id`` is supplied; ``edit`` does
-natural-language single/multi-image editing. LoRA adapters and a ``quantize``
-override run on a one-off transient model; otherwise the resident model is used.
+default and img2img when ``init_image`` is supplied; ``edit`` does
+natural-language single/multi-image editing. ``image-2.1`` serves both with one
+model. LoRA adapters and a ``quantize`` override run on a one-off transient model;
+otherwise the resident model is used.
 """
 
 from importlib import import_module

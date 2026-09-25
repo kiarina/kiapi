@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "kiapi Qwen Image API",
-    "description": "Image generation and editing (Qwen-Image via mflux).\n\nTwo operations on Alibaba's Qwen-Image models: `/generate` (text-to-image, or\nimage-to-image when `init_image` is supplied) and `/edit` (natural-language\nsingle/multi-image editing). Qwen-Image is strong at rendered text and\ninstruction-following edits.\n\n## Upstream docs\n- [mflux — Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) — the MLX engine kiapi runs\n- [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) — generate weights\n- [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) — edit weights\n\n## Models\n- **image** (default) — text-to-image / img2img. The only variant `/generate`\n  accepts.\n- **edit-2509** — instruction-based editing. The only variant `/edit` accepts.\n\nEach endpoint is pinned to its variant, so `model` is effectively fixed per\noperation; discover variants at `GET /v1/image/qwen/models`. Omitted\n`steps`/`guidance`/`quantize`/size are filled in server-side and the resolved\nvalues are recorded in the result `params`.\n\n## generate vs edit\n- **generate** is text-to-image; pass `init_image` (+ optional `image_strength`\n  in 0..1) to seed an img2img run from one image.\n- **edit** takes a list of reference `images` for single- or multi-image editing\n  / composition under one natural-language prompt.\n\n## Resident vs transient runs\nThe warmed, resident model uses the server-default quantization (q8). A request\nthat either supplies `loras` or sets a `quantize` differing from the resident\nmodel builds a **one-off transient model** for that call — weights load fresh, so\nit is slower and not reused. For the fast path, omit `loras` and leave `quantize`\nunset.\n\n## LoRA\nApply adapters by passing their `file` ids in `loras` (up to 4, each\n`{file, scale}`). Any lora forces a transient run.\n\n## TIPS\n- For a quick image, call `sync` without `Accept: application/json` to get the\n  raw bytes straight back (`curl -o out.png`).\n- `width`/`height` must be multiples of 16 and at most 2048x2048 (default 1024).\n- Qwen-Image renders legible text well — describe the wanted text explicitly in\n  the prompt.\n- First use downloads the Qwen weights (~58 GB full); run `kiapi activate` ahead\n  of time to avoid a cold-start download on the first request.\n\n## Performance\n- Upstream weights are large (~58 GB full); kiapi defaults to q8.\n- Transient runs (any `loras` or a `quantize` override) rebuild the model each\n  call and are slower than the resident path.\n",
+    "description": "Image generation and editing (Qwen-Image via mflux).\n\nTwo operations on Alibaba's Qwen-Image models: `/generate` (text-to-image, or\nimage-to-image when `init_image` is supplied) and `/edit` (natural-language\nsingle/multi-image editing). Qwen-Image is strong at rendered text and\ninstruction-following edits.\n\n## Upstream docs\n- [mflux — Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) — the MLX engine kiapi runs\n- [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) — generate weights\n- [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) — edit weights\n- [Qwen/Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) — unified generate/edit weights (non-commercial)\n\n## Models\n- **image** (default) — text-to-image / img2img. The only variant `/generate`\n  accepts.\n- **edit-2509** — instruction-based editing. The default for `/edit`.\n- **image-2.1** — Qwen-Image-2.1, accepted by both `/generate` and `/edit`.\n  One resident model, RGBA output, up to 10 reference images, up to 2752 px.\n  Its weights are under the Qwen Research License: **non-commercial use only**.\n  Listed only when the server runs the mflux build with 2.1 editing.\n\nOmit `model` for each endpoint's default; discover variants at\n`GET /v1/image/qwen/models`. Omitted\n`steps`/`guidance`/`quantize`/size are filled in server-side and the resolved\nvalues are recorded in the result `params`.\n\n## generate vs edit\n- **generate** is text-to-image; pass `init_image` (+ optional `image_strength`\n  in 0..1) to seed an img2img run from one image.\n- **edit** takes a list of reference `images` for single- or multi-image editing\n  / composition under one natural-language prompt.\n\n## image-2.1\n- Defaults: `steps` 40, `guidance` 1.0 (trained guidance-free), q8. With\n  `guidance` above 1, `negative_prompt` drives true CFG at about twice the time.\n- Size: multiples of 32, up to 2752x2752. An edit without `width`/`height` takes\n  the last image's aspect ratio at about 1024x1024 pixels.\n- Transparency: ask for it in the prompt, e.g. \"This is an RGBA image with\n  transparency. ... The background is transparent.\" `png`/`webp` keep alpha;\n  `jpeg` flattens onto white.\n- Not supported: `init_image` (pass the image in `images` on `/edit`), `loras`,\n  and `scheduler` (ignored).\n\n## Resident vs transient runs\nThe warmed, resident model uses the server-default quantization (q8). A request\nthat either supplies `loras` or sets a `quantize` differing from the resident\nmodel builds a **one-off transient model** for that call — weights load fresh, so\nit is slower and not reused. For the fast path, omit `loras` and leave `quantize`\nunset.\n\n## LoRA\nApply adapters by passing their `file` ids in `loras` (up to 4, each\n`{file, scale}`). Any lora forces a transient run.\n\n## TIPS\n- For a quick image, call `sync` without `Accept: application/json` to get the\n  raw bytes straight back (`curl -o out.png`).\n- `width`/`height` must be multiples of 16 and at most 2048x2048 (default 1024);\n  `image-2.1` needs multiples of 32 and allows up to 2752.\n- Qwen-Image renders legible text well — describe the wanted text explicitly in\n  the prompt.\n- First use downloads the Qwen weights (~58 GB full); run `kiapi activate` ahead\n  of time to avoid a cold-start download on the first request.\n\n## Performance\n- Upstream weights are large (~58 GB full); kiapi defaults to q8.\n- Transient runs (any `loras` or a `quantize` override) rebuild the model each\n  call and are slower than the resident path.\n",
     "version": "0.7.0"
   },
   "paths": {
     "/v1/image/qwen/generate": {
       "post": {
         "summary": "Generate Qwen Endpoint",
-        "description": "Generate an image from a text prompt (Qwen Image, text-to-image / img2img).\n\nPlain text-to-image by default; supply `init_image` (+ optional\n`image_strength`) to run img2img instead — use `/v1/image/qwen/edit` for\nnatural-language single/multi-image editing. The same endpoint serves both\n`sync` and `async` via `mode`. This endpoint only accepts the `image` model\nvariant.\n\nSync content negotiation: a single image is produced, so unless the client\nasks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /\n`X-Kiapi-Job-Id` headers — `curl -o out.png` just works. With\n`Accept: application/json` (or async) the Job JSON is returned, whose\n`result` follows ImageResponse.\n\nAny `loras` or a `quantize` differing from the resident model runs a one-off\ntransient model (slower, not reused). Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
+        "description": "Generate an image from a text prompt (Qwen Image, text-to-image / img2img).\n\nPlain text-to-image by default; supply `init_image` (+ optional\n`image_strength`) to run img2img instead — use `/v1/image/qwen/edit` for\nnatural-language single/multi-image editing. The same endpoint serves both\n`sync` and `async` via `mode`. This endpoint accepts the `image` (default)\nand `image-2.1` model variants; `image-2.1` does not take `init_image`.\n\nSync content negotiation: a single image is produced, so unless the client\nasks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /\n`X-Kiapi-Job-Id` headers — `curl -o out.png` just works. With\n`Accept: application/json` (or async) the Job JSON is returned, whose\n`result` follows ImageResponse.\n\nAny `loras` or a `quantize` differing from the resident model runs a one-off\ntransient model (slower, not reused). Async returns 202 immediately; poll\nGET /v1/jobs/{job_id} and fetch the artifact via GET /v1/files/{file_id}.",
         "operationId": "generate_qwen_endpoint_v1_image_qwen_generate_post",
         "parameters": [
           {
@@ -118,7 +118,7 @@
     "/v1/image/qwen/edit": {
       "post": {
         "summary": "Edit Qwen Endpoint",
-        "description": "Edit / combine one or more reference images with a prompt (Qwen Image Edit).\n\nTakes a list of `images` (FileRefs, single or multi-image) plus a\nnatural-language `prompt`. For plain image-to-image from a single seed image,\nuse `init_image` on `/v1/image/qwen/generate` instead. The same endpoint\nserves both `sync` and `async` via `mode`. This endpoint only accepts the\n`edit-2509` model variant.\n\nSync content negotiation, transient-model behavior (`loras` / `quantize`\noverride), and the ImageResponse `result` shape match\n`/v1/image/qwen/generate`.",
+        "description": "Edit / combine one or more reference images with a prompt (Qwen Image Edit).\n\nTakes a list of `images` (FileRefs, single or multi-image) plus a\nnatural-language `prompt`. For plain image-to-image from a single seed image,\nuse `init_image` on `/v1/image/qwen/generate` instead. The same endpoint\nserves both `sync` and `async` via `mode`. This endpoint accepts the\n`edit-2509` (default) and `image-2.1` model variants.\n\nSync content negotiation, transient-model behavior (`loras` / `quantize`\noverride), and the ImageResponse `result` shape match\n`/v1/image/qwen/generate`.",
         "operationId": "edit_qwen_endpoint_v1_image_qwen_edit_post",
         "parameters": [
           {
@@ -369,7 +369,7 @@
               }
             ],
             "title": "Model",
-            "description": "Model variant (see GET /v1/image/qwen/models). Omit for the default `edit-2509`; `/edit` only accepts `edit-2509` (use `/generate` for `image`)."
+            "description": "Model variant (see GET /v1/image/qwen/models). Omit for the default `edit-2509`; `/edit` accepts `edit-2509` and `image-2.1` (use `/generate` for `image`)."
           },
           "mode": {
             "type": "string",
@@ -397,7 +397,7 @@
               }
             ],
             "title": "Negative Prompt",
-            "description": "Optional text describing what to avoid in the result."
+            "description": "Optional text describing what to avoid in the result. `image-2.1` uses it only when `guidance` is above 1."
           },
           "images": {
             "items": {
@@ -406,7 +406,7 @@
             "type": "array",
             "minItems": 1,
             "title": "Images",
-            "description": "One or more reference images (Files-API file ids, http(s) URLs, or data URLs) to edit / compose under the prompt. At least one is required."
+            "description": "One or more reference images (Files-API file ids, http(s) URLs, or data URLs) to edit / compose under the prompt. At least one is required; `image-2.1` accepts up to 10 and keeps their alpha channel."
           },
           "width": {
             "anyOf": [
@@ -418,7 +418,7 @@
               }
             ],
             "title": "Width",
-            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+            "description": "Output width in pixels. Omit for the server default (1024; for `image-2.1`, derived from the last image's aspect ratio). Must be a multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
           },
           "height": {
             "anyOf": [
@@ -430,7 +430,7 @@
               }
             ],
             "title": "Height",
-            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+            "description": "Output height in pixels. Omit for the server default (1024; for `image-2.1`, derived from the last image's aspect ratio). Must be a multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
           },
           "steps": {
             "anyOf": [
@@ -443,7 +443,7 @@
               }
             ],
             "title": "Steps",
-            "description": "Number of denoising steps (1..100). Omit for the server default (30). More steps = slower, sometimes higher quality."
+            "description": "Number of denoising steps (1..100; `image-2.1`: 2..100). Omit for the server default (30, or 40 for `image-2.1`). More steps = slower, sometimes higher quality."
           },
           "guidance": {
             "anyOf": [
@@ -455,7 +455,7 @@
               }
             ],
             "title": "Guidance",
-            "description": "Classifier-free guidance scale. Omit for the server default (2.5); higher follows the prompt more strictly."
+            "description": "Classifier-free guidance scale. Omit for the server default (2.5, or 1.0 for `image-2.1`); higher follows the prompt more strictly. `image-2.1` is trained guidance-free and needs at least 1.0."
           },
           "seed": {
             "anyOf": [
@@ -484,7 +484,7 @@
           "scheduler": {
             "type": "string",
             "title": "Scheduler",
-            "description": "Noise scheduler. `linear` is the default and tested value.",
+            "description": "Noise scheduler. `linear` is the default and tested value. Ignored by `image-2.1`.",
             "default": "linear"
           },
           "format": {
@@ -495,7 +495,7 @@
               "webp"
             ],
             "title": "Format",
-            "description": "Output image encoding for the produced file.",
+            "description": "Output image encoding for the produced file. `image-2.1` produces RGBA: `png` / `webp` keep the alpha channel, `jpeg` flattens it onto white.",
             "default": "png"
           },
           "quality": {
@@ -512,7 +512,7 @@
             },
             "type": "array",
             "title": "Loras",
-            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused)."
+            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused). Not supported by `image-2.1`."
           }
         },
         "additionalProperties": true,
@@ -637,7 +637,7 @@
               }
             ],
             "title": "Model",
-            "description": "Model variant (see GET /v1/image/qwen/models). Omit for the default `image`; `/generate` only accepts `image` (use `/edit` for `edit-2509`)."
+            "description": "Model variant (see GET /v1/image/qwen/models). Omit for the default `image`; `/generate` accepts `image` and `image-2.1` (use `/edit` for `edit-2509`)."
           },
           "mode": {
             "type": "string",
@@ -665,7 +665,7 @@
               }
             ],
             "title": "Negative Prompt",
-            "description": "Optional text describing what to avoid in the image."
+            "description": "Optional text describing what to avoid in the image. `image-2.1` uses it only when `guidance` is above 1."
           },
           "init_image": {
             "anyOf": [
@@ -676,7 +676,7 @@
                 "type": "null"
               }
             ],
-            "description": "Optional input image (Files-API file id, http(s) URL, or data URL). When set, `/generate` runs img2img seeded from this image; omit for plain txt2img."
+            "description": "Optional input image (Files-API file id, http(s) URL, or data URL). When set, `/generate` runs img2img seeded from this image; omit for plain txt2img. Not accepted by `image-2.1` (use `/edit`)."
           },
           "image_strength": {
             "anyOf": [
@@ -700,7 +700,7 @@
               }
             ],
             "title": "Width",
-            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+            "description": "Output width in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
           },
           "height": {
             "anyOf": [
@@ -712,7 +712,7 @@
               }
             ],
             "title": "Height",
-            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048."
+            "description": "Output height in pixels. Omit for the server default (1024). Must be a multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
           },
           "steps": {
             "anyOf": [
@@ -725,7 +725,7 @@
               }
             ],
             "title": "Steps",
-            "description": "Number of denoising steps (1..100). Omit for the server default (30). More steps = slower, sometimes higher quality."
+            "description": "Number of denoising steps (1..100; `image-2.1`: 2..100). Omit for the server default (30, or 40 for `image-2.1`). More steps = slower, sometimes higher quality."
           },
           "guidance": {
             "anyOf": [
@@ -737,7 +737,7 @@
               }
             ],
             "title": "Guidance",
-            "description": "Classifier-free guidance scale. Omit for the server default (4.0); higher follows the prompt more strictly."
+            "description": "Classifier-free guidance scale. Omit for the server default (4.0, or 1.0 for `image-2.1`); higher follows the prompt more strictly. `image-2.1` is trained guidance-free and needs at least 1.0."
           },
           "seed": {
             "anyOf": [
@@ -766,7 +766,7 @@
           "scheduler": {
             "type": "string",
             "title": "Scheduler",
-            "description": "Noise scheduler. `linear` is the default and tested value.",
+            "description": "Noise scheduler. `linear` is the default and tested value. Ignored by `image-2.1`.",
             "default": "linear"
           },
           "format": {
@@ -777,7 +777,7 @@
               "webp"
             ],
             "title": "Format",
-            "description": "Output image encoding for the produced file.",
+            "description": "Output image encoding for the produced file. `image-2.1` produces RGBA: `png` / `webp` keep the alpha channel, `jpeg` flattens it onto white.",
             "default": "png"
           },
           "quality": {
@@ -794,7 +794,7 @@
             },
             "type": "array",
             "title": "Loras",
-            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused)."
+            "description": "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any lora forces a one-off transient model (slower, not reused). Not supported by `image-2.1`."
           }
         },
         "additionalProperties": true,

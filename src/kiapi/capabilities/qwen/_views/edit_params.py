@@ -3,7 +3,7 @@
 Built from settings + request by ``resolve_edit_params``; the model needs nothing
 else to produce the image and its metadata. ``image_paths`` are the locally
 resolved input files, kept out of the recorded metadata in favour of
-``image_file_ids``.
+``image_file_ids``. ``reference_resolution`` is set for ``image-2.1`` only.
 """
 
 from typing import Literal
@@ -34,3 +34,5 @@ class EditParams(BaseModel):
     quality: int
 
     loras: list[LoraRef]
+
+    reference_resolution: int | None = None

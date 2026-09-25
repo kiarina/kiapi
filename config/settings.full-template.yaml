@@ -472,6 +472,37 @@ kiapi.capabilities.qwen:
   # Default editing guidance: float
   #   Guidance strength used when an image editing request omits guidance.
   # edit_guidance: 2.5
+  #--------------------------------------------------
+  # Qwen-Image-2.1 model repo: str
+  #   Hugging Face repo ID used for Qwen-Image-2.1 generation and editing.
+  # image_21_model: Qwen/Qwen-Image-2.1
+  #--------------------------------------------------
+  # Qwen-Image-2.1 quantization bits: int | None
+  #   Quantization bit count used when loading Qwen-Image-2.1.
+  #   Use a bit count such as 8, or None to disable quantization.
+  # image_21_quantize: 8
+  #--------------------------------------------------
+  # Qwen-Image-2.1 default steps: int
+  #   Diffusion step count used when a Qwen-Image-2.1 request omits steps.
+  # image_21_steps: 40
+  #--------------------------------------------------
+  # Qwen-Image-2.1 default guidance: float
+  #   Guidance strength used when a Qwen-Image-2.1 request omits guidance.
+  #   1.0 is the trained guidance-free default.
+  # image_21_guidance: 1.0
+  #--------------------------------------------------
+  # Qwen-Image-2.1 maximum width: int
+  #   Upper pixel limit for the Qwen-Image-2.1 output width accepted in a request.
+  # image_21_max_width: 2752
+  #--------------------------------------------------
+  # Qwen-Image-2.1 maximum height: int
+  #   Upper pixel limit for the Qwen-Image-2.1 output height accepted in a request.
+  # image_21_max_height: 2752
+  #--------------------------------------------------
+  # Qwen-Image-2.1 reference resolution: int
+  #   Pixel-area budget (as a square side) that Qwen-Image-2.1 edit references are resized to.
+  #   An edit that omits width/height also uses it with the last reference's aspect ratio.
+  # image_21_reference_resolution: 1024
 
 #--------------------------------------------------------------------------------
 # Settings for the SeedVR2 upscaling model, scale factors, and resolution limits.

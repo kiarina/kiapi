@@ -103,5 +103,60 @@ class QwenSettings(BaseSettings):
         description="Guidance strength used when an image editing request omits guidance.",
     )
 
+    # --------------------------------------------------
+    # image-2.1
+    # --------------------------------------------------
+
+    image_21_model: str = Field(
+        default="Qwen/Qwen-Image-2.1",
+        title="Qwen-Image-2.1 model repo",
+        description="Hugging Face repo ID used for Qwen-Image-2.1 generation and editing.",
+    )
+
+    image_21_quantize: int | None = Field(
+        default=8,
+        title="Qwen-Image-2.1 quantization bits",
+        description=(
+            "Quantization bit count used when loading Qwen-Image-2.1.\n"
+            "Use a bit count such as 8, or None to disable quantization."
+        ),
+    )
+
+    image_21_steps: int = Field(
+        default=40,
+        title="Qwen-Image-2.1 default steps",
+        description="Diffusion step count used when a Qwen-Image-2.1 request omits steps.",
+    )
+
+    image_21_guidance: float = Field(
+        default=1.0,
+        title="Qwen-Image-2.1 default guidance",
+        description=(
+            "Guidance strength used when a Qwen-Image-2.1 request omits guidance.\n"
+            "1.0 is the trained guidance-free default."
+        ),
+    )
+
+    image_21_max_width: int = Field(
+        default=2752,
+        title="Qwen-Image-2.1 maximum width",
+        description="Upper pixel limit for the Qwen-Image-2.1 output width accepted in a request.",
+    )
+
+    image_21_max_height: int = Field(
+        default=2752,
+        title="Qwen-Image-2.1 maximum height",
+        description="Upper pixel limit for the Qwen-Image-2.1 output height accepted in a request.",
+    )
+
+    image_21_reference_resolution: int = Field(
+        default=1024,
+        title="Qwen-Image-2.1 reference resolution",
+        description=(
+            "Pixel-area budget (as a square side) that Qwen-Image-2.1 edit references are resized to.\n"
+            "An edit that omits width/height also uses it with the last reference's aspect ratio."
+        ),
+    )
+
 
 settings_manager = SettingsManager(QwenSettings)

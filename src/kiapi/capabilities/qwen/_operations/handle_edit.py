@@ -6,29 +6,35 @@ from kiapi.core.file import FileID
 from kiapi.core.job import JobResult
 from kiapi.core.model import model_registry
 
+from .._constants.image_21 import IMAGE_21_VARIANT
 from .._settings import settings_manager
 from .._views.edit_request import EditRequest
 from .is_quantize_override import is_quantize_override
 from .resolve_edit_params import resolve_edit_params
 from .resolve_lora_params import resolve_lora_params
 
+EDIT_VARIANTS = ("edit-2509", IMAGE_21_VARIANT)
+
 
 def handle_edit(ctx: AppContext, req: EditRequest) -> tuple[JobResult, list[FileID]]:
     settings = settings_manager.get_settings()
     spec = model_registry.resolve("qwen", req.model or "edit-2509")
     ctx.ensure_model_ready(spec)
-    if spec.name != "edit-2509":
-        raise CapabilityError("qwen edit requires model 'edit-2509'")
+    if spec.name not in EDIT_VARIANTS:
+        raise CapabilityError("qwen edit requires model 'edit-2509' or 'image-2.1'")
     image_paths = [
         get_file_path(ctx.file_store, image, kind="image") for image in req.images
     ]
     lora_params = resolve_lora_params(ctx, req.loras)
-    override = is_quantize_override(settings, req)
+    override = is_quantize_override(settings, req, variant=spec.name)
     params = resolve_edit_params(
         settings, req, variant=spec.name, image_paths=image_paths
     )
 
-    if lora_params.paths or override:
+    if spec.name == IMAGE_21_VARIANT and override:
+        ctx.memory_manager.reserve(spec.weight_gb + spec.peak_headroom_gb)
+        result = spec.module.run_edit_transient(spec, params, ctx.file_store)
+    elif lora_params.paths or override:
         ctx.memory_manager.reserve(spec.weight_gb + spec.peak_headroom_gb)
         result = spec.module.run_edit_transient(
             spec,

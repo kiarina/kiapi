@@ -3,6 +3,30 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-25 — qwen に Qwen-Image-2.1（`image-2.1`）を足し、mflux を 0.20.0 + #741 の fork に上げた
+
+- ユーザーと検討して、既存の `image` / `edit-2509` は残し、2.1 を並べて足すと決めた。2.1 の重みは Qwen Research License
+  （研究・評価用のみ、商用は別契約）で、kiapi の画像 model で生成と編集を商用に使えるのは Apache-2.0 の 1.x だけのため
+- mflux 0.20.0 の 2.1 は txt2img / img2img だけ。編集・RGBA・複数参照は上流 PR mflux-community/mflux#741（OPEN）にあるので、
+  [kiarina/mflux](https://github.com/kiarina/mflux) の `qwen-image-2.1-edit`（PR head `144a6bec` = `v.0.20.0` + 2 commit）を
+  `tool.uv.sources` で固定した。公式 mflux の環境では `image-2.1` を登録しない。追跡は `tasks/mflux-qwen-image-21-upstream.md`
+- 設計: `QwenImage21Edit` 1 つを常駐させ、`/generate`（txt2img）と `/edit`（参照 1〜10 枚）の両方に使う。txt2img 専用の
+  `QwenImage21` は checkpoint の layout が違い、両方載せると重みが二重になるので使わない。そのため 2.1 では `init_image`（strength
+  方式の img2img）と `loras` を 422 で拒否する。既定は 40 steps・guidance 1.0・q8、サイズは 32 の倍数で最大 2752。編集でサイズを
+  省くと、最後の参照画像の縦横比で約 1024² にする（mflux と同じ規則）。`jpeg` は透明部分を白に合成する（1.x の出力にも効く）
+- mflux が text-only の prompt embedding を dict に貯め続けるので、常駐モデルが prompt ごとに太らないよう毎回 `prompt_cache` を消す
+- 踏んだ落とし穴: fork の `mflux.models.qwen21.variants.edit.qwen_image_21_edit` を直接 import すると循環 import で失敗する。
+  `mflux.models.qwen21.reference` 経由で import する（上流には未報告）
+- 実測（Mac Studio M4 Max 128GB、q8、直接呼び出し）: 常駐 16.6 GiB、load の peak 31.5 GiB、1024² の 40 steps で txt2img 210 s、
+  参照 1 枚の編集 246 s（peak 29.6 GiB）。bf16 は 5.0 s/step で q8 の 5.4 s/step とほぼ同じなのに 13 GiB 多いので、既定は q8。
+  `weight_gb=17.0`・`peak_headroom_gb=15.0` とした。2048² 以上は未計測
+- 品質: 日本語の看板「喫茶 みぃねこ」は 1024² でも 512² でも正確に描けた。透明ステッカーは本物の alpha（62〜66% が透明）。
+  ステッカーを青くしてスカーフを足す編集は指示どおり。無地の色見本 2 枚を「ポスターに合成」させた編集は黄色一色になり、
+  上流の作者が報告している「一部の編集が指示に従わない」と同じ傾向が見えた。verify の [11] を実画像（miineko.png + 横長の黄色）
+  にしたら、キャラを中央に置き上に「MIINEKO」を描いた 1376×768 のポスターを指示どおりに作った
+- mflux 0.20.0 で seedvr2 の `mx.repeat` の失敗（2026-09-15 から）が直った。`tasks/seedvr2-mflux-repeat-error.md` を閉じた
+- full verify（サーバー機）: qwen 13/13（2.1 の [9]〜[12] を含む）、seedvr2 6/6、zimage 12/12、flux2 12/12、ernie 11/11、ideogram4 5/5
+
 ## 2026-09-24 — chat から qwen3.6-27b を外した
 
 - ユーザーの判断で `qwen3.6-27b`（alias `qwen3.6`）を削除した。`qwen3.8-27b` が同じ handler・modalities・容量で置き換えられ、

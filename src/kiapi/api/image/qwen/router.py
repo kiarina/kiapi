@@ -47,8 +47,8 @@ async def generate_qwen_endpoint(
     Plain text-to-image by default; supply `init_image` (+ optional
     `image_strength`) to run img2img instead — use `/v1/image/qwen/edit` for
     natural-language single/multi-image editing. The same endpoint serves both
-    `sync` and `async` via `mode`. This endpoint only accepts the `image` model
-    variant.
+    `sync` and `async` via `mode`. This endpoint accepts the `image` (default)
+    and `image-2.1` model variants; `image-2.1` does not take `init_image`.
 
     Sync content negotiation: a single image is produced, so unless the client
     asks for JSON the raw image bytes are returned with `X-Kiapi-File-Id` /
@@ -64,12 +64,13 @@ async def generate_qwen_endpoint(
         spec = model_registry.resolve("qwen", req.model or "image")
     except UnknownModelError as exc:
         raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
-    if spec.name != "image":
+    if spec.name not in ("image", "image-2.1"):
         raise HTTPException(
-            status_code=400, detail="qwen generate requires model 'image'"
+            status_code=400,
+            detail="qwen generate requires model 'image' or 'image-2.1'",
         )
     try:
-        validate_generate(req)
+        validate_generate(req, variant=spec.name)
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))  # noqa: B904
 
@@ -104,8 +105,8 @@ async def edit_qwen_endpoint(
     Takes a list of `images` (FileRefs, single or multi-image) plus a
     natural-language `prompt`. For plain image-to-image from a single seed image,
     use `init_image` on `/v1/image/qwen/generate` instead. The same endpoint
-    serves both `sync` and `async` via `mode`. This endpoint only accepts the
-    `edit-2509` model variant.
+    serves both `sync` and `async` via `mode`. This endpoint accepts the
+    `edit-2509` (default) and `image-2.1` model variants.
 
     Sync content negotiation, transient-model behavior (`loras` / `quantize`
     override), and the ImageResponse `result` shape match
@@ -115,12 +116,13 @@ async def edit_qwen_endpoint(
         spec = model_registry.resolve("qwen", req.model or "edit-2509")
     except UnknownModelError as exc:
         raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
-    if spec.name != "edit-2509":
+    if spec.name not in ("edit-2509", "image-2.1"):
         raise HTTPException(
-            status_code=400, detail="qwen edit requires model 'edit-2509'"
+            status_code=400,
+            detail="qwen edit requires model 'edit-2509' or 'image-2.1'",
         )
     try:
-        validate_edit(req)
+        validate_edit(req, variant=spec.name)
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))  # noqa: B904
 

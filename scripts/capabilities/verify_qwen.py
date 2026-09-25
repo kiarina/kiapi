@@ -2,6 +2,8 @@
 
 Exercises txt2img, img2img, natural-language edit, raw image responses, async
 polling, artifact download, validation errors, and help/models discovery.
+When ``image-2.1`` is registered, also checks its txt2img, RGBA output, multi-
+reference edit, and validation rules.
 
 Usage:
     # start the server first, e.g.:
@@ -12,6 +14,7 @@ Env:
     KIAPI_BASE_URL      server base URL (default http://127.0.0.1:8000)
     KIAPI_QWEN_WIDTH    verification image width (default 512)
     KIAPI_QWEN_HEIGHT   verification image height (default 512)
+    KIAPI_IMAGE         image-2.1 edit reference (default: kiapi/tests/assets/miineko.png)
 """
 
 import io
@@ -28,6 +31,12 @@ from PIL import Image
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 WIDTH = int(os.environ.get("KIAPI_QWEN_WIDTH", "512"))
 HEIGHT = int(os.environ.get("KIAPI_QWEN_HEIGHT", "512"))
+ASSET_IMAGE = Path(
+    os.environ.get(
+        "KIAPI_IMAGE",
+        str(Path(__file__).resolve().parents[2] / "tests/assets/miineko.png"),
+    )
+)
 GEN_URL = f"{BASE_URL}/v1/image/qwen/generate"
 EDIT_URL = f"{BASE_URL}/v1/image/qwen/edit"
 
@@ -70,6 +79,14 @@ def _params(**kw: Any) -> Any:
             for lora in loras
         ]
     return kw
+
+
+def _transparent_share(content: bytes) -> float | None:
+    image = Image.open(io.BytesIO(content))
+    if image.mode != "RGBA":
+        return None
+    alpha = image.getchannel("A")
+    return sum(alpha.histogram()[:16]) / (image.width * image.height)
 
 
 def _png_bytes(color: tuple[int, int, int], size: int = 256) -> bytes:
@@ -321,6 +338,152 @@ def main() -> None:
             f"[8] {'✓' if ok8 else '✗'} discovery: /v1/image/qwen/models + /v1/image/qwen/openapi.json"
         )
         results.append(("8", bool(ok8)))
+
+        # 9-12. image-2.1 (registered only with the pinned mflux fork)
+        if not any(x["name"] == "image-2.1" for x in m):
+            print("[9-12] - image-2.1 not registered; skipped")
+        else:
+            t0 = time.time()
+            r = client.post(
+                GEN_URL,
+                json=_params(
+                    mode="sync",
+                    model="image-2.1",
+                    prompt="和風カフェの店先。木の看板にははっきりと「喫茶 みぃねこ」と書かれている。明るい昼の光、写真",
+                    width=WIDTH,
+                    height=HEIGHT,
+                    seed=21,
+                ),
+            )
+            body = r.json() if r.status_code == 200 else {}
+            params = (body.get("result") or {}).get("params", {})
+            ok9 = (
+                r.status_code == 200
+                and body.get("status") == "succeeded"
+                and params.get("model") == "image-2.1"
+                and params.get("steps") == 40
+                and params.get("guidance") == 1.0
+            )
+            print(
+                f"[9] {'✓' if ok9 else '✗'} ({time.time() - t0:5.1f}s) image-2.1 txt2img -> 40 steps, guidance 1.0"
+            )
+            results.append(("9", bool(ok9)))
+            if ok9:
+                fid9 = body.get("artifacts", [None])[0]
+                if p := _save(fid9, f"9_image21_{fid9}.png"):
+                    saved_files.setdefault("9", []).append(p)
+
+            t0 = time.time()
+            sticker = {
+                "mode": "sync",
+                "model": "image-2.1",
+                "prompt": (
+                    "This is an RGBA image with transparency. A cute orange cat "
+                    "sticker. The image has alpha channel and the background is "
+                    "transparent."
+                ),
+                "width": WIDTH,
+                "height": HEIGHT,
+                "seed": 22,
+            }
+            rr = client.post(GEN_URL, headers={"Accept": "*/*"}, json=sticker)
+            share = _transparent_share(rr.content) if rr.status_code == 200 else None
+            rj = client.post(
+                GEN_URL,
+                headers={"Accept": "*/*"},
+                json=sticker | {"format": "jpeg", "steps": 8},
+            )
+            ok10 = (
+                share is not None
+                and share > 0.2
+                and rj.status_code == 200
+                and rj.headers.get("content-type") == "image/jpeg"
+                and Image.open(io.BytesIO(rj.content)).mode == "RGB"
+            )
+            print(
+                f"[10] {'✓' if ok10 else '✗'} ({time.time() - t0:5.1f}s) image-2.1 RGBA png "
+                f"(transparent {share if share is None else round(share * 100)}%) + jpeg flattened"
+            )
+            results.append(("10", bool(ok10)))
+            if share is not None:
+                path = verify_dir / "10_image21_rgba.png"
+                path.write_bytes(rr.content)
+                saved_files.setdefault("10", []).append(path)
+
+            character = client.post(
+                f"{BASE_URL}/v1/files",
+                files={
+                    "file": (
+                        "miineko.png",
+                        io.BytesIO(ASSET_IMAGE.read_bytes()),
+                        "image/png",
+                    )
+                },
+            )
+            buf = io.BytesIO()
+            Image.new("RGB", (384, 216), (240, 200, 90)).save(buf, format="PNG")
+            wide = client.post(
+                f"{BASE_URL}/v1/files",
+                files={
+                    "file": ("qwen21-wide.png", io.BytesIO(buf.getvalue()), "image/png")
+                },
+            )
+            refs = [character.json()["file_id"], wide.json()["file_id"]]
+            t0 = time.time()
+            r = client.post(
+                EDIT_URL,
+                json=_params(
+                    mode="sync",
+                    model="image-2.1",
+                    prompt=(
+                        "Make a wide poster: the pixel-art character from image 1 "
+                        "stands in the center of the yellow background of image 2, "
+                        "with the title MIINEKO in large letters above it"
+                    ),
+                    image_file_ids=refs,
+                    seed=23,
+                ),
+            )
+            body = r.json() if r.status_code == 200 else {}
+            result = body.get("result") or {}
+            ok11 = (
+                r.status_code == 200
+                and body.get("status") == "succeeded"
+                and result.get("params", {}).get("kind") == "edit"
+                and result.get("width", 0) > result.get("height", 0)
+                and result.get("width", 1) % 32 == 0
+                and result.get("height", 1) % 32 == 0
+            )
+            print(
+                f"[11] {'✓' if ok11 else '✗'} ({time.time() - t0:5.1f}s) image-2.1 edit, 2 refs, size from last ref "
+                f"({result.get('width')}x{result.get('height')})"
+            )
+            results.append(("11", bool(ok11)))
+            if ok11:
+                fid11 = body.get("artifacts", [None])[0]
+                if p := _save(fid11, f"11_image21_edit_{fid11}.png"):
+                    saved_files.setdefault("11", []).append(p)
+
+            base = {"model": "image-2.1", "prompt": "x", "width": 256, "height": 256}
+            lora = {"file_id": "file_does_not_exist"}
+            rejected = {
+                "init_image": client.post(
+                    GEN_URL, json=_params(**base, init_image_file_id=ref1)
+                ),
+                "loras": client.post(GEN_URL, json=_params(**base, loras=[lora])),
+                "multiple of 32": client.post(GEN_URL, json=base | {"width": 272}),
+                "guidance < 1": client.post(GEN_URL, json=base | {"guidance": 0.5}),
+                "11 images": client.post(
+                    EDIT_URL, json=_params(**base, image_file_ids=[ref1] * 11)
+                ),
+            }
+            bad = [k for k, v in rejected.items() if v.status_code != 422]
+            ok12 = not bad
+            print(
+                f"[12] {'✓' if ok12 else '✗'} image-2.1 validation -> 422"
+                + (f" (not rejected: {bad})" if bad else "")
+            )
+            results.append(("12", ok12))
 
     print(f"\n{'=' * 70}\n## SUMMARY\n{'=' * 70}")
     passed = sum(1 for _, ok in results if ok)

@@ -23,7 +23,8 @@ class GenerateRequest(BaseModel):
         default=None,
         description=(
             "Model variant (see GET /v1/image/qwen/models). Omit for the default "
-            "`image`; `/generate` only accepts `image` (use `/edit` for `edit-2509`)."
+            "`image`; `/generate` accepts `image` and `image-2.1` (use `/edit` for "
+            "`edit-2509`)."
         ),
     )
     mode: Literal["sync", "async"] = Field(
@@ -41,14 +42,17 @@ class GenerateRequest(BaseModel):
     )
     negative_prompt: str | None = Field(
         default=None,
-        description="Optional text describing what to avoid in the image.",
+        description=(
+            "Optional text describing what to avoid in the image. `image-2.1` uses "
+            "it only when `guidance` is above 1."
+        ),
     )
     init_image: FileRef | None = Field(
         default=None,
         description=(
             "Optional input image (Files-API file id, http(s) URL, or data URL). "
             "When set, `/generate` runs img2img seeded from this image; omit for "
-            "plain txt2img."
+            "plain txt2img. Not accepted by `image-2.1` (use `/edit`)."
         ),
     )
     image_strength: float | None = Field(
@@ -64,29 +68,31 @@ class GenerateRequest(BaseModel):
         default=None,
         description=(
             "Output width in pixels. Omit for the server default (1024). Must be a "
-            "multiple of 16 and at most 2048."
+            "multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
         ),
     )
     height: int | None = Field(
         default=None,
         description=(
             "Output height in pixels. Omit for the server default (1024). Must be a "
-            "multiple of 16 and at most 2048."
+            "multiple of 16 and at most 2048 (`image-2.1`: 32 and 2752)."
         ),
     )
     steps: int | None = Field(
         default=None,
         ge=1,
         description=(
-            "Number of denoising steps (1..100). Omit for the server default (30). "
+            "Number of denoising steps (1..100; `image-2.1`: 2..100). Omit for the "
+            "server default (30, or 40 for `image-2.1`). "
             "More steps = slower, sometimes higher quality."
         ),
     )
     guidance: float | None = Field(
         default=None,
         description=(
-            "Classifier-free guidance scale. Omit for the server default (4.0); "
-            "higher follows the prompt more strictly."
+            "Classifier-free guidance scale. Omit for the server default (4.0, or "
+            "1.0 for `image-2.1`); higher follows the prompt more strictly. "
+            "`image-2.1` is trained guidance-free and needs at least 1.0."
         ),
     )
     seed: int | None = Field(
@@ -106,12 +112,19 @@ class GenerateRequest(BaseModel):
     )
     scheduler: str = Field(
         default="linear",
-        description="Noise scheduler. `linear` is the default and tested value.",
+        description=(
+            "Noise scheduler. `linear` is the default and tested value. Ignored by "
+            "`image-2.1`."
+        ),
     )
 
     format: Literal["png", "jpeg", "webp"] = Field(
         default="png",
-        description="Output image encoding for the produced file.",
+        description=(
+            "Output image encoding for the produced file. `image-2.1` produces "
+            "RGBA: `png` / `webp` keep the alpha channel, `jpeg` flattens it onto "
+            "white."
+        ),
     )
     quality: int = Field(
         default=90,
@@ -124,7 +137,8 @@ class GenerateRequest(BaseModel):
         default_factory=list,
         description=(
             "Up to 4 LoRA adapters [{file, scale}] referencing Files-API ids. Any "
-            "lora forces a one-off transient model (slower, not reused)."
+            "lora forces a one-off transient model (slower, not reused). Not "
+            "supported by `image-2.1`."
         ),
     )
 

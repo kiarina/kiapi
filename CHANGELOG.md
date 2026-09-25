@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Dependencies
+
+- mflux 0.19.1 -> 0.20.0, pinned to a kiarina fork commit (`144a6bec`) that adds
+  mflux-community/mflux#741 on top of 0.20.0. 0.20.0 also fixes the seedvr2
+  `mx.repeat` failure.
+
 ### Removed
 
 - chat: removed the `qwen3.6-27b` model (alias `qwen3.6`). `qwen3.8-27b` uses the
@@ -29,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `qwen3.8-27b` keeps `qwen3_5` and `qwen3-vl`.
 
 ### Added
+
+- qwen: added the `image-2.1` model (`Qwen/Qwen-Image-2.1`, aliases
+  `qwen-image-2.1`, `qwen-2.1`). One resident model serves both `/generate`
+  (text-to-image) and `/edit` (up to 10 reference images), outputs RGBA, and
+  renders up to 2752 px. Defaults are 40 steps, guidance 1.0 and q8. It does not
+  take `init_image` or `loras`. Its weights are under the non-commercial Qwen
+  Research License. Editing comes from the pinned mflux fork (`144a6bec`,
+  mflux-community/mflux#741); installs with official mflux do not register it.
+- qwen: `jpeg` output flattens transparent areas onto white.
 
 - chat: Qwen3.8-Flash-Next reuses unchanged history when images are appended,
   like Qwen3.8-27B, through the pinned mlx-vlm fork (`6581ba8c`).
