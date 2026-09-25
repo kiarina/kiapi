@@ -100,11 +100,14 @@ Web UI を kiapi 自身が配る。
 - [ ] ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。
   生成時に `meta.family` を書くようにすると確実になる
 
-### 段階 2: 実行
+### 段階 2: 実行（2026-09-26 に実装）
 
-- OpenAPI からのフォーム自動生成と、family ごとの差分
-- `/v1/chat` によるプロンプト生成
-- chat 画面（ストリーミング、マルチモーダル入力）
+- [x] OpenAPI からのフォーム自動生成（全 22 操作。POST の JSON と、web fetch の GET クエリ）
+- [x] `/v1/chat` によるプロンプト生成（「Write with chat」。prompt・negative_prompt・lyrics）
+- [x] chat 画面（ストリーミング、画像・音声・動画の添付、system prompt）
+- [ ] family ごとの差分: 今は汎用フォームだけで、サイズのプリセット、画像の範囲指定、音声の波形表示などは無い。
+  使ってみて欲しくなったものから足す
+- [ ] 実行中ジョブの中断: kiapi に中断の API が無い（`DELETE /v1/jobs/{id}` は実行中を止めない）ので UI にも無い
 
 ## 完了条件
 
@@ -130,3 +133,12 @@ Web UI を kiapi 自身が配る。
     向け、`HF_HOME` を本来の場所に固定して 2 つ目を :8600 で起動した（warmup 無しなのでモデルは載らない）
   - `/v1/setup` は Docker と venv の確認でおよそ 5 秒かかる。UI では Models を開いたときと Refresh のときだけ取る
   - 稼働中のサービスへ反映するには、そのマシンで `mise run web:build` してから kiapi を再起動する（ビルド成果物は git に無い）
+
+- 2026-09-26: 段階 2 を実装した。各 family のタブに Playground を足して既定にした。フォームは capability の
+  `openapi.json` から作り（`web/src/playground/schema.ts`）、生成は `mode: "async"` で投げてジョブを追う。
+  FileRef は既存ファイルからの選択とアップロード、LoRA は file と scale の組、真偽値は「既定 / On / Off」。
+  「Write with chat」は family・操作・項目の説明を system prompt にして既定 `qwen3.8-27b` に書かせる。
+  :8500 で Z-Image の生成、Qwen Image の Write with chat、chat、web fetch、embedding を実際に通し、
+  スマホ幅で横スクロールが出ないことも確かめた
+  - 踏んだ落とし穴: `useEffect(() => el.scrollIntoView(...))` のように式で返すと、戻り値が cleanup と
+    見なされて React が落ちることがある。effect の本体は必ずブロックで書く

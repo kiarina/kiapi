@@ -1,4 +1,19 @@
 const PATHS: Record<string, React.ReactNode> = {
+  x: <path d="M4 4l8 8M12 4l-8 8" />,
+  plus: <path d="M8 3v10M3 8h10" />,
+  upload: <path d="M8 13.5v-8M4.5 9 8 5.5 11.5 9M3 2.5h10" />,
+  sparkle: <path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6z" />,
+  dice: (
+    <>
+      <rect x="2.5" y="2.5" width="11" height="11" rx="2.5" />
+      <circle cx="5.8" cy="5.8" r="0.6" fill="currentColor" />
+      <circle cx="10.2" cy="10.2" r="0.6" fill="currentColor" />
+      <circle cx="8" cy="8" r="0.6" fill="currentColor" />
+    </>
+  ),
+  send: <path d="M2.5 8 13.5 2.5 10 13.5 7.5 8.5z" />,
+  stop: <rect x="4" y="4" width="8" height="8" rx="1.5" />,
+  play: <path d="M5 3.5v9l7-4.5z" />,
   overview: (
     <>
       <rect x="2" y="2" width="5" height="5" rx="1.2" />

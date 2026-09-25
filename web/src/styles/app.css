@@ -996,3 +996,456 @@ pre.json {
   top: 0;
   z-index: 10;
 }
+
+/* --- playground ------------------------------------------------------------- */
+
+.playground {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.pg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 2px 6px 8px 2px;
+}
+.pg-result {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.pg-submit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+.btn.big {
+  height: 48px;
+  justify-content: center;
+  font-size: 15px;
+  border-radius: 12px;
+}
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+.pg-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-small);
+  color: var(--text);
+}
+button.tag {
+  cursor: pointer;
+}
+.stage.waiting {
+  background-image:
+    radial-gradient(var(--stage-dot) 1px, transparent 1px),
+    linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--accent) 7%, transparent) 50%, transparent 70%);
+  background-size:
+    16px 16px,
+    200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position:
+      0 0,
+      150% 0;
+  }
+  to {
+    background-position:
+      0 0,
+      -50% 0;
+  }
+}
+
+.history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 10px;
+}
+.history-item {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.history-item .thumb {
+  border-radius: 10px;
+}
+.history-item.on .thumb {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.field-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.field-label {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.req {
+  color: var(--fail);
+}
+.field-help {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.field .icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.input.textarea {
+  height: auto;
+  padding: 10px 12px;
+  line-height: 1.55;
+  resize: vertical;
+}
+select.input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238a8a92' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+.input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.write-btn {
+  height: 26px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.write-btn:hover {
+  color: var(--accent-hover);
+}
+.write-dialog {
+  width: min(620px, 100%);
+}
+.write-output {
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.seg {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: var(--r-control);
+}
+.seg > button {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+.seg > button.on {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: var(--shadow), 0 0 0 1px var(--line);
+}
+.seg.wide > button {
+  height: 34px;
+  font-size: 13.5px;
+  text-transform: capitalize;
+}
+
+.model-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.model-option.on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 0.5px var(--ink);
+}
+.model-option.off {
+  opacity: 0.6;
+}
+.model-option input {
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.adv-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.adv-toggle:hover {
+  color: var(--text);
+}
+
+.file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 4px 4px 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+}
+.file-chip .thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+.file-chip .mono {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px dashed var(--control);
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.file-add:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+
+.picker {
+  width: min(880px, 100%);
+  max-height: min(720px, calc(100vh - 32px));
+}
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  min-height: 160px;
+  padding: 2px;
+}
+.picker-item {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.picker-item.on .thumb {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
+}
+
+.spark {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 64px;
+}
+.spark > span {
+  flex: 1;
+  min-height: 1px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* --- chat ------------------------------------------------------------------- */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+}
+.chat-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 320px;
+}
+.bubble {
+  max-width: 88%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.bubble.user {
+  align-self: flex-end;
+  background: var(--ink);
+  color: var(--on-ink);
+  border-bottom-right-radius: 6px;
+}
+.bubble.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 6px;
+}
+.bubble .prose {
+  font-size: 14.5px;
+}
+.bubble .prose > :last-child {
+  margin-bottom: 0;
+}
+.bubble-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.bubble-files img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.composer {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+}
+.composer .textarea {
+  flex: 1;
+  border: 0;
+  box-shadow: none !important;
+  resize: none;
+  background: transparent;
+}
+.composer .btn {
+  height: 40px;
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 0;
+}
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@media (max-width: 1100px) {
+  .playground {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pg-form {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}

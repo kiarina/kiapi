@@ -3,6 +3,8 @@ import Markdown from "react-markdown";
 
 import type { FileRecord, OpenApiDoc, OpenApiOperation, SchemaRef, SetupModel } from "../api";
 import { Command, ErrorBox, Loading, PageHead, Thumb } from "../components/ui";
+import { ChatPlayground } from "../playground/ChatPlayground";
+import { Playground } from "../playground/Playground";
 import { sortedFiles, useData } from "../data";
 import { displayTitle, familyHref, loadSpec, specBase } from "../families";
 import { firstParagraph, gb } from "../format";
@@ -50,19 +52,25 @@ export function Family({ domain, family, tab }: { domain: string; family: string
         }
       />
       <nav className="tabs" aria-label="Family sections">
-        <a className={`tab${tab === "guide" ? " on" : ""}`} href={familyHref(domain, family)}>
+        <a className={`tab${tab === "playground" ? " on" : ""}`} href={familyHref(domain, family)}>
+          Playground
+        </a>
+        <a className={`tab${tab === "guide" ? " on" : ""}`} href={familyHref(domain, family, "guide")}>
           Guide
         </a>
         <a className={`tab${tab === "api" ? " on" : ""}`} href={familyHref(domain, family, "api")}>
           API
         </a>
-        <span className="tab disabled" title="Running families from the UI comes next">
-          Playground · soon
-        </span>
       </nav>
 
       {error && <ErrorBox error={error} />}
       {!doc && !error && <Loading />}
+      {doc && tab === "playground" &&
+        (family === "chat" ? (
+          <ChatPlayground models={models} />
+        ) : (
+          <Playground key={family} doc={doc} family={family} models={models} />
+        ))}
       {doc && tab === "guide" && <Guide doc={doc} models={models} outputs={outputs} />}
       {doc && tab === "api" && <Api doc={doc} />}
     </>

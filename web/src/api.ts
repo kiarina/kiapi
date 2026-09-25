@@ -150,3 +150,24 @@ export interface OpenApiDoc {
   paths: Record<string, Record<string, OpenApiOperation>>;
   components?: { schemas?: Record<string, SchemaRef> };
 }
+
+export async function uploadFile(file: Blob, filename: string): Promise<FileRecord> {
+  const form = new FormData();
+  form.append("file", file, filename);
+  return (await apiFetch("/v1/files", { method: "POST", body: form })).json();
+}
+
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await apiFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  return res.json() as Promise<T>;
+}
+
+export interface AsyncJob {
+  job_id: string;
+  type: string;
+  status: JobStatus;
+}

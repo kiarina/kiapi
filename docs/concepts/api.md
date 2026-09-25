@@ -55,10 +55,18 @@ docstrings and Pydantic schemas own operation-specific details.
 
 `GET /` serves a single-page app for people, built from `web/` into
 `src/kiapi/api/ui/static` and shipped in the wheel. It reads only the public API
-(`/health`, `/v1/setup`, `/v1/jobs`, `/v1/files`, and each capability's
-`openapi.json`), so it adds no server-side state. Pages use hash routes
+(`/health`, `/v1/setup`, `/v1/jobs`, `/v1/files`, each capability's
+`openapi.json`, and the capability endpoints themselves), so it adds no
+server-side state. Pages use hash routes
 (`/#/models`) to stay clear of the API's URL space, and assets live under
 `/_ui`.
+
+Each family's Playground builds its form from the capability `openapi.json`
+(field types, defaults, descriptions), submits generation requests with
+`mode: "async"`, and follows the job. "Write with chat" sends the family
+description, the operation description, and the field description to
+`/v1/chat/completions` as the system prompt, so a person gets the same guidance
+an LLM agent reads.
 
 The UI never changes the machine's setup. For a missing resource it shows the
 `kiapi activate` command to run in a terminal; `GET /v1/setup` reports the

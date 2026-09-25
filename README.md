@@ -189,7 +189,8 @@ open ~/Downloads/bgm.wav
 **Use from a browser:**
 Open `http://localhost:8000/` while kiapi runs. The web UI shows the server
 status, jobs, and files, what each family can do, and which models still need
-`kiapi activate`.
+`kiapi activate`. Each family's Playground runs it from a form, and "Write with
+chat" drafts the prompt with a local chat model.
 
 **Run as a background service:**
 ```sh

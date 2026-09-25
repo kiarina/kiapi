@@ -24,7 +24,7 @@ function Page({ route }: { route: string[] }) {
     case "files":
       return a ? <FileDetail id={a} /> : <Files />;
     case "f":
-      if (a && b) return <Family domain={a} family={b} tab={c === "api" ? "api" : "guide"} />;
+      if (a && b) return <Family domain={a} family={b} tab={c === "api" || c === "guide" ? c : "playground"} />;
       break;
   }
   return <div className="card empty">Page not found. <a href="#/">Go to overview</a></div>;
@@ -80,7 +80,9 @@ export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
 
-  useEffect(() => applyTheme(theme, false), [theme]);
+  useEffect(() => {
+    applyTheme(theme, false);
+  }, [theme]);
   useEffect(() => {
     const open = () => setTokenOpen(true);
     window.addEventListener("kiapi:unauthorized", open);
