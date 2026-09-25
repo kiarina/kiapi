@@ -133,7 +133,6 @@ Web UI を kiapi 自身が配る。
     向け、`HF_HOME` を本来の場所に固定して 2 つ目を :8600 で起動した（warmup 無しなのでモデルは載らない）
   - `/v1/setup` は Docker と venv の確認でおよそ 5 秒かかる。UI では Models を開いたときと Refresh のときだけ取る
   - 稼働中のサービスへ反映するには、そのマシンで `mise run web:build` してから kiapi を再起動する（ビルド成果物は git に無い）
-
 - 2026-09-26: 段階 2 を実装した。各 family のタブに Playground を足して既定にした。フォームは capability の
   `openapi.json` から作り（`web/src/playground/schema.ts`）、生成は `mode: "async"` で投げてジョブを追う。
   FileRef は既存ファイルからの選択とアップロード、LoRA は file と scale の組、真偽値は「既定 / On / Off」。
