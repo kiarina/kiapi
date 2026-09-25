@@ -191,3 +191,4 @@ mise run verify --kiapi --family embedding --fast
 - [Qwen3.8 画像prefix再利用の上流取り込みを追う](tasks/mlx-vlm-image-prefix-upstream.md)
 - [Omni media prefix再利用の上流取り込みを追う](tasks/mlx-vlm-omni-media-prefix-upstream.md)
 - [mflux#741 がリリースされたら Qwen-Image-2.1 の pin を上流へ戻す](tasks/mflux-qwen-image-21-upstream.md)
+- [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
