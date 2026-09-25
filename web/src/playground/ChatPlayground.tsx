@@ -208,27 +208,92 @@ export function ChatPlayground({ doc, models }: { doc: OpenApiDoc; models: Setup
   const setCount = Object.values(params).filter((v) => v !== undefined && v !== "").length;
 
   return (
-    <div className={`chat-shell${panelOpen ? " with-panel" : ""}`} ref={root} style={{ height }}>
+    <div className="chat-shell" ref={root} style={{ height }}>
+      <aside className={`chat-params${panelOpen ? " open" : ""}`} aria-label="Parameters">
+          <div className="card-head">
+            <h2 className="card-title">Parameters</h2>
+            <button type="button" className="adv-toggle" onClick={() => setParams({})}>
+              Reset
+            </button>
+            <button type="button" className="icon-btn params-close" aria-label="Close parameters" onClick={() => setPanelOpen(false)}>
+              <Icon name="x" />
+            </button>
+          </div>
+          <div className="field">
+            <div className="field-head">
+              <span className="field-label">Model</span>
+              <Hint label="Model" text={fields.length ? (op?.fields.find((f) => f.name === "model")?.description ?? "") : ""} />
+            </div>
+            <div className="model-options" role="radiogroup" aria-label="Model">
+              {models.map((m) => (
+                <label key={m.name} className={`model-option${model === m.name ? " on" : ""}${m.status === "missing" ? " off" : ""}`}>
+                  <input type="radio" name="chat-model" aria-label={m.name} checked={model === m.name} disabled={m.status === "missing"} onChange={() => setModel(m.name)} />
+                  <span className="mono">{m.name}</span>
+                  {m.status === "missing" && <span className="badge muted">not set up</span>}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="field">
+            <span className="field-head">
+              <span className="field-label">System prompt</span>
+            </span>
+            <textarea className="input textarea" rows={3} placeholder="Optional" value={system} onChange={(e) => setSystem(e.target.value)} />
+          </label>
+          <div className="field">
+            <div className="field-head">
+              <span className="field-label">Stream</span>
+              <Hint
+                label="Stream"
+                text="Stream the answer as it is generated (`stream: true`, with `stream_options.include_usage`). Off waits for the whole `chat.completion` object."
+              />
+            </div>
+            <div className="seg">
+              <button type="button" className={stream ? "on" : ""} aria-pressed={stream} onClick={() => setStream(true)}>
+                On
+              </button>
+              <button type="button" className={!stream ? "on" : ""} aria-pressed={!stream} onClick={() => setStream(false)}>
+                Off
+              </button>
+            </div>
+          </div>
+          {fields
+            .filter((f) => f.name !== "stream" && f.name !== "stream_options")
+            .map((f) => (
+              <div key={f.name}>
+                <FieldInput field={f} value={params[f.name]} onChange={(v) => setParams((p) => ({ ...p, [f.name]: v }))} ctx={{ models: [] }} />
+                {f.name === "tools" && !params.tools && (
+                  <button type="button" className="adv-toggle" style={{ marginTop: 6 }} onClick={() => setParams((p) => ({ ...p, tools: EXAMPLE_TOOLS }))}>
+                    Insert an example tool
+                  </button>
+                )}
+                {f.name === "tool_choice" && (
+                  <div className="chips" style={{ marginTop: 6 }}>
+                    {["auto", "none", "required"].map((c) => (
+                      <button key={c} type="button" className={`chip${params.tool_choice === c ? " on" : ""}`} onClick={() => setParams((p) => ({ ...p, tool_choice: c }))}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          <details className="small">
+            <summary className="muted" style={{ cursor: "pointer" }}>
+              Request body
+            </summary>
+            <pre className="json">{JSON.stringify({ model, ...extra, stream, messages: "…" }, null, 2)}</pre>
+          </details>
+      </aside>
       <div className="chat">
         <div className="chat-bar">
-          <select className="input" style={{ width: "auto", height: 34 }} aria-label="Chat model" value={model} onChange={(e) => setModel(e.target.value)}>
-            {models.map((m) => (
-              <option key={m.name} value={m.name} disabled={m.status === "missing"}>
-                {m.name}
-                {m.status === "missing" ? " (not set up)" : ""}
-              </option>
-            ))}
-          </select>
-          <input
-            className="input"
-            style={{ flex: 1, minWidth: 160, height: 34 }}
-            placeholder="System prompt (optional)"
-            value={system}
-            onChange={(e) => setSystem(e.target.value)}
-          />
-          <button type="button" className={`btn small${panelOpen ? " on" : ""}`} aria-expanded={panelOpen} onClick={() => setPanelOpen((o) => !o)}>
+          <button type="button" className="btn small params-toggle" aria-expanded={panelOpen} onClick={() => setPanelOpen(true)}>
             Parameters{setCount ? ` · ${setCount}` : ""}
           </button>
+          <span className="mono small muted" style={{ flex: 1 }}>
+            {model}
+            {system.trim() ? " · system prompt" : ""}
+          </span>
           <button type="button" className="btn small" onClick={() => setTurns([])} disabled={busy || turns.length === 0}>
             New chat
           </button>
@@ -371,63 +436,6 @@ export function ChatPlayground({ doc, models }: { doc: OpenApiDoc; models: Setup
         </form>
       </div>
 
-      {panelOpen && (
-        <aside className="chat-panel" aria-label="Parameters">
-          <div className="card-head">
-            <h2 className="card-title">Parameters</h2>
-            <button type="button" className="adv-toggle" onClick={() => setParams({})}>
-              Reset
-            </button>
-            <button type="button" className="icon-btn" aria-label="Close parameters" onClick={() => setPanelOpen(false)}>
-              <Icon name="x" />
-            </button>
-          </div>
-          <div className="field">
-            <div className="field-head">
-              <span className="field-label">Stream</span>
-              <Hint
-                label="Stream"
-                text="Stream the answer as it is generated (`stream: true`, with `stream_options.include_usage`). Off waits for the whole `chat.completion` object."
-              />
-            </div>
-            <div className="seg">
-              <button type="button" className={stream ? "on" : ""} aria-pressed={stream} onClick={() => setStream(true)}>
-                On
-              </button>
-              <button type="button" className={!stream ? "on" : ""} aria-pressed={!stream} onClick={() => setStream(false)}>
-                Off
-              </button>
-            </div>
-          </div>
-          {fields
-            .filter((f) => f.name !== "stream" && f.name !== "stream_options")
-            .map((f) => (
-              <div key={f.name}>
-                <FieldInput field={f} value={params[f.name]} onChange={(v) => setParams((p) => ({ ...p, [f.name]: v }))} ctx={{ models: [] }} />
-                {f.name === "tools" && !params.tools && (
-                  <button type="button" className="adv-toggle" style={{ marginTop: 6 }} onClick={() => setParams((p) => ({ ...p, tools: EXAMPLE_TOOLS }))}>
-                    Insert an example tool
-                  </button>
-                )}
-                {f.name === "tool_choice" && (
-                  <div className="chips" style={{ marginTop: 6 }}>
-                    {["auto", "none", "required"].map((c) => (
-                      <button key={c} type="button" className={`chip${params.tool_choice === c ? " on" : ""}`} onClick={() => setParams((p) => ({ ...p, tool_choice: c }))}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          <details className="small">
-            <summary className="muted" style={{ cursor: "pointer" }}>
-              Request body
-            </summary>
-            <pre className="json">{JSON.stringify({ model, ...extra, stream, messages: "…" }, null, 2)}</pre>
-          </details>
-        </aside>
-      )}
     </div>
   );
 }

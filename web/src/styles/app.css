@@ -1340,12 +1340,21 @@ select.input {
 
 .chat-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+  gap: 32px;
   min-height: 420px;
 }
-.chat-shell.with-panel {
-  grid-template-columns: minmax(0, 1fr) 320px;
+.chat-params {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 2px 6px 8px 2px;
+}
+.params-toggle,
+.params-close {
+  display: none !important;
 }
 .chat {
   display: flex;
@@ -1372,17 +1381,6 @@ select.input {
   flex-direction: column;
   gap: 14px;
   padding: 4px 4px 8px 0;
-}
-.chat-panel {
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-card);
 }
 .bubble {
   max-width: 88%;
@@ -1507,10 +1505,21 @@ select.input {
 }
 
 @media (max-width: 1100px) {
-  .chat-shell.with-panel {
+  .chat-shell {
     grid-template-columns: minmax(0, 1fr);
   }
-  .chat-panel {
+  .params-toggle,
+  .params-close {
+    display: inline-flex !important;
+  }
+  .chat-params {
+    display: none;
+  }
+  .chat-params.open {
+    display: flex;
+    padding: 16px;
+    background: var(--surface);
+    border-left: 1px solid var(--line);
     position: fixed;
     top: 0;
     right: 0;
@@ -1612,8 +1621,9 @@ select.input {
 .fab:hover {
   transform: scale(1.06);
 }
+/* On the chat page the button sits clear above the message console. */
 .fab.raised {
-  bottom: 112px;
+  bottom: 168px;
 }
 .helper {
   position: fixed;
@@ -1633,8 +1643,8 @@ select.input {
 }
 .fab.raised + .helper,
 .helper:has(+ .fab.raised) {
-  bottom: 176px;
-  height: min(560px, calc(100vh - 200px));
+  bottom: 232px;
+  height: min(520px, calc(100vh - 256px));
 }
 @keyframes pop {
   from {

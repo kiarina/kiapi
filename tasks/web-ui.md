@@ -150,3 +150,5 @@ Web UI を kiapi 自身が配る。
   qwen3.8-27b で最初の回答はおよそ 35 秒（8K tokens ほどの prefill）
   - 踏んだ落とし穴: 浮かぶ質問窓の class を `.assistant` にしたら、chat の `.bubble.assistant` にも当たって吹き出しが
     固定表示になった。浮かぶ窓は `.helper` にした
+- 2026-09-26: chat を他の Playground と同じ 2 列にした（左がモデル・system prompt・stream を含む全パラメータ、右がタイムラインと
+  その下の入力欄）。狭い画面ではパラメータを右から出す。chat の画面では質問ボタンを入力欄から離して上げた
