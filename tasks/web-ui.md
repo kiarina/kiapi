@@ -19,7 +19,13 @@ kiapi は LLM エージェント向けで、人には何ができるか分かり
   - 「Web UI」節: Overview、Models（コマンド案内）、質問チャットがフォームを埋める場面の 3 枚
   - できれば、質問チャットがフォームを埋めて光る 10 秒ほどの GIF
 - 画像はリポジトリに置き、README からは絶対 URL で参照する（PyPI は相対パスの画像を出さない）
-- README はリリースと同じタイミングで出す（PyPI の 0.7.0 には UI が無いため）。リリースは実行直前にユーザーへ確認する
+- README の画像は `main` 上の絶対 URL なので、push してからでないと GitHub で確かめられない。先に README と画像を push し、
+  リリースは実行直前にユーザーへ確認する
+- 2026-09-26: 撮影と README の更新を済ませた（`docs/images/web-ui/*.webp`、2880×2000、ライト・ダーク各 4 枚）。
+  撮影は、`KIAPI_FILES_ROOT` と `XDG_CACHE_HOME` を一時ディレクトリにした 2 つ目の kiapi を :8000 で起動し、
+  Z-Image turbo と ERNIE-Image turbo だけで作った 6 枚を入れて、puppeteer-core（インストール済みの Chrome）で撮った。
+  テーマは `prefers-color-scheme` のエミュレートで切り替える（localStorage を事前に書くと reload のたびに上書きされる）。
+  GIF は見送った。残りは 0.8.0 のリリース
 
 ### その後（必要になったら）
 

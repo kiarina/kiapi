@@ -4,6 +4,11 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
 [![API Docs](https://img.shields.io/badge/API%20Docs-GitHub%20Pages-green.svg)](https://kiarina.github.io/kiapi/)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/playground-dark.webp">
+  <img alt="The kiapi web UI running Z-Image, with the generated image next to the form" src="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/playground-light.webp">
+</picture>
+
 ## Summary
 
 kiapi is an API server that uses a Mac Studio M4 Max with 128GB of memory at home to provide the following capabilities.
@@ -22,6 +27,37 @@ See: [API Documents](https://kiarina.github.io/kiapi/)
 > [!NOTE]
 > The Mac Studio M4 Max with 128GB of memory is an example.
 > Other Apple Silicon models will also work if they have sufficient unified memory.
+
+## Web UI
+
+Open `http://localhost:8000/` while kiapi runs. The web UI lets you try every
+family without writing a request, and shows what each one can do.
+
+- **Playground** for every family: forms built from the API schema, uploads or
+  stored files as inputs, and results as they finish.
+- **Write with chat** drafts prompts with a local chat model that reads the
+  family's guide.
+- **Ask about a family** from the corner button. The assistant answers from
+  the family's OpenAPI document and can fill in the form for you; you review
+  and submit it.
+- **Models** shows which models are ready and the `kiapi activate` command for
+  anything missing. **Jobs** and **Files** show progress and previews.
+
+<p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/overview-dark.webp">
+  <img alt="Overview of server status, jobs, and recent files" src="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/overview-light.webp" width="49%">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/models-dark.webp">
+  <img alt="Model setup status with activate commands" src="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/models-light.webp" width="49%">
+</picture>
+</p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/assistant-dark.webp">
+  <img alt="The assistant filling in the Z-Image form from a request" src="https://raw.githubusercontent.com/kiarina/kiapi/main/docs/images/web-ui/assistant-light.webp">
+</picture>
 
 ## Resources
 
@@ -187,10 +223,7 @@ open ~/Downloads/bgm.wav
 ```
 
 **Use from a browser:**
-Open `http://localhost:8000/` while kiapi runs. The web UI shows the server
-status, jobs, and files, what each family can do, and which models still need
-`kiapi activate`. Each family's Playground runs it from a form, and "Write with
-chat" drafts the prompt with a local chat model.
+Open `http://localhost:8000/` while kiapi runs. See [Web UI](#web-ui).
 
 **Run as a background service:**
 ```sh
