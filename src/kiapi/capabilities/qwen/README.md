@@ -1,6 +1,7 @@
 # qwen
 
-[mflux Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) provides image generation and image editing functions.
+[mflux Qwen Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/qwen/README.md) and
+[mflux Qwen Image 2.1](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/qwen21/README.md) provide image generation and image editing functions.
 Qwen Image is a strong model for multilingual prompts and text in images.
 
 - **generate**:
@@ -33,7 +34,7 @@ Its weights are **non-commercial** (Qwen Research License).
 
 | Package | License | Description |
 |---|---|---|
-| [mflux](https://github.com/filipstrand/mflux) | MIT | Run Qwen Image / Qwen Image Edit / Qwen-Image-2.1 on MLX. |
+| [mflux](https://github.com/mflux-community/mflux) | MIT | Run Qwen Image / Qwen Image Edit / Qwen-Image-2.1 on MLX. |
 
 ## Models
 

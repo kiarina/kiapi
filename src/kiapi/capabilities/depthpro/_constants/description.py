@@ -4,7 +4,7 @@ This is **image-to-depth**, not prompt-driven image generation: you give one
 image and get back a metric depth map.
 
 ## Upstream docs
-- [mflux](https://github.com/filipstrand/mflux) — the MLX engine kiapi runs
+- [mflux](https://github.com/mflux-community/mflux) — the MLX engine kiapi runs
 - [apple/DepthPro](https://huggingface.co/apple/DepthPro) — model weights
 - [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) — original Depth Pro code and paper
 

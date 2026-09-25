@@ -5,7 +5,7 @@ text and typography. There is no image-to-image, no training, and no hosted Magi
 Prompt API.
 
 ## Upstream docs
-- [mflux — Ideogram 4](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ideogram4/README.md) — the MLX engine kiapi runs
+- [mflux — Ideogram 4](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/ideogram4/README.md) — the MLX engine kiapi runs
 - [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) — the `fp8` weights (gated)
 
 ## Models

@@ -1,6 +1,6 @@
 # flux2
 
-[mflux FLUX.2 Klein](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/flux2/README.md) provides image generation, image editing, and LoRA learning functions.
+[mflux FLUX.2 Klein](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/flux2/README.md) provides image generation, image editing, and LoRA learning functions.
 
 - **generate**:
   - txt2img / img2img
@@ -29,7 +29,7 @@
 
 | Package | License | Description |
 |---|---|---|
-| [mflux](https://github.com/filipstrand/mflux) | MIT | FLUX.2 Execute Klein generation, editing, and LoRA learning on MLX. |
+| [mflux](https://github.com/mflux-community/mflux) | MIT | FLUX.2 Execute Klein generation, editing, and LoRA learning on MLX. |
 
 ## Models
 

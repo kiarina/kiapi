@@ -6,7 +6,8 @@ single/multi-image editing). Qwen-Image is strong at rendered text and
 instruction-following edits.
 
 ## Upstream docs
-- [mflux — Qwen Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/qwen/README.md) — the MLX engine kiapi runs
+- [mflux — Qwen Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/qwen/README.md) — the MLX engine kiapi runs
+- [mflux — Qwen Image 2.1](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/qwen21/README.md) — the MLX engine for `image-2.1`
 - [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) — generate weights
 - [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) — edit weights
 - [Qwen/Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) — unified generate/edit weights (non-commercial)

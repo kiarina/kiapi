@@ -4,7 +4,7 @@ Three operations on Baidu's ERNIE-Image models: `/generate` (text-to-image),
 `/edit` (single-image image-to-image), and `/train` (LoRA finetune).
 
 ## Upstream docs
-- [mflux — ERNIE-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ernie_image/README.md) — the MLX engine kiapi runs
+- [mflux — ERNIE-Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/ernie_image/README.md) — the MLX engine kiapi runs
 - [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) — `turbo` weights
 - [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) — `base` weights
 

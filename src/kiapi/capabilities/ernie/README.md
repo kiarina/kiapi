@@ -1,6 +1,6 @@
 # ernie
 
-[mflux ERNIE-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ernie_image/README.md) provides image generation, image editing, and LoRA fine tuning functions.
+[mflux ERNIE-Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/ernie_image/README.md) provides image generation, image editing, and LoRA fine tuning functions.
 
 - **generate**: Generate image from text
 - **edit**: Prompt editing of single image in Files API
@@ -26,7 +26,7 @@
 
 | Package | License | Description |
 |---|---|---|
-| [mflux](https://github.com/filipstrand/mflux) | MIT | Uses ERNIE-Image's MLX implementation and LoRA learning function. |
+| [mflux](https://github.com/mflux-community/mflux) | MIT | Uses ERNIE-Image's MLX implementation and LoRA learning function. |
 
 ## Models
 

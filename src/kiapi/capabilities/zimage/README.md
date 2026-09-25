@@ -1,6 +1,6 @@
 # zimage
 
-[mflux Z-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/z_image/README.md) provides image generation and LoRA fine-tuning functionality.
+[mflux Z-Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/z_image/README.md) provides image generation and LoRA fine-tuning functionality.
 
 Z-Image is a relatively lightweight image generation model.
 `turbo` is fast with few steps, and `base` is suitable for adjustment using guidance / negative prompt.
@@ -27,7 +27,7 @@ Z-Image is a relatively lightweight image generation model.
 
 | Package | License | Description |
 |---|---|---|
-| [mflux](https://github.com/filipstrand/mflux) | MIT | Perform Z-Image generation and LoRA training on MLX. |
+| [mflux](https://github.com/mflux-community/mflux) | MIT | Perform Z-Image generation and LoRA training on MLX. |
 
 ## Models
 

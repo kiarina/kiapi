@@ -5,7 +5,7 @@ Two operations on Alibaba's Z-Image models: `/generate` (text-to-image) and
 edit endpoint. To edit an existing image, use the ernie / qwen / flux2 families.
 
 ## Upstream docs
-- [mflux — Z-Image](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/z_image/README.md) — the MLX engine kiapi runs
+- [mflux — Z-Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/z_image/README.md) — the MLX engine kiapi runs
 - [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) — `base` weights
 
 ## Models

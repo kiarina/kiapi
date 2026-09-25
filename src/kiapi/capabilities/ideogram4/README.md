@@ -1,6 +1,6 @@
 # ideogram4
 
-[mflux Ideogram 4 FP8](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/ideogram4/README.md) provides typography-friendly text image generation functionality.
+[mflux Ideogram 4 FP8](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/ideogram4/README.md) provides typography-friendly text image generation functionality.
 Ideogram 4 is a model suitable for situations where you want to handle text, signs, labels, logo-like text, etc. in images.
 kiapi only exposes txt2img and saves the generated results as Files API artifacts.
 
@@ -26,7 +26,7 @@ kiapi only exposes txt2img and saves the generated results as Files API artifact
 
 | Package | License | Description |
 |---|---|---|
-| [mflux](https://github.com/filipstrand/mflux) | MIT | Uses the MLX implementation of Ideogram 4 FP8. |
+| [mflux](https://github.com/mflux-community/mflux) | MIT | Uses the MLX implementation of Ideogram 4 FP8. |
 
 ## Models
 

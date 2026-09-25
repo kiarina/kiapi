@@ -6,7 +6,7 @@ generation — there is no prompt. To create or edit images from text, use the
 qwen / flux2 / zimage / ideogram4 families instead.
 
 ## Upstream docs
-- [mflux — SeedVR2](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/seedvr2/README.md) — the MLX engine kiapi runs
+- [mflux — SeedVR2](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/seedvr2/README.md) — the MLX engine kiapi runs
 - [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) — weights
 
 ## Models

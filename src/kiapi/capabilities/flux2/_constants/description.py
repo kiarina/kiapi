@@ -5,7 +5,7 @@ Three operations on Black Forest Labs' FLUX.2 Klein models: `/generate`
 (multi-reference image editing), and `/train` (LoRA finetune).
 
 ## Upstream docs
-- [mflux — FLUX.2](https://github.com/filipstrand/mflux/blob/main/src/mflux/models/flux2/README.md) — the MLX engine kiapi runs
+- [mflux — FLUX.2](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/flux2/README.md) — the MLX engine kiapi runs
 - [FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) — distilled `klein-9b` weights
 - [FLUX.2-klein-base-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) / [base-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) — trainable base weights
 
