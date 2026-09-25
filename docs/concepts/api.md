@@ -66,7 +66,9 @@ Each family's Playground builds its form from the capability `openapi.json`
 `mode: "async"`, and follows the job. "Write with chat" sends the family
 description, the operation description, and the field description to
 `/v1/chat/completions` as the system prompt, so a person gets the same guidance
-an LLM agent reads.
+an LLM agent reads. The floating assistant does the same for questions: it
+sends the current family's `openapi.json` (or the root one outside family
+pages) to a chat model as the system prompt.
 
 The UI never changes the machine's setup. For a missing resource it shows the
 `kiapi activate` command to run in a terminal; `GET /v1/setup` reports the

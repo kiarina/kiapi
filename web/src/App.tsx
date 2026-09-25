@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { setToken } from "./api";
+import { Assistant } from "./components/Assistant";
 import { Icon } from "./components/Icon";
 import { Sidebar } from "./components/Sidebar";
 import { DataProvider } from "./data";
@@ -122,6 +123,7 @@ export function App() {
           <Page route={route} />
         </main>
       </div>
+      <Assistant route={route} />
       {tokenOpen && <TokenDialog onClose={() => setTokenOpen(false)} />}
     </DataProvider>
   );

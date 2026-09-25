@@ -141,3 +141,12 @@ Web UI を kiapi 自身が配る。
   スマホ幅で横スクロールが出ないことも確かめた
   - 踏んだ落とし穴: `useEffect(() => el.scrollIntoView(...))` のように式で返すと、戻り値が cleanup と
     見なされて React が落ちることがある。effect の本体は必ずブロックで書く
+- 2026-09-26: ユーザーの指摘で chat を作り直した。ログを独立したスクロール領域にし、末尾にいるときだけ追従する
+  （`useStickToBottom`。以前は描画のたびに scrollIntoView して揺れ、sticky の入力欄と重なっていた）。
+  パラメータを ChatRequest から作るパネルに出し、tools・tool_choice・parallel_tool_calls・max_completion_tokens・
+  chat_template_kwargs・stream の有無まで試せるようにした。tool call は index ごとに組み立てて表示し、結果を返して
+  続きを生成できる。全フォームの項目に「?」を付け、hover・focus・tap で説明全文を出す。右下の丸ボタンで、
+  今の family の `openapi.json`（family 以外では root）を system prompt にした質問用の小さなチャットを開ける。
+  qwen3.8-27b で最初の回答はおよそ 35 秒（8K tokens ほどの prefill）
+  - 踏んだ落とし穴: 浮かぶ質問窓の class を `.assistant` にしたら、chat の `.bubble.assistant` にも当たって吹き出しが
+    固定表示になった。浮かぶ窓は `.helper` にした

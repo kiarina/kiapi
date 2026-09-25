@@ -213,7 +213,8 @@ export function buildPayload(op: Operation, values: Values): Values {
         }));
         break;
       case "json":
-        out[f.name] = typeof v === "string" ? JSON.parse(v) : v;
+        // Unparsable text is sent as a string, e.g. tool_choice "auto".
+        out[f.name] = typeof v === "string" ? safeJson(v) : v;
         break;
       case "text":
         // Unions such as seedvr2's resolution accept a number or a named preset.

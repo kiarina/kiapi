@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 
 import { AuthError, apiFetch, apiJson } from "./api";
 
@@ -107,4 +107,23 @@ export function useCopy(): [string | null, (text: string) => void] {
     timer.current = window.setTimeout(() => setCopied(null), 1400);
   }, []);
   return [copied, copy];
+}
+
+// Keeps a scroll container pinned to its bottom while content grows, but only
+// while the reader is already at the bottom, so scrolling up to read is never fought.
+export function useStickToBottom(ref: RefObject<HTMLElement | null>, content: unknown): void {
+  const pinned = useRef(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => {
+      pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [ref]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [ref, content]);
 }

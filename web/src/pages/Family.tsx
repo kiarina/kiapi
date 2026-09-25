@@ -67,7 +67,7 @@ export function Family({ domain, family, tab }: { domain: string; family: string
       {!doc && !error && <Loading />}
       {doc && tab === "playground" &&
         (family === "chat" ? (
-          <ChatPlayground models={models} />
+          <ChatPlayground doc={doc} models={models} />
         ) : (
           <Playground key={family} doc={doc} family={family} models={models} />
         ))}

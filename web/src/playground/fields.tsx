@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import Markdown from "react-markdown";
 
 import type { SetupModel } from "../api";
 import { Icon } from "../components/Icon";
@@ -13,9 +14,19 @@ export interface FieldContext {
   onWrite?: (field: Field) => void;
 }
 
-function help(description: string): string {
-  const first = description.split(/\n\s*\n/)[0].replace(/\s+/g, " ");
-  return first.length > 180 ? `${first.slice(0, 177)}…` : first;
+// A "?" that shows the field's full description on hover, focus, or tap.
+export function Hint({ label, text }: { label: string; text: string }) {
+  if (!text) return null;
+  return (
+    <span className="hint">
+      <button type="button" className="hint-btn" aria-label={`About ${label}`}>
+        ?
+      </button>
+      <span role="tooltip" className="hint-pop prose">
+        <Markdown>{text}</Markdown>
+      </span>
+    </span>
+  );
 }
 
 function Frame({ field, children, aside }: { field: Field; children: ReactNode; aside?: ReactNode }) {
@@ -26,10 +37,11 @@ function Frame({ field, children, aside }: { field: Field; children: ReactNode; 
           {field.label}
           {field.required && <span className="req"> *</span>}
         </label>
+        <Hint label={field.label} text={field.description} />
+        <span style={{ flex: 1 }} />
         {aside}
       </div>
       {children}
-      {field.description && field.kind !== "boolean" && <div className="field-help">{help(field.description)}</div>}
     </div>
   );
 }
@@ -312,7 +324,6 @@ export function FieldInput({
               </button>
             ))}
           </div>
-          <div className="field-help">{help(field.description)}</div>
         </Frame>
       );
     }

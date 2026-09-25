@@ -69,7 +69,7 @@ export function WriteWithChat({
           ],
           temperature: 0.7,
         },
-        (d) => setOutput((o) => o + d),
+        { onText: (d) => setOutput((o) => o + d) },
         abort.current.signal,
       );
     } catch (e) {
