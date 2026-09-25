@@ -43,6 +43,21 @@ version's source: remove it if upstream fixed the bug, keep it if the bug is sti
 there, and adapt it if the code it touches moved. Note which case you checked on
 device.
 
+## Pin an unreleased upstream change from a fork
+
+When a feature exists only in an open upstream PR, pin it from a kiarina fork, not
+from the contributor's branch, which can be rebased or deleted:
+
+1. Fork the upstream repository and push the verified commit to a branch that
+   kiapi alone uses. Never force-push that branch.
+2. Pin it in `[tool.uv.sources]` with the full commit (`rev = "<sha>"`), and leave
+   the `dependencies` floor at the latest release. Published wheels ignore
+   `tool.uv.sources`, so PyPI installs keep the official release.
+3. Make the capability work on that official release too. Either keep a fallback
+   (chat with the mlx-vlm fork) or register the model only when the fork's module
+   exists (`importlib.util.find_spec`, as qwen does for `image-2.1`).
+4. Add a `tasks/` file that says which PR to wait for and how to move the pin back.
+
 ## Verify in full, not with `--fast`
 
 `--fast` runs only the first case of each verify script, which is usually plain
@@ -59,6 +74,14 @@ A newly added model needs its weights first; until then its requests return 503
 ```sh
 uv run kiapi activate --repo <huggingface-repo>
 ```
+
+A passing case checks the request plumbing, not the output. For a new model or a
+changed engine, open the artifacts in `.verify/kiapi/<family>/`. Trivial inputs can
+hide a bad result: a Qwen-Image-2.1 edit given two flat color swatches returned a
+single flat color and still passed. Use real images, such as
+`tests/assets/miineko.png`. `git worktree remove` deletes the worktree's `.verify`,
+so copy what you want to keep first. The server also keeps each artifact under
+`KIAPI_FILES_ROOT` with its prompt and params in the `.json` next to it.
 
 When a case crashes the server, the verify driver's server log is
 `<tmp>/kiapi-verify-*/kiapi.log`, and a native abort (for example a Metal page
