@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- web: enable Bing in the bundled SearXNG configuration so searches still return
+  results when the default general engines encounter rate limits or CAPTCHAs.
+
 ## [0.8.0] - 2026-09-26
 
 ### Dependencies

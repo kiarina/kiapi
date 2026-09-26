@@ -3,6 +3,13 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-26 — Web search がほぼ 0 件になる状態を修正した
+
+- サーバー機の SearXNG で Brave は 429、DuckDuckGo と Startpage は CAPTCHA。既定検索では「岐阜」「OpenAI」が 0 件、
+  「Python」は Wikipedia の 1 件だけだった。API の整形処理ではなく上流エンジン側の失敗と確認した
+- 個別指定した Bing は「岐阜」「OpenAI」で各 10 件。SearXNG の同梱設定で既定無効の Bing を有効にした。
+  検証用コンテナで「岐阜」が 10 件になり、結果が Bing 由来であることを確認した
+
 ## 2026-09-26 — 0.8.0 をリリースし、README で Web UI を紹介した
 
 - README の冒頭に Playground の画面、新設の「Web UI」節に Overview・Models・質問チャットの画面を載せた（ライトとダークを

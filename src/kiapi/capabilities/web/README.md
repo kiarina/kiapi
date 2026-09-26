@@ -41,6 +41,12 @@ search / fetch are also submitted to single-flight workers as Jobs.
 - **search query**:
   `query` is passed directly to SearXNG. `site:`, `!wp`, `!images`, `:ja` etc.
   You can use SearXNG inline operators as is.
+- **search engines**:
+  The bundled SearXNG configuration enables Bing alongside its default engines.
+  An empty `results` list can still occur when the upstream engines fail; inspect
+  `unresponsive_engines` in the response to distinguish that from no matches.
+  SearXNG settings are copied to the user configuration directory on first use;
+  update an existing `searxng/settings.yml` explicitly to change its engines.
 - **search result count**:
   There is no `max_results` in SearXNG itself, so after kiapi receives one page of results.
   Truncate client-side. Default is `KIAPI_WEB_DEFAULT_MAX_RESULTS=10`.

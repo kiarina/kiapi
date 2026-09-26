@@ -9,3 +9,11 @@ search:
   formats:
     - html
     - json
+
+engines:
+  # SearXNG disables Bing by default. Keep another general engine available when
+  # Brave, DuckDuckGo, or Startpage rate-limit this local instance.
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
