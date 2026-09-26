@@ -35,6 +35,9 @@ stays complete without a second source of truth.
   `kiapi activate` command to run in a terminal.
 - **Jobs** and **Files**: lists and details with in-place media previews.
 - **Family**: Playground, Guide and API tabs for each family.
+- Web search results show image thumbnails and video posters. Supported video
+  embeds load only after the person presses Play; other videos link to their
+  source page.
 
 ## Schema-driven forms
 

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- web UI: show image thumbnails in image searches and video previews with
+  inline playback when SearXNG provides a supported embed URL.
 - web UI: each Web search result can fill its URL into the Fetch form for a
   separate fetch request.
 

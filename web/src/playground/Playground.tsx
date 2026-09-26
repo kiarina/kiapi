@@ -428,6 +428,64 @@ interface SearchResult {
   title?: string;
   url?: string;
   content?: string;
+  category?: string;
+  img_src?: string;
+  thumbnail?: string;
+  thumbnail_src?: string;
+  iframe_src?: string;
+}
+
+function httpUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function videoEmbedUrl(value: string | undefined): string | undefined {
+  const src = httpUrl(value);
+  if (!src) return undefined;
+  const url = new URL(src);
+  if (url.protocol !== "https:") return undefined;
+  if (["www.youtube-nocookie.com", "www.youtube.com"].includes(url.hostname) && /^\/embed\/[\w-]+\/?$/.test(url.pathname)) return src;
+  if (url.hostname === "player.vimeo.com" && /^\/video\/\d+\/?$/.test(url.pathname)) return src;
+  if (url.hostname === "www.dailymotion.com" && /^\/embed\/video\/[\w-]+\/?$/.test(url.pathname)) return src;
+  return undefined;
+}
+
+function SearchPreview({ result }: { result: SearchResult }) {
+  const [playing, setPlaying] = useState(false);
+  const [posterIndex, setPosterIndex] = useState(0);
+  const posters = [...new Set([result.thumbnail_src, result.thumbnail, result.img_src].map(httpUrl).filter((url): url is string => !!url))];
+  const poster = posters[posterIndex];
+  const image = poster && <img src={poster} alt={result.category === "images" ? result.title ?? "Search result image" : ""} loading="lazy" referrerPolicy="no-referrer" onError={() => setPosterIndex((index) => index + 1)} />;
+  if (result.category === "images") {
+    if (!poster) return null;
+    return (
+      <a className="search-preview" href={httpUrl(result.img_src) ?? httpUrl(result.url)} target="_blank" rel="noreferrer" aria-label={`Open image: ${result.title ?? "search result"}`}>
+        {image}
+      </a>
+    );
+  }
+  if (result.category !== "videos") return null;
+  const embed = videoEmbedUrl(result.iframe_src);
+  if (playing && embed) {
+    return <iframe className="search-preview search-video" src={embed} title={result.title ?? "Search result video"} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />;
+  }
+  if (!poster && !embed) return null;
+  const preview = <>{image}<span className="search-play"><Icon name="play" size={22} /></span></>;
+  return embed ? (
+    <button type="button" className="search-preview search-video" onClick={() => setPlaying(true)} aria-label={`Play video: ${result.title ?? "search result"}`}>
+      {preview}
+    </button>
+  ) : (
+    <a className="search-preview search-video" href={httpUrl(result.url)} target="_blank" rel="noreferrer" aria-label={`Open video: ${result.title ?? "search result"}`}>
+      {preview}
+    </a>
+  );
 }
 
 function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind: "job" }>; onFetchUrl?: (url: string) => void }) {
@@ -450,18 +508,20 @@ function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind:
   }
   const data = outcome.data as Record<string, unknown>;
   const results = Array.isArray(data?.results) ? (data.results as SearchResult[]) : null;
+  const imageResults = results?.length && results.every((result) => result.category === "images");
   const embedding = Array.isArray(data?.embedding) ? (data.embedding as number[]) : undefined;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {results && (
         <div className="card">
           <h2 className="card-title">{results.length} results</h2>
-          <div className="rows">
+          <div className={imageResults ? "search-image-grid" : "rows"}>
             {results.map((r, i) => (
-              <div key={i} className="row" style={{ flexDirection: "column", alignItems: "stretch", gap: 2, padding: "10px 0" }}>
-                <a href={r.url} target="_blank" rel="noreferrer" style={{ fontWeight: 500 }}>
-                  {r.title ?? r.url}
-                </a>
+              <div key={`${r.category}:${r.url}:${i}`} className="row search-result">
+                <SearchPreview result={r} />
+                {httpUrl(r.url) ? (
+                  <a href={r.url} target="_blank" rel="noreferrer" style={{ fontWeight: 500, overflowWrap: "anywhere" }}>{r.title ?? r.url}</a>
+                ) : <span style={{ fontWeight: 500 }}>{r.title ?? r.url}</span>}
                 <span className="mono small muted" style={{ overflowWrap: "anywhere" }}>{r.url}</span>
                 {r.content && <span className="small">{r.content}</span>}
                 {r.url && /^https?:\/\//i.test(r.url) && onFetchUrl && (

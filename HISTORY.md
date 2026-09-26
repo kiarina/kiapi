@@ -3,6 +3,17 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-26 — Web search の画像と動画を結果内に表示した
+
+- SearXNG は画像結果に `thumbnail_src` / `img_src`、動画結果に `thumbnail` / `iframe_src` を返す。
+  Web UI は画像を一覧内で表示し、動画はサムネイルを表示する。対応する埋め込み URL は Play 押下で読み込み、
+  その他の動画は元ページへリンクする
+- 壊れたサムネイルは別の画像 URL へ切り替え、表示不能なら枠を隠す。YouTube の埋め込みは参照元を
+  送らないとエラー 153 になったため、iframe の referrer policy を `strict-origin-when-cross-origin` にした。
+  独立した kiapi の画面で画像表示と YouTube プレーヤーの読み込み、ライト・ダーク、スマホ幅 375px の
+  横スクロールなしを確認した
+
+
 ## 2026-09-26 — Web search の結果を Fetch フォームへ渡せるようにした
 
 - 検索結果ごとに「Use in Fetch」ボタンを追加。押すと Fetch タブへ切り替えて結果 URL を入力し、
