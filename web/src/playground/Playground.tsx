@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 
 import { apiFetch, downloadPath, postJson, type AsyncJob, type FileRecord, type Job, type OpenApiDoc, type SetupModel } from "../api";
@@ -64,6 +64,7 @@ export function Playground({
   const [error, setError] = useState<Error>();
   const [outcome, setOutcome] = useState<Outcome>();
   const [flash, setFlash] = useState<Set<string>>(new Set());
+  const formRef = useRef<HTMLFormElement>(null);
   const { jobs } = useData();
 
   useEffect(() => {
@@ -157,12 +158,24 @@ export function Playground({
     }
   };
 
+  const useInFetch = (url: string) => {
+    const fetchIndex = ops.findIndex((operation) => operation.name === "fetch" && operation.fields.some((field) => field.name === "url"));
+    if (fetchIndex === -1) return;
+    const fetchPath = ops[fetchIndex].path;
+    setValuesByOp((current) => ({ ...current, [fetchPath]: { ...(current[fetchPath] ?? {}), url } }));
+    setOpIndex(fetchIndex);
+    setFlash(new Set(["url"]));
+    window.setTimeout(() => setFlash(new Set()), 2400);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (!op) return <div className="card empty">This family has no operations to run from the UI.</div>;
   const canUseAsInput = ops.some((o) => o.fields.some(takesImage));
 
   return (
     <div className="playground">
       <form
+        ref={formRef}
         className="pg-form"
         onSubmit={(e) => {
           e.preventDefault();
@@ -248,7 +261,9 @@ export function Playground({
         {outcome?.kind === "job" && (
           <JobResult jobId={outcome.jobId} onReuse={reuse} onUseAsInput={canUseAsInput ? useAsInput : undefined} />
         )}
-        {outcome && outcome.kind !== "job" && <SyncResult outcome={outcome} />}
+        {outcome && outcome.kind !== "job" && (
+          <SyncResult outcome={outcome} onFetchUrl={family === "web" ? useInFetch : undefined} />
+        )}
 
         {history.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -415,7 +430,7 @@ interface SearchResult {
   content?: string;
 }
 
-function SyncResult({ outcome }: { outcome: Exclude<Outcome, { kind: "job" }> }) {
+function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind: "job" }>; onFetchUrl?: (url: string) => void }) {
   if (outcome.kind === "text") {
     return (
       <div className="card prose" style={{ maxHeight: "70vh", overflow: "auto" }}>
@@ -449,6 +464,11 @@ function SyncResult({ outcome }: { outcome: Exclude<Outcome, { kind: "job" }> })
                 </a>
                 <span className="mono small muted" style={{ overflowWrap: "anywhere" }}>{r.url}</span>
                 {r.content && <span className="small">{r.content}</span>}
+                {r.url && /^https?:\/\//i.test(r.url) && onFetchUrl && (
+                  <button type="button" className="btn small" style={{ alignSelf: "flex-start", marginTop: 6 }} onClick={() => onFetchUrl(r.url!)}>
+                    Use in Fetch
+                  </button>
+                )}
               </div>
             ))}
           </div>

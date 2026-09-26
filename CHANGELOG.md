@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- web UI: each Web search result can fill its URL into the Fetch form for a
+  separate fetch request.
+
 ### Fixed
 
 - web UI: choose search categories and engines from the running SearXNG
