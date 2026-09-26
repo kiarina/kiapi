@@ -20,6 +20,11 @@ type Outcome =
   | { kind: "text"; text: string; contentType: string }
   | { kind: "blob"; url: string; contentType: string };
 
+interface SearchOptions {
+  categories: string[];
+  engines: string[];
+}
+
 const TERMINAL = new Set(["succeeded", "failed", "canceled"]);
 // Fields a chat model can write from the family guide.
 const WRITABLE = new Set(["prompt", "negative_prompt", "lyrics"]);
@@ -41,7 +46,16 @@ export function Playground({
   family: string;
   models: SetupModel[];
 }) {
-  const ops = useMemo(() => operationsOf(doc), [doc]);
+  const searchOptions = useApi<SearchOptions>(family === "web" ? "/v1/web/search/options" : null);
+  const ops = useMemo(() => operationsOf(doc).map((op) => ({
+    ...op,
+    fields: op.fields.map((field) => {
+      if (family !== "web" || op.name !== "search") return field;
+      if (field.name === "categories") return { ...field, options: searchOptions.data?.categories ?? [] };
+      if (field.name === "engines") return { ...field, options: searchOptions.data?.engines ?? [] };
+      return field;
+    }),
+  })), [doc, family, searchOptions.data]);
   const [opIndex, setOpIndex] = useState(0);
   const [valuesByOp, setValuesByOp] = useState<Record<string, Values>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -172,6 +186,9 @@ export function Playground({
           </div>
         )}
         {op.description && <p className="small muted" style={{ margin: 0 }}>{op.description.split(/\n\s*\n/)[0]}</p>}
+        {family === "web" && op.name === "search" && searchOptions.error && (
+          <p className="small muted" role="alert">Could not load search choices: {searchOptions.error.message}</p>
+        )}
 
         {basic.map((f) => (
           <FieldInput
@@ -430,7 +447,7 @@ function SyncResult({ outcome }: { outcome: Exclude<Outcome, { kind: "job" }> })
                 <a href={r.url} target="_blank" rel="noreferrer" style={{ fontWeight: 500 }}>
                   {r.title ?? r.url}
                 </a>
-                <span className="mono small muted">{r.url}</span>
+                <span className="mono small muted" style={{ overflowWrap: "anywhere" }}>{r.url}</span>
                 {r.content && <span className="small">{r.content}</span>}
               </div>
             ))}

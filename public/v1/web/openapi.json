@@ -6,6 +6,24 @@
     "version": "0.8.0"
   },
   "paths": {
+    "/v1/web/search/options": {
+      "get": {
+        "summary": "Search Options",
+        "operationId": "search_options_v1_web_search_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOptions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/web/search": {
       "post": {
         "summary": "Search Web",
@@ -291,6 +309,33 @@
         ],
         "title": "FetchErrorResponse"
       },
+      "SearchOptions": {
+        "properties": {
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "description": "SearXNG's current search categories."
+          },
+          "engines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines",
+            "description": "SearXNG's currently enabled engines."
+          }
+        },
+        "type": "object",
+        "required": [
+          "categories",
+          "engines"
+        ],
+        "title": "SearchOptions",
+        "description": "Choices currently enabled by the resident SearXNG instance."
+      },
       "SearchRequest": {
         "properties": {
           "query": {
@@ -315,7 +360,7 @@
               }
             ],
             "title": "Categories",
-            "description": "SearXNG categories to search. Omit to use `KIAPI_WEB_DEFAULT_CATEGORIES`; if that is unset, SearXNG chooses its own default. Common values include `general`, `it`, `science`, `news`, `images`, `videos`, `map`, `music`, `files`, and `social_media`.",
+            "description": "SearXNG categories to search. Omit to use `KIAPI_WEB_DEFAULT_CATEGORIES`; if that is unset, SearXNG chooses its own default. Common values include `general`, `it`, `science`, `news`, `images`, `videos`, `map`, `music`, `files`, and `social media`.",
             "examples": [
               [
                 "general"

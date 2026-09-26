@@ -15,6 +15,7 @@ search / fetch are also submitted to single-flight workers as Jobs.
 | Endpoint | Name | Description |
 |---|---|---|
 | `POST /v1/web/search` | Web search | Call SearXNG's `/search?format=json` and return the search results. |
+| `GET /v1/web/search/options` | Search choices | Return the current SearXNG categories and enabled engines for selection controls. |
 | `GET /v1/web/fetch?url=...` | Get page | Render an HTML page with Crawl4AI and return Markdown or PDF. |
 | `GET /v1/web/openapi.json` | OpenAPI | Returns detailed input/output specifications, usage, and TIPS. |
 
@@ -47,6 +48,10 @@ search / fetch are also submitted to single-flight workers as Jobs.
   `unresponsive_engines` in the response to distinguish that from no matches.
   SearXNG settings are copied to the user configuration directory on first use;
   update an existing `searxng/settings.yml` explicitly to change its engines.
+- **search choices**:
+  The Web UI loads categories and enabled engines from `/v1/web/search/options`
+  and allows multiple selections. Leaving either field empty preserves the
+  server or SearXNG default.
 - **search result count**:
   There is no `max_results` in SearXNG itself, so after kiapi receives one page of results.
   Truncate client-side. Default is `KIAPI_WEB_DEFAULT_MAX_RESULTS=10`.

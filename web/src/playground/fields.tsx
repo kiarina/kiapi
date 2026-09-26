@@ -141,6 +141,31 @@ function LorasInput({ field, value, onChange }: { field: Field; value: Lora[]; o
 
 function TagsInput({ field, value, onChange }: { field: Field; value: string[]; onChange: (v: string[]) => void }) {
   const [draft, setDraft] = useState("");
+  if (field.options && (field.name === "categories" || field.name === "engines")) {
+    return (
+      <div className="chips">
+        {value.map((item) => (
+          <button key={item} type="button" className="chip on" onClick={() => onChange(value.filter((x) => x !== item))}>
+            {item} ×
+          </button>
+        ))}
+        <select
+          id={`f-${field.name}`}
+          className="input"
+          aria-label={`Add ${field.label.toLowerCase()}`}
+          style={{ width: "100%" }}
+          value=""
+          disabled={field.options.length === 0}
+          onChange={(e) => onChange([...value, e.target.value])}
+        >
+          <option value="">{field.options.length ? `Choose ${field.label.toLowerCase()}…` : "Loading choices…"}</option>
+          {field.options.filter((option) => !value.includes(option)).map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
   if (field.options) {
     return (
       <div className="chips">

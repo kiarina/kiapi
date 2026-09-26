@@ -33,7 +33,7 @@ class SearchRequest(BaseModel):
             "`KIAPI_WEB_DEFAULT_CATEGORIES`; if that is unset, SearXNG chooses "
             "its own default. Common values include `general`, `it`, `science`, "
             "`news`, `images`, `videos`, `map`, `music`, `files`, and "
-            "`social_media`."
+            "`social media`."
         ),
         examples=[["general"], ["it", "science"]],
     )

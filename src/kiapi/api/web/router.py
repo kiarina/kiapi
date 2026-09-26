@@ -1,4 +1,4 @@
-"""Web API (web): ``POST /v1/web/search`` + ``GET /v1/web/fetch``.
+"""Web API (web): search, search choices, and single-page fetch.
 
 ``fetch`` selects its output format from the ``Accept`` header (``text/markdown``
 default, ``application/pdf``) and returns the rendered page as a raw body, in the
@@ -29,6 +29,8 @@ from kiapi.capabilities.web import (
     handle_fetch,
     handle_search,
 )
+from kiapi.capabilities.web._operations.list_search_options import list_search_options
+from kiapi.capabilities.web._views.search_options import SearchOptions
 from kiapi.core.app import AppContext
 from kiapi.core.memory import MemoryBudgetError
 from kiapi.core.model import UnknownModelError
@@ -36,6 +38,29 @@ from kiapi.core.setup import SetupRequiredError
 from kiapi.core.worker import Worker
 
 router = APIRouter(dependencies=REQUIRE_AUTH)
+
+
+@router.get("/v1/web/search/options", response_model=SearchOptions)
+async def search_options(
+    ctx: AppContext = Depends(get_ctx),
+    worker: Worker = Depends(get_worker),
+) -> dict:
+    job = ctx.job_store.create(type="web.search-options")
+    future = await worker.submit(
+        job, lambda: (list_search_options(ctx).model_dump(), [])
+    )
+    try:
+        return await asyncio.wait_for(
+            future, timeout=settings_manager.get_settings().sync_timeout_s
+        )
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail="Search options timed out")  # noqa: B904
+    except SearchBackendError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc))  # noqa: B904
+    except (SetupRequiredError, MemoryBudgetError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc))  # noqa: B904
+    finally:
+        ctx.job_store.delete(job.id)
 
 
 def fetch_api_request(
