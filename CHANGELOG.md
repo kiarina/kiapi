@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development tooling: ruff 0.16.6 -> 0.16.9, types-PyYAML 6.0.12.20260906,
   pnpm 10 -> 12, and `@types/node` 26.6.3 for the web UI. Dependabot now also
   watches `web/`.
+- Lockfile refresh: transformers 5.16.1 -> 5.17.0, mlx-audio 0.5.1 -> 0.5.6,
+  huggingface-hub 1.30.0 -> 1.33.0, filelock 3.32.5 -> 4.0.4, numpy 2.5.3,
+  uvicorn 0.54.0, starlette 1.7.0 and other transitive updates. huggingface-hub 2
+  stays blocked by transformers, tokenizers and mflux (`<2.0`), and opencv-python 5
+  by mflux (`<5.0`).
 
 ## [0.8.0] - 2026-09-26
 
