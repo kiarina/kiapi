@@ -14,6 +14,12 @@ updates:
       # update.
       - dependency-name: "mlx-vlm"
 
+  # Web UI dependencies are declared in web/package.json and pinned in web/pnpm-lock.yaml.
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

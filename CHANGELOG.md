@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - web: enable Bing in the bundled SearXNG configuration so searches still return
   results when the default general engines encounter rate limits or CAPTCHAs.
 
+### Dependencies
+
+- Development tooling: ruff 0.16.6 -> 0.16.9, types-PyYAML 6.0.12.20260906,
+  pnpm 10 -> 12, and `@types/node` 26.6.3 for the web UI. Dependabot now also
+  watches `web/`.
+
 ## [0.8.0] - 2026-09-26
 
 ### Dependencies
