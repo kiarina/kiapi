@@ -3,6 +3,23 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-09-28 — 外の条件を待つものを `waiting/` へ分けた
+
+- タスク管理の規則を変えた（agent リポジトリと共通）。`tasks/` は今すぐ着手できるものと kiarina の判断待ち、`waiting/` は
+  上流のレビュー・リリースなど外の条件を待つもの（1 件 1 ファイル、確かめ方と確かめる目安の日付を持つ）。タスクが外の条件待ちに
+  入ったらタスクを消して `waiting/` に 1 件作り、条件が満たされたら新しいタスクを起こす。`AGENTS.md` と
+  `docs/playbooks/dependency-upgrades.md` を更新した
+- 上流待ちのタスクを振り分けた（PR の状態は 2026-09-28 に確認）
+  - `tasks/ltx25-mlx-video-upstream-pin.md` → `waiting/mlx-video-ltx25-pr.md`。mlx-video#52 は OPEN、2026-09-15 から反応なし
+  - `tasks/mlx-vlm-image-prefix-upstream.md` と `tasks/mlx-vlm-omni-media-prefix-upstream.md` → 1 件の
+    `waiting/mlx-vlm-prefix-reuse-prs.md`。#2309・#2311 は OPEN、レビューなし
+  - `tasks/mflux-qwen-image-21-upstream.md` → `waiting/mflux-qwen-image-21-release.md`。#741 は 2026-09-27 にマージ
+    （`acdfc98`、rebase と修正を経た版）されたが、PyPI は 0.20.0 のまま。2026-09-25 に PR へ報告した循環 import は、マージ版で
+    `reference/__init__.py` の遅延 re-export になって直っていた。2.1 は LoRA 非対応、mask・丸印による部分編集は未検証のまま
+  - `tasks/mlx-vlm-omni-deepstack-upstream.md` は待ちが解けていたので、`tasks/mlx-vlm-omni-patch-removal.md` として起こし直した。
+    自分の #2256・#2257 は上流の別の修正（`22a84f63` / #2265、#2287）に置き換えられて close、#2258 はマージされ、3 件とも
+    mlx-vlm 0.7.2（2026-09-21）に入っている。公開依存の `mlx-vlm==0.7.1` を上げれば patch H・C・B を外せる
+
 ## 2026-09-26 — Web search の画像と動画を結果内に表示した
 
 - SearXNG は画像結果に `thumbnail_src` / `img_src`、動画結果に `thumbnail` / `iframe_src` を返す。

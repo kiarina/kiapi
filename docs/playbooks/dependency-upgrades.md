@@ -56,7 +56,8 @@ from the contributor's branch, which can be rebased or deleted:
 3. Make the capability work on that official release too. Either keep a fallback
    (chat with the mlx-vlm fork) or register the model only when the fork's module
    exists (`importlib.util.find_spec`, as qwen does for `image-2.1`).
-4. Add a `tasks/` file that says which PR to wait for and how to move the pin back.
+4. Add a `waiting/` file that says which PR to wait for, how to check it, and how to
+   move the pin back.
 
 ## Verify in full, not with `--fast`
 
