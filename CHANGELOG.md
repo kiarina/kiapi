@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development tooling: ruff 0.16.10, mypy 2.4.0, vite 8.3.2 and `@types/node`
   26.6.4 for the web UI. CI and release workflows use mise-action v5 with mise
   2026.10.2.
+- Lockfile refresh: transformers 5.17.0 -> 5.18.0, mlx 0.32.2 -> 0.32.3, mlx-lm
+  0.31.3 -> 0.32.0, mlx-audio 0.5.6 -> 0.5.7, torch 2.14.1, fastapi 0.142.2 and
+  other transitive updates. huggingface-hub 2 stays blocked by tokenizers and
+  mflux (`<2.0`), and opencv-python 5 by mflux (`<5.0`).
 
 ## [0.8.0] - 2026-09-26
 
