@@ -3,6 +3,18 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-05 — 依存の定期巡回と待ちの確認
+
+- 開発ツールと CI を更新した（`013306e`）。ruff 0.16.10、mypy 2.4.0、web の vite 8.3.2・`@types/node` 26.6.4。CI と release の
+  workflow を mise-action v5・mise 2026.10.2 にした。v5 は token を後続の step へ渡さなくなったので、release の `mise install` に
+  `GITHUB_TOKEN` を渡した（release workflow は次のタグまで未実行）
+- 推論経路の lock 更新（transformers 5.18.0、mlx / mlx-metal 0.32.3、mlx-lm 0.32.0、mlx-audio 0.5.7、torch 2.14.1 ほか）は
+  worktree で `mise run ci`（mypy 648 files・372 tests）まで通した。verify はサーバー機のサービスを止めるので、main には入れていない
+- 阻害: huggingface-hub 2 は tokenizers 0.23.2 と mflux 0.20.0 / 0.21.0 の `<2.0`（transformers は 5.18.0 で `<3.0` に緩んだ）、
+  opencv-python 5 は mflux 0.20.0 / 0.21.0 の `<5.0`
+- 待ちを確かめた。mflux 0.21.0（#741 を含む）が出たので `waiting/mflux-qwen-image-21-release.md` を消して
+  `tasks/mflux-qwen-image-21-unpin.md` を起こした。mlx-video#52、mlx-vlm#2309・#2311 は OPEN・レビューなしのままで、目安を 2026-10-12 にした
+
 ## 2026-09-28 — 外の条件を待つものを `waiting/` へ分けた
 
 - タスク管理の規則を変えた（agent リポジトリと共通）。`tasks/` は今すぐ着手できるものと kiarina の判断待ち、`waiting/` は

@@ -202,9 +202,9 @@ mise run verify --kiapi --family embedding --fast
 - [mlx-vlm を 0.7.2 以降へ上げて Omni の互換 patch を外す](tasks/mlx-vlm-omni-patch-removal.md)
 - [Qwen3.8-27B の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
+- [mflux を 0.21.0 へ上げ、Qwen-Image-2.1 の fork pin を外す](tasks/mflux-qwen-image-21-unpin.md)
 
 ### 待ち（`waiting/`）
 
-- [mlx-video#52（LTX-2.5 対応）のレビューかマージ](waiting/mlx-video-ltx25-pr.md) — 目安 2026-10-05
-- [mlx-vlm #2309・#2311（prefix 再利用）のレビューかリリース](waiting/mlx-vlm-prefix-reuse-prs.md) — 目安 2026-10-05
-- [mflux#741（Qwen-Image-2.1 編集）を含む mflux のリリース](waiting/mflux-qwen-image-21-release.md) — 目安 2026-10-05
+- [mlx-video#52（LTX-2.5 対応）のレビューかマージ](waiting/mlx-video-ltx25-pr.md) — 目安 2026-10-12
+- [mlx-vlm #2309・#2311（prefix 再利用）のレビューかリリース](waiting/mlx-vlm-prefix-reuse-prs.md) — 目安 2026-10-12

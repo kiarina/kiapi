@@ -1,9 +1,9 @@
 # mlx-video#52（LTX-2.5 対応）のレビューかマージ
 
 - 待っているもの: 上流 PR [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52) のレビュー指摘、またはマージ。
-  2026-09-28 時点で OPEN、レビュー・コメントなし（最終更新 2026-09-15）
+  2026-10-05 時点で OPEN、レビュー・コメントなし（最終更新 2026-09-15）
 - 確かめ方: `gh pr view 52 -R Blaizzy/mlx-video --json state,mergedAt,reviews,comments`
-- 確かめる目安: 2026-10-05
+- 確かめる目安: 2026-10-12
 - 満たされたら:
   - 指摘が来たら、対応するタスクを起こす。作業 checkout は `~/src/github.com/Blaizzy/mlx-video`。PR 本文や maintainer への
     返信は、送信前に日本語訳で kiarina の承認を取る。kiapi が使う API（`generate_video` の引数、`PipelineType.DFR`、
