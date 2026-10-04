@@ -32,13 +32,16 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Install mise
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5
         with:
-          version: 2026.9.1
+          version: 2026.10.2
           cache: true
           install: false
 
       - name: Setup tools via mise
+        env:
+          # mise-action v5 no longer exports its token to later steps.
+          GITHUB_TOKEN: ${{ github.token }}
         run: mise install
 
       - name: Install dependencies

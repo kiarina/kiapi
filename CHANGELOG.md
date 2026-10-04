@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   uvicorn 0.54.0, starlette 1.7.0 and other transitive updates. huggingface-hub 2
   stays blocked by transformers, tokenizers and mflux (`<2.0`), and opencv-python 5
   by mflux (`<5.0`).
+- Development tooling: ruff 0.16.10, mypy 2.4.0, vite 8.3.2 and `@types/node`
+  26.6.4 for the web UI. CI and release workflows use mise-action v5 with mise
+  2026.10.2.
 
 ## [0.8.0] - 2026-09-26
 
