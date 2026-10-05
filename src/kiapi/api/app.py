@@ -33,6 +33,7 @@ from .setup.router import router as setup_router
 from .ui.router import ASSETS_PATH as ui_assets_path
 from .ui.router import assets as ui_assets
 from .ui.router import router as ui_router
+from .video.h3.router import router as h3_router
 from .video.ltx2.router import router as ltx2_router
 from .web.router import router as web_router
 
@@ -155,6 +156,7 @@ app.include_router(zimage_router)
 app.include_router(acestep_router)
 app.include_router(audiogen_router)
 app.include_router(ltx2_router)
+app.include_router(h3_router)
 app.include_router(web_router)
 app.include_router(setup_router)
 app.include_router(ui_router)

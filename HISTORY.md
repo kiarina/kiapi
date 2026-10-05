@@ -3,6 +3,18 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-06 — MiniMax H3（Ref2VA）を h3 family として足した
+
+- 事前の評価（2026-10-04、labs `2026/10/04/minimax-h3-ref2va-eval`）で、手元の実装のうち mlx-serve（Zig、MIT）が Ref2VA の入力を
+  公式の仕様どおりすべて扱えると確かめた。h3.c（C、MIT）・mlx-h3（Python、LICENSE なし）・PipeNetwork（Python、Ref2VA なし）は採らなかった
+- エンジンは mlx-serve の配布版 v26.10.1 をサブプロセスで動かす。常駐させると待機中に約 29 GB を握るので、ジョブごとに起動して止める
+  （transient、予約 50 GB。実測ピークは 960x544・124 フレーム・参照動画入りで 43 GB。1344x768 は未計測）
+- 重みは 8bit の `ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit`、Turbo は LightX2V の Ref2VA 8 ステップ v1.0 の ComfyUI 形式
+  （diffusers 形式は mlx-serve の部品名に 0/259 で合わない）。Turbo を既定にした
+- サーバー機で `mise run verify --kiapi --family h3` が 6/6 通った（256x256・22 フレーム、テキストのみ 35 秒、画像＋音声 70 秒、
+  動画＋その音声 55 秒）。verify はサービスを止めて終わった後に起動し直す
+- Context-IR の代わり（chat で 6 欄の依頼文を書く）は入れていない。README で公式ガイドを案内する
+
 ## 2026-10-05 — 依存の定期巡回と待ちの確認
 
 - 開発ツールと CI を更新した（`013306e`）。ruff 0.16.10、mypy 2.4.0、web の vite 8.3.2・`@types/node` 26.6.4。CI と release の

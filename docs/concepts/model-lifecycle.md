@@ -83,6 +83,9 @@ Some capabilities load a process instead of a Python model object:
 Core still sees a payload with `load` and `release` behavior, so memory, TTL,
 jobs, and single-flight execution apply uniformly.
 
+`h3` also runs a subprocess, the mlx-serve binary, but only for the duration of
+one job: it is transient and reserves its peak like the other video families.
+
 ## Dependency Isolation
 
 ACE-Step requires a Transformers version incompatible with the main kiapi

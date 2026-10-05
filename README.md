@@ -19,7 +19,7 @@ kiapi is an API server that uses a Mac Studio M4 Max with 128GB of memory at hom
 | Embedding | text + image input support |
 | Image generation | text2image, image2image, image editing, and LoRA training support |
 | Music and sound-effect generation | text2audio, cover, repaint, and extract support |
-| Video generation | text2video, image2video, and audio2video support |
+| Video generation | text2video, image2video, and audio2video support<br>video with stereo audio from image, video, and audio references |
 | Web | search + fetch support |
 
 See: [API Documents](https://kiarina.github.io/kiapi/)
@@ -96,11 +96,14 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  |  | [Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler) | model weights | LTX-2.x Community License | Gated. Detailing adapter for `pipeline="dfr"`. |
 |  |  | [mlx-community/gemma-4-e2b-it-bf16](https://huggingface.co/mlx-community/gemma-4-e2b-it-bf16) | model weights | Gemma Terms of Use | Prompt enhancer for `enhance_prompt`. |
 |  |  | [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | model weights | Not declared upstream | The model card has no license metadata; verify rights before use. |
+|  | [h3](src/kiapi/capabilities/h3/README.md) | [ddalcu/mlx-serve](https://github.com/ddalcu/mlx-serve) | binary release | MIT | Pinned release archive; kiapi starts it for each MiniMax H3 job. |
+|  |  | [ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit](https://huggingface.co/ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit) | model weights | MiniMax H3 Community License | 8-bit pack of [MiniMaxAI/MiniMax-H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) Ref2VA. Not licensed in the EU, the UK, South Korea, or the United States; commercial use above USD 20M annual revenue needs a separate license; redistribution must show "Powered by MiniMax H3". |
+|  |  | [lightx2v/Minimax-h3-Turbo](https://huggingface.co/lightx2v/Minimax-h3-Turbo) | LoRA weights | Apache-2.0 | Ref2VA Turbo 8-step LoRA used by `turbo=true`. |
 | web | [web](src/kiapi/capabilities/web/README.md) | [searxng/searxng](https://github.com/searxng/searxng) / `searxng/searxng:latest` | Docker image | AGPL-3.0 | Web search backend. AGPL obligations can matter for network services. |
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend. |
 
 > [!NOTE]
-> Using all resources at once requires a little under 600GB of disk space in total.
+> Using all resources at once requires a little under 700GB of disk space in total.
 > It also consumes a little under 50GB of memory at peak.
 > For the size and memory consumption of each resource, see the per-family links above.
 
@@ -141,6 +144,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 | audio | acestep | `POST /v1/audio/acestep` | [ACE-Step API details](src/kiapi/capabilities/acestep/README.md) |
 |  | audiogen | `POST /v1/audio/audiogen` | [AudioGen API details](src/kiapi/capabilities/audiogen/README.md) |
 | video | ltx2 | `POST /v1/video/ltx2` | [LTX-2 API details](src/kiapi/capabilities/ltx2/README.md) |
+|  | h3 | `POST /v1/video/h3` | [MiniMax H3 API details](src/kiapi/capabilities/h3/README.md) |
 | web |  | `POST /v1/web` | [Web API details](src/kiapi/capabilities/web/README.md) |
 | core | files | `POST /v1/files` | Upload input files, LoRA adapters, and other files, then issue a `file_id`. |
 |  |  | `GET /v1/files` | Return a list of stored files. |
@@ -176,7 +180,7 @@ kiapi automatically uses 80% of installed memory as the effective budget on
 startup. If a model's required memory does not fit in that budget, requests
 return 503 as an insufficient memory budget error.
 
-`kiapi activate --all` uses a little under 600GB of disk capacity, including
+`kiapi activate --all` uses a little under 700GB of disk capacity, including
 model weights and Docker images. At first, it is recommended to use `kiapi activate`
 to set up only the capabilities you need.
 
@@ -197,7 +201,7 @@ kiapi status
 
 # Prepare model weights, Docker images, and dedicated venv environments
 kiapi activate                   # Choose targets from the interactive list
-kiapi activate --all             # Set up everything (just under 600GB)
+kiapi activate --all             # Set up everything (just under 700GB)
 kiapi activate --family acestep  # Set up only the specified family
 
 # Verify the setup

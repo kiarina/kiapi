@@ -1,0 +1,718 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi MiniMax H3 API",
+    "description": "Video with stereo audio from text and ordered references, with MiniMax H3.\n\nMiniMax H3 (Hailuo 3.0) is a 33B joint video + audio diffusion transformer.\nkiapi runs its **Ref2VA** checkpoint, which takes text plus up to 9 reference\nimages, 3 reference videos and 3 reference audio clips (12 files at most), and\nalso generates from text alone.\n\n## Upstream docs\n- [MiniMaxAI/MiniMax-H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) — model card, prompting guide, and the MiniMax H3 Community License\n- [Prompt guide for references](https://github.com/MiniMax-AI/MiniMax-H3/blob/main/skills/h3-prompt-writing/references/ref-en.txt) — the six-section format H3 was trained on\n- [mlx-serve](https://github.com/ddalcu/mlx-serve) — the MLX engine kiapi runs\n- [lightx2v/Minimax-h3-Turbo](https://huggingface.co/lightx2v/Minimax-h3-Turbo) — the Turbo LoRA\n\n## How a run works\n\nEach job starts an mlx-serve process, generates, and stops it. kiapi reserves\nabout 50 GB per run. A run takes tens of minutes, so use `mode=async` and poll\n`GET /v1/jobs/{job_id}`; progress reports the denoising step.\n\nMeasured on an M4 Max 128 GB at 960x544, 124 frames, Turbo (8 steps):\n\n| References | Time |\n|---|---:|\n| text or images (any number), voices | about 20 min |\n| plus one 3 s reference video | about 31 min |\n| plus one 5 s reference video | about 50 min |\n\nReference video frames join the sequence at every step, so their length drives\nthe time. Images are resized to the output size and add little. Without Turbo\n(20 steps) a run takes about 2.5x as long.\n\n## References and labels\n\nRefer to references in the prompt by type and 1-based position:\n\n- `images` → `<Picture 1>`, `<Picture 2>`, ...\n- `videos` → `<Video 1>`, ...\n- audio → `<Audio 1>`, ...: with `use_video_audio`, each video's soundtrack takes\n  the next label in video order first; then the standalone `audios` follow.\n\nStandalone audio needs at least one image or video. Reference videos are cut to\nthe generated length.\n\n## Writing prompts\n\nH3 was trained on structured prompts that MiniMax produces with a hosted\nrewriter (H3-Context-IR), which is not part of the open release. Plain sentences\nwork, but the six sections of the guide above (`subject_definitions`, `summary`,\n`retention_analysis`, `detailed_description`, `overall_soundscape`,\n`non_diegetic_music`) follow references more faithfully. A chat model given the\nguide and the references can write them. Put dialogue inside\n`<d>[Japanese] ...</d>`.\n\n## What works well\n\n- Keeping characters from reference images, including back views and several\n  characters in one shot.\n- Taking setting, camera and motion from reference videos.\n- Speaking given lines with a reference voice.\n\nStrictly preserving a source video (editing, continuing from its last frame) is\nweaker than MiniMax's hosted service: framing and faces can drift.\n\n## License\n\nThe weights are under the MiniMax H3 Community License: not available in the\nEU, the UK, South Korea and the United States, commercial use above USD 20M\nannual revenue needs a separate license, and redistribution must show\n\"Powered by MiniMax H3\". The Turbo LoRA is Apache-2.0.\n",
+    "version": "0.8.0"
+  },
+  "paths": {
+    "/v1/video/h3/generate": {
+      "post": {
+        "summary": "Generate",
+        "description": "Generate an MP4 with stereo audio from text and ordered references.\n\n`images`, `videos` and `audios` are referred to in the prompt as\n`<Picture N>`, `<Video N>` and `<Audio N>`. Without references the model\ngenerates from text alone.\n\nA run takes tens of minutes, so the default `mode` is `async`: it returns\n202 immediately; poll GET /v1/jobs/{job_id} and fetch the artifact via\nGET /v1/files/{file_id}. With `sync` and `Accept` other than JSON, the raw\nMP4 is returned with `X-Kiapi-File-Id` / `X-Kiapi-Job-Id` headers; the\nJob JSON `result` follows VideoResponse.",
+        "operationId": "generate_v1_video_h3_generate_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobVideoResponse"
+                }
+              },
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Async job accepted. Poll GET /v1/jobs/{job_id}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/video/h3/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_video_h3_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Video H3 Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsyncJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "In-memory job id. Poll GET /v1/jobs/{job_id} to inspect status, progress, result, and artifacts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Job type. Generation APIs use values such as zimage, flux2-edit, or acestep-extract.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Initial job status. Async responses are normally queued unless the worker starts immediately.",
+            "examples": [
+              "queued"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "type",
+          "status"
+        ],
+        "title": "AsyncJobResponse"
+      },
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "GenerateRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model variant (see GET /v1/video/h3/models). Omit for the default."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "title": "Mode",
+            "description": "`async` (default) returns 202 with a job_id immediately — poll GET /v1/jobs/{job_id}. A run takes tens of minutes, so `sync` usually times out (504) while the job keeps running.",
+            "default": "async"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Description of the video and its sound. Refer to references as `<Picture N>`, `<Video N>` and `<Audio N>` (1-based per type, see the API description for the numbering). Write dialogue inside `<d>[Japanese] ...</d>`. The six-section format of the official guide gives the most faithful results.",
+            "examples": [
+              "The pink cat character from <Picture 1> waves at the camera and hops happily on a sunny park lawn."
+            ]
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Images",
+            "description": "Reference images, in `<Picture 1>`, `<Picture 2>`, ... order (at most 9). Use them for characters, objects, scenes, or styles."
+          },
+          "videos": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Videos",
+            "description": "Reference videos, in `<Video 1>`, ... order (at most 3, each at least 2 seconds). Each is cut to the generated length. Use them for setting, camera, motion, editing, or continuation."
+          },
+          "use_video_audio": {
+            "type": "boolean",
+            "title": "Use Video Audio",
+            "description": "Also pass each reference video's soundtrack. Soundtracks take the first `<Audio N>` labels, in video order, before the standalone `audios`.",
+            "default": false
+          },
+          "audios": {
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Audios",
+            "description": "Standalone reference audio clips (at most 3, 2 to 15 seconds each), for a voice timbre, music, or sound to reuse. Needs at least one image or video reference."
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "Output width in pixels. Omit for server default 960. Must be a positive multiple of 32; width * height may not exceed 1344 * 768."
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "Output height in pixels. Omit for server default 544. Must be a positive multiple of 32."
+          },
+          "num_frames": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Frames",
+            "description": "Number of output frames at 24 fps. Omit for server default 124 (~5.2 s). Must satisfy `5 + 17*k` (for example 22, 56, 124, 243, 362)."
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps",
+            "description": "Denoising steps. Omit for 8 with `turbo` and 20 without it. Time grows linearly with steps."
+          },
+          "turbo": {
+            "type": "boolean",
+            "title": "Turbo",
+            "description": "Apply the LightX2V Ref2VA Turbo LoRA (8-step distillation). Disable for the base model at 20 steps, about 2.5x slower.",
+            "default": true
+          },
+          "fast": {
+            "type": "boolean",
+            "title": "Fast",
+            "description": "mlx-serve's approximate speed-up (velocity caching and attention broadcast). Faster but lossy; off by default.",
+            "default": false
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Random seed for reproducibility. Omit for a random seed (the resolved seed is recorded in the result `params`)."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateRequest"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "JobVideoResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobVideoResponse"
+      },
+      "VideoResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced MP4. Fetch metadata at GET /v1/files/{id} or bytes at /download."
+          },
+          "video_bytes": {
+            "type": "integer",
+            "title": "Video Bytes",
+            "description": "Size of the produced MP4 in bytes."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Prompt used for the generation."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Resolved parameters actually used for the run (dimensions, frame count, steps, turbo, fast, use_video_audio, seed), so the result is reproducible."
+          },
+          "references": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "References",
+            "description": "Number of references passed, by kind (images, videos, audios)."
+          },
+          "has_audio": {
+            "type": "boolean",
+            "title": "Has Audio",
+            "description": "Whether the MP4 carries the generated audio."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings",
+            "description": "kiapi extension: server-side timing."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "video_bytes",
+          "prompt",
+          "params",
+          "references",
+          "has_audio",
+          "timings"
+        ],
+        "title": "VideoResponse",
+        "description": "Capability-specific ``result`` for a succeeded MiniMax H3 generation job."
+      },
+      "_Timings": {
+        "properties": {
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock time in seconds, from starting mlx-serve to the MP4."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "h3",
+  "x-kiapi-domain": "video",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

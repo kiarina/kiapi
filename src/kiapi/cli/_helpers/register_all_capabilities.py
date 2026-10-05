@@ -5,6 +5,7 @@ from kiapi.capabilities.depthpro import register as register_depthpro
 from kiapi.capabilities.embedding import register as register_embedding
 from kiapi.capabilities.ernie import register as register_ernie
 from kiapi.capabilities.flux2 import register as register_flux2
+from kiapi.capabilities.h3 import register as register_h3
 from kiapi.capabilities.ideogram4 import register as register_ideogram4
 from kiapi.capabilities.ltx2 import register as register_ltx2
 from kiapi.capabilities.qwen import register as register_qwen
@@ -30,6 +31,7 @@ def register_all_capabilities() -> None:
     register_embedding()
     register_ernie()
     register_flux2()
+    register_h3()
     register_ideogram4()
     register_ltx2()
     register_qwen()

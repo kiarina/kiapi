@@ -751,6 +751,62 @@ kiapi.capabilities.ltx2:
   # ltx25_progress_eta_base_s: 105.0
 
 #--------------------------------------------------------------------------------
+# Settings for MiniMax H3 weights, the mlx-serve engine, and request limits.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.h3:
+  # Model repo: str
+  #   Hugging Face repo ID for the 8-bit Ref2VA pack that mlx-serve loads.
+  # model_repo: ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit
+  #--------------------------------------------------
+  # Turbo LoRA repo: str
+  #   Hugging Face repo ID holding the Ref2VA Turbo LoRA.
+  # turbo_lora_repo: lightx2v/Minimax-h3-Turbo
+  #--------------------------------------------------
+  # Turbo LoRA file: str
+  #   Turbo LoRA file in the repo. Use the ComfyUI layout: mlx-serve does not match the diffusers layout's module names.
+  # turbo_lora_file: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors
+  #--------------------------------------------------
+  # mlx-serve release URL: str
+  #   Release archive of the mlx-serve binary that runs MiniMax H3.
+  # mlx_serve_url: "https://github.com/ddalcu/mlx-serve/releases/download/v26.10.1/mlx-serve-bin-macos-arm64.tar.gz"
+  #--------------------------------------------------
+  # mlx-serve version: str
+  #   Version label of `mlx_serve_url`; names the local install directory.
+  # mlx_serve_version: 26.10.1
+  #--------------------------------------------------
+  # Startup timeout seconds: float
+  #   Seconds to wait for the mlx-serve process to accept requests.
+  # startup_timeout_s: 300.0
+  #--------------------------------------------------
+  # Maximum pixels: int
+  #   Upper limit for width * height (the released 768p canvas).
+  # max_pixels: 1032192
+  #--------------------------------------------------
+  # Maximum frame count: int
+  #   Upper limit for the frame count (15 seconds at 24 fps).
+  # max_num_frames: 362
+  #--------------------------------------------------
+  # Default width: int
+  #   Video width in pixels used when a request omits width.
+  # default_width: 960
+  #--------------------------------------------------
+  # Default height: int
+  #   Video height in pixels used when a request omits height.
+  # default_height: 544
+  #--------------------------------------------------
+  # Default frame count: int
+  #   Generated frame count used when a request omits num_frames (~5.2 s).
+  # default_num_frames: 124
+  #--------------------------------------------------
+  # Default Turbo steps: int
+  #   Denoising steps used with the Turbo LoRA when a request omits steps.
+  # default_turbo_steps: 8
+  #--------------------------------------------------
+  # Default steps: int
+  #   Denoising steps used without Turbo when a request omits steps.
+  # default_steps: 20
+
+#--------------------------------------------------------------------------------
 # Settings for Web search/fetch backends and request defaults.
 #--------------------------------------------------------------------------------
 kiapi.capabilities.web:
