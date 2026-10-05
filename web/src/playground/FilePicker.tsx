@@ -11,7 +11,8 @@ export type Accept = "image" | "audio" | "video" | "any";
 // Which files a FileRef field expects, from its name.
 export function acceptFor(field: string): Accept {
   if (/image/.test(field)) return "image";
-  if (field === "audio" || field === "source") return "audio";
+  if (/video/.test(field)) return "video";
+  if (/audio/.test(field) || field === "source") return "audio";
   return "any";
 }
 

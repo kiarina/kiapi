@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- web UI: file pickers for fields named after videos or audio (such as h3's
+  `videos` and `audios`) list only video or audio files.
 - web UI: choose search categories and engines from the running SearXNG
   configuration instead of entering their names manually.
 - web: enable Bing in the bundled SearXNG configuration so searches still return
