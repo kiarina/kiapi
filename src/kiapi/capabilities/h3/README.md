@@ -32,12 +32,20 @@ At most 12 references in total.
 
 ### Prompts
 
-H3 was trained on six-section prompts that MiniMax writes with a hosted rewriter
-(H3-Context-IR) that is not released. Plain sentences work; for faithful use of
-references, follow the
-[full-reference guide](https://github.com/MiniMax-AI/MiniMax-H3/blob/main/skills/h3-prompt-writing/references/ref-en.txt).
-A chat model given the guide and the references can write it. Write dialogue as
+H3 was trained on structured prompts that MiniMax writes with a hosted rewriter
+(H3-Context-IR) that is not released. `enhance_prompt` (default `true`) stands in
+for it: before generation, a kiapi chat model (`qwen3.8-27b`, setting
+`KIAPI_H3_ENHANCE_MODEL`) reads MiniMax's
+[prompt guide](https://github.com/MiniMax-AI/MiniMax-H3/tree/main/skills/h3-prompt-writing/references)
+(`ref-en.txt` with references, `base-en.txt` without), sees the reference images
+and three frames of each reference video, and rewrites the request into that
+format. It cannot hear audio, so say in the request what each `<Audio N>` is for.
+The rewrite takes about 2 minutes and is recorded in `params.enhanced_prompt`.
+A prompt that already uses the format is sent as is. Write dialogue as
 `<d>[Japanese] ...</d>`.
+
+The guides have no license in their repository, so kiapi does not ship them:
+`kiapi activate --family h3` downloads them from a pinned commit.
 
 ## API Docs
 

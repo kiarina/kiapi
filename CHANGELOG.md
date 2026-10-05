@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - h3: new video family for MiniMax H3 Ref2VA (`POST /v1/video/h3/generate`).
   Generates video with stereo audio from text and up to 9 image, 3 video and 3
   audio references, through a per-job mlx-serve subprocess, with the LightX2V
-  Turbo LoRA by default.
+  Turbo LoRA by default. `enhance_prompt` (default on) rewrites the request into
+  MiniMax's structured prompt format with a kiapi chat model.
 - web UI: show image thumbnails in image searches and video previews with
   inline playback when SearXNG provides a supported embed URL.
 - web UI: each Web search result can fill its URL into the Fetch form for a

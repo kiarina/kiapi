@@ -35,4 +35,5 @@ def resolve_generate_params(
         turbo=req.turbo,
         fast=req.fast,
         use_video_audio=req.use_video_audio,
+        enhance_prompt=req.enhance_prompt,
     )

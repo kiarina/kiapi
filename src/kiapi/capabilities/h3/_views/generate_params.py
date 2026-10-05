@@ -17,6 +17,9 @@ class GenerateParams(BaseModel):
     use_video_audio: bool = Field(
         description="Whether reference video soundtracks are passed."
     )
+    enhance_prompt: bool = Field(
+        description="Whether the prompt is rewritten into the structured format."
+    )
 
     def gen_params(self) -> dict:
         return {
@@ -28,5 +31,6 @@ class GenerateParams(BaseModel):
             "turbo": self.turbo,
             "fast": self.fast,
             "use_video_audio": self.use_video_audio,
+            "enhance_prompt": self.enhance_prompt,
             "seed": self.seed,
         }

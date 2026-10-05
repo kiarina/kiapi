@@ -5,9 +5,11 @@ from kiapi.core.app import AppContext
 from kiapi.core.file import FileID, FileRef
 from kiapi.core.job import JobResult
 from kiapi.core.model import model_registry
+from kiapi.core.workdir import create_work_dir
 
 from .._settings import settings_manager
 from .._views.generate_request import GenerateRequest
+from .enhance_prompt import enhance_prompt
 from .resolve_generate_params import resolve_generate_params
 
 
@@ -25,8 +27,15 @@ def handle_generate(
         "audios": _stage(ctx, req.audios, "audio"),
     }
 
+    prompt = enhance_prompt(
+        ctx, params, staged, settings, create_work_dir("video/h3/enhance")
+    )
+    params = params.model_copy(update={"prompt": prompt})
+
     ctx.memory_manager.reserve(spec.weight_gb + spec.peak_headroom_gb)
-    result = spec.module.run_generate(params, settings, ctx.file_store, staged)
+    result = spec.module.run_generate(
+        params, settings, ctx.file_store, staged, request_prompt=req.prompt
+    )
 
     return result, [result["file_id"]]
 

@@ -16,6 +16,7 @@ def check(ctx: AppContext, spec: ModelSpec) -> CheckResult:
             height=256,
             num_frames=22,
             seed=1,
+            enhance_prompt=False,
         ),
     )
     return build_check_result(spec, result, artifacts)

@@ -8,7 +8,7 @@ from .._constants.description import DESCRIPTION
 from .._constants.variants import H3_VARIANT
 from .._models import h3
 from .._settings import settings_manager
-from .mlx_serve_paths import mlx_serve_archive
+from .mlx_serve_paths import PROMPT_GUIDES, mlx_serve_archive, prompt_guide
 
 
 def register() -> None:
@@ -48,6 +48,14 @@ def register() -> None:
                     url=settings.mlx_serve_url,
                     path=str(mlx_serve_archive(settings)),
                     disk_gb=0.1,
+                ),
+                *(
+                    UrlFileResource(
+                        url=settings.prompt_guide_base_url + name,
+                        path=str(prompt_guide(settings, name)),
+                        disk_gb=0.0,
+                    )
+                    for name in PROMPT_GUIDES
                 ),
                 HfSnapshotResource(repo=settings.model_repo, disk_gb=69.3),
                 HfSnapshotResource(

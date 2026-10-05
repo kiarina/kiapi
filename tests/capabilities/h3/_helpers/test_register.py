@@ -34,6 +34,8 @@ def test_register_downloads_engine_pack_and_turbo_lora(
     archive = resources[0]
     assert isinstance(archive, UrlFileResource)
     assert archive.url.endswith("/mlx-serve-bin-macos-arm64.tar.gz")
+    guides = [r for r in resources if isinstance(r, UrlFileResource)][1:]
+    assert [r.url.rsplit("/", 1)[1] for r in guides] == ["base-en.txt", "ref-en.txt"]
     snapshots = {r.repo: r for r in resources if isinstance(r, HfSnapshotResource)}
     assert "ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit" in snapshots
     lora = snapshots["lightx2v/Minimax-h3-Turbo"]

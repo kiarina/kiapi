@@ -50,6 +50,31 @@ class H3Settings(BaseSettings):
         description="Version label of `mlx_serve_url`; names the local install directory.",
     )
 
+    prompt_guide_base_url: str = Field(
+        default=(
+            "https://raw.githubusercontent.com/MiniMax-AI/MiniMax-H3/"
+            "d21241f0a4b3acbb34c97dae47fa417b7065e438/skills/h3-prompt-writing/"
+            "references/"
+        ),
+        title="Prompt guide base URL",
+        description=(
+            "Directory URL of MiniMax's prompt guides (`base-en.txt` for text only, "
+            "`ref-en.txt` for references) that `enhance_prompt` gives the chat model."
+        ),
+    )
+
+    enhance_model: str = Field(
+        default="qwen3.8-27b",
+        title="Prompt rewrite model",
+        description="kiapi chat model that rewrites prompts for `enhance_prompt`.",
+    )
+
+    enhance_max_tokens: int = Field(
+        default=3000,
+        title="Prompt rewrite max tokens",
+        description="Maximum tokens the chat model may generate for one rewrite.",
+    )
+
     startup_timeout_s: float = Field(
         default=300.0,
         title="Startup timeout seconds",

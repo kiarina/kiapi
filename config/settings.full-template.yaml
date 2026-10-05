@@ -774,6 +774,18 @@ kiapi.capabilities.h3:
   #   Version label of `mlx_serve_url`; names the local install directory.
   # mlx_serve_version: 26.10.1
   #--------------------------------------------------
+  # Prompt guide base URL: str
+  #   Directory URL of MiniMax's prompt guides (`base-en.txt` for text only, `ref-en.txt` for references) that `enhance_prompt` gives the chat model.
+  # prompt_guide_base_url: "https://raw.githubusercontent.com/MiniMax-AI/MiniMax-H3/d21241f0a4b3acbb34c97dae47fa417b7065e438/skills/h3-prompt-writing/references/"
+  #--------------------------------------------------
+  # Prompt rewrite model: str
+  #   kiapi chat model that rewrites prompts for `enhance_prompt`.
+  # enhance_model: qwen3.8-27b
+  #--------------------------------------------------
+  # Prompt rewrite max tokens: int
+  #   Maximum tokens the chat model may generate for one rewrite.
+  # enhance_max_tokens: 3000
+  #--------------------------------------------------
   # Startup timeout seconds: float
   #   Seconds to wait for the mlx-serve process to accept requests.
   # startup_timeout_s: 300.0

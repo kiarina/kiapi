@@ -27,6 +27,8 @@ def run_generate(
     settings: H3Settings,
     files: FileStore,
     staged: dict[str, list[str]],
+    *,
+    request_prompt: str,
 ) -> dict[str, Any]:
     """Blocking generation. Returns artifact metadata (the job's ``result``)."""
     reporter = ProgressReporter.current()
@@ -81,9 +83,13 @@ def run_generate(
     has_audio = _write_mp4(result, tmp, video_path)
     total_s = round(time.time() - t0, 2)
 
-    gen_params = params.gen_params() | {"num_frames": int(result["frames"])}
+    gen_params = params.gen_params() | {
+        "prompt": request_prompt,
+        "enhanced_prompt": params.prompt if params.prompt != request_prompt else None,
+        "num_frames": int(result["frames"]),
+    }
     meta = {
-        "prompt": params.prompt,
+        "prompt": request_prompt,
         "params": gen_params,
         "references": {kind: len(paths) for kind, paths in staged.items()},
         "has_audio": has_audio,

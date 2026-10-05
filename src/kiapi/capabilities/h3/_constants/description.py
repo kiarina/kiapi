@@ -43,13 +43,14 @@ the generated length.
 
 ## Writing prompts
 
-H3 was trained on structured prompts that MiniMax produces with a hosted
-rewriter (H3-Context-IR), which is not part of the open release. Plain sentences
-work, but the six sections of the guide above (`subject_definitions`, `summary`,
-`retention_analysis`, `detailed_description`, `overall_soundscape`,
-`non_diegetic_music`) follow references more faithfully. A chat model given the
-guide and the references can write them. Put dialogue inside
-`<d>[Japanese] ...</d>`.
+H3 was trained on structured prompts that MiniMax writes with a hosted rewriter
+(H3-Context-IR), which is not part of the open release. With `enhance_prompt`
+(default) a kiapi chat model rewrites the request into that format first, using
+the official guide, the reference images, and frames of the reference videos.
+It cannot hear audio, so say what each `<Audio N>` is for. It adds about 2
+minutes; the text used is in `params.enhanced_prompt`. To write the structured
+prompt yourself, follow the guide above; such a prompt is sent unchanged. Put
+dialogue inside `<d>[Japanese] ...</d>`.
 
 ## What works well
 

@@ -75,6 +75,17 @@ class GenerateRequest(BaseModel):
             "reuse. Needs at least one image or video reference."
         ),
     )
+    enhance_prompt: bool = Field(
+        default=True,
+        description=(
+            "Rewrite the prompt into MiniMax's structured format before generation, "
+            "with a kiapi chat model that sees the official prompt guide, the "
+            "reference images, and frames of the reference videos (it cannot hear "
+            "audio, so say in the prompt what each `<Audio N>` is for). Adds about "
+            "2 minutes. Skipped when the prompt already uses the format. The result "
+            "`params.enhanced_prompt` holds the text used."
+        ),
+    )
     width: int | None = Field(
         default=None,
         description=(
@@ -138,6 +149,7 @@ class GenerateRequest(BaseModel):
             "height": self.height,
             "num_frames": self.num_frames,
             "steps": self.steps,
+            "enhance_prompt": self.enhance_prompt,
             "turbo": self.turbo,
             "fast": self.fast,
             "seed": self.seed,

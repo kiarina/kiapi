@@ -25,7 +25,9 @@ class VideoResponse(BaseModel):
     params: dict[str, Any] = Field(
         description=(
             "Resolved parameters actually used for the run (dimensions, frame count, "
-            "steps, turbo, fast, use_video_audio, seed), so the result is reproducible."
+            "steps, turbo, fast, use_video_audio, seed), so the result is reproducible. "
+            "`enhanced_prompt` is the rewritten prompt sent to the model, or null when "
+            "the request prompt was used as is."
         )
     )
     references: dict[str, int] = Field(

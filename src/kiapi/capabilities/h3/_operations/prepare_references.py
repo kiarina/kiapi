@@ -72,7 +72,7 @@ def _video_entry(
     if not frames:
         raise ValueError(f"no frames could be decoded from reference video {src.name}")
     entry: dict[str, Any] = {"frames": [_b64(frame) for frame in frames]}
-    if with_audio and _has_audio(src):
+    if with_audio and has_audio(src):
         seconds = len(frames) / FPS
         wav = out_dir / "audio.wav"
         _ffmpeg("-i", str(src), "-vn", "-t", f"{seconds:.3f}", str(wav))
@@ -92,7 +92,7 @@ def _as_wav(src: Path, dst: Path) -> Path:
     return dst
 
 
-def _has_audio(src: Path) -> bool:
+def has_audio(src: Path) -> bool:
     out = subprocess.run(
         [
             "ffprobe",

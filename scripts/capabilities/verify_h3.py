@@ -91,8 +91,12 @@ def main() -> None:
                 client,
                 verify_dir,
                 "1",
-                "text only (Turbo) -> mp4 with audio",
-                {"prompt": "a red fox walks through fresh snow, soft wind", **SMALL},
+                "text only (Turbo, prompt as is) -> mp4 with audio",
+                {
+                    "prompt": "a red fox walks through fresh snow, soft wind",
+                    "enhance_prompt": False,
+                    **SMALL,
+                },
                 lambda res: res["has_audio"] and res["params"]["steps"] == 8,
             )
         )
@@ -106,7 +110,7 @@ def main() -> None:
                 client,
                 verify_dir,
                 "2",
-                "image + audio references",
+                "image + audio references, rewritten prompt",
                 {
                     "prompt": (
                         "The pink cat character from <Picture 1> dances to the "
@@ -116,7 +120,11 @@ def main() -> None:
                     "audios": [song],
                     **SMALL,
                 },
-                lambda res: res["references"] == {"images": 1, "videos": 0, "audios": 1},
+                lambda res: (
+                    res["references"] == {"images": 1, "videos": 0, "audios": 1}
+                    and "subject_definitions:"
+                    in (res["params"]["enhanced_prompt"] or "")
+                ),
             )
         )
 
@@ -140,9 +148,24 @@ def main() -> None:
             )
         )
 
-        results.append(_rejected(client, "4", "num_frames off 5+17k", {"prompt": "x", "num_frames": 50}))
-        results.append(_rejected(client, "5", "width not multiple of 32", {"prompt": "x", "width": 300}))
-        results.append(_rejected(client, "6", "audio without image or video", {"prompt": "x", "audios": [song]}))
+        results.append(
+            _rejected(
+                client, "4", "num_frames off 5+17k", {"prompt": "x", "num_frames": 50}
+            )
+        )
+        results.append(
+            _rejected(
+                client, "5", "width not multiple of 32", {"prompt": "x", "width": 300}
+            )
+        )
+        results.append(
+            _rejected(
+                client,
+                "6",
+                "audio without image or video",
+                {"prompt": "x", "audios": [song]},
+            )
+        )
 
     print(f"\n{sum(results)}/{len(results)} passed; artifacts in {verify_dir}")
     sys.exit(0 if all(results) else 1)
