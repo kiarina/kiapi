@@ -19,8 +19,7 @@ class GenerateRequest(BaseModel):
         default=None,
         description=(
             "Model variant (see GET /v1/video/ltx2/models). Omit for the "
-            "default `ltx-2.5-distilled` (LTX-2.5, 22B). `distilled` is the "
-            "previous LTX-2 (19B) model."
+            "default `ltx-2.5-distilled` (LTX-2.5, 22B)."
         ),
     )
     mode: Literal["sync", "async"] = Field(
@@ -35,7 +34,7 @@ class GenerateRequest(BaseModel):
         ...,
         min_length=1,
         description=(
-            "Text description of the desired video. Distilled LTX-2 has no "
+            "Text description of the desired video. Distilled LTX-2.5 has no "
             "negative guidance, so describe the motion, subject, framing, and "
             "visual qualities you want rather than what to avoid."
         ),
@@ -131,7 +130,7 @@ class GenerateRequest(BaseModel):
     auto_duration: bool = Field(
         default=False,
         description=(
-            "LTX-2.5 only. Predict the frame count from the prompt (1 to 20 "
+            "Predict the frame count from the prompt (1 to 20 "
             "seconds, capped by the frame limit) instead of using `num_frames`. "
             "Omit `num_frames` when this is true. The result `num_frames` reports "
             "the generated length."
@@ -140,7 +139,7 @@ class GenerateRequest(BaseModel):
     enhance_prompt: bool = Field(
         default=False,
         description=(
-            "LTX-2.5 only. Expand the prompt into a detailed caption with Gemma 4 "
+            "Expand the prompt into a detailed caption with Gemma 4 "
             "E2B before generation. For I2V the reference image is also given to "
             "the enhancer."
         ),
@@ -148,7 +147,7 @@ class GenerateRequest(BaseModel):
     pipeline: Literal["distilled", "dfr"] = Field(
         default="distilled",
         description=(
-            "LTX-2.5 only. `dfr` (Diffusion Fidelity Rendering) generates keyframes "
+            "`dfr` (Diffusion Fidelity Rendering) generates keyframes "
             "and refines them with a detailing IC-LoRA for finer texture and "
             "steadier shapes, at roughly 1.7x the time. T2V only (no `image`, "
             "`end_image`, or `audio`); `generate_audio` is allowed."
@@ -157,7 +156,7 @@ class GenerateRequest(BaseModel):
     video_decoder: Literal["conv", "diffusion"] = Field(
         default="conv",
         description=(
-            "LTX-2.5 only. `diffusion` decodes with the experimental diffusion "
+            "`diffusion` decodes with the experimental diffusion "
             "video VAE, which tends to render smoother and more temporally "
             "stable detail, at roughly 1.5 to 2x the time. kiapi decodes it in "
             "2x2 spatial tiles to bound memory."

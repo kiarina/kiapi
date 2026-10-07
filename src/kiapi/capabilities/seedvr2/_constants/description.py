@@ -3,7 +3,7 @@ DESCRIPTION = """Image super-resolution upscaling (SeedVR2 via mflux).
 One operation: `/upscale` takes an input image and produces a higher-resolution
 version. SeedVR2 is diffusion-based super-resolution, **not** prompt-driven image
 generation — there is no prompt. To create or edit images from text, use the
-qwen / flux2 / zimage / ideogram4 families instead.
+qwen / flux2 / zimage families instead.
 
 ## Upstream docs
 - [mflux — SeedVR2](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/seedvr2/README.md) — the MLX engine kiapi runs

@@ -92,7 +92,7 @@ function classify(doc: OpenApiDoc, name: string, prop: SchemaRef): Pick<Field, "
   const v = variants[0] ?? {};
   const resolved = resolveRef(doc, v);
   if (variants.length > 1) {
-    // e.g. ideogram4's prompt (string or caption object) or seedvr2's resolution (int or "4k").
+    // e.g. seedvr2's resolution (int or "4k").
     return { kind: variants.some((x) => x.type === "string") && PROMPT_FIELDS.has(name) ? "prompt" : "text" };
   }
   if (refName(v) === "FileRef") return { kind: "file" };
@@ -219,10 +219,6 @@ export function buildPayload(op: Operation, values: Values): Values {
       case "text":
         // Unions such as seedvr2's resolution accept a number or a named preset.
         out[f.name] = f.acceptsInteger && /^-?\d+$/.test(String(v)) ? Number(v) : v;
-        break;
-      case "prompt":
-        // ideogram4 also takes a JSON caption object in `prompt`.
-        out[f.name] = typeof v === "string" && /^\s*\{/.test(v) ? safeJson(v) : v;
         break;
       default:
         out[f.name] = v;

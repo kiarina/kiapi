@@ -21,9 +21,7 @@ from .embedding.router import router as embedding_router
 from .files.router import router as files_router
 from .health.router import router as health_router
 from .image.depthpro.router import router as depthpro_router
-from .image.ernie.router import router as ernie_router
 from .image.flux2.router import router as flux2_router
-from .image.ideogram4.router import router as ideogram4_router
 from .image.qwen.router import router as qwen_router
 from .image.seedvr2.router import router as seedvr2_router
 from .image.zimage.router import router as zimage_router
@@ -147,9 +145,7 @@ app.include_router(chat_router)
 app.include_router(models_router)
 app.include_router(embedding_router)
 app.include_router(depthpro_router)
-app.include_router(ernie_router)
 app.include_router(flux2_router)
-app.include_router(ideogram4_router)
 app.include_router(qwen_router)
 app.include_router(seedvr2_router)
 app.include_router(zimage_router)

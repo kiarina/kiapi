@@ -14,21 +14,6 @@ class LTX2Settings(BaseSettings):
         protected_namespaces=(),
     )
 
-    model_repo: str = Field(
-        default="prince-canuma/LTX-2-distilled",
-        title="LTX-2 model repo",
-        description="Hugging Face repo ID for the LTX-2 model used for video generation.",
-    )
-
-    text_encoder_repo: str | None = Field(
-        default=None,
-        title="Text encoder repo",
-        description=(
-            "Hugging Face repo ID for a text encoder from a separate repo.\n"
-            "When None, the model's default text encoder is used."
-        ),
-    )
-
     ltx25_model_repo: str = Field(
         default="Lightricks/LTX-2.5",
         title="LTX-2.5 model repo",
@@ -98,15 +83,6 @@ class LTX2Settings(BaseSettings):
     # waiting); the schedule is paced to hit ~80% at this expected duration. Base
     # seconds for a 97-frame 512x512 job; scaled by frame count and resolution.
     # 0 disables the creep (progress stays at the coarse 0.0 until completion).
-    progress_eta_base_s: float = Field(
-        default=90.0,
-        title="Progress ETA base seconds",
-        description=(
-            "Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2 job.\n"
-            "The value is scaled by frame count and resolution. Set to 0 to disable it."
-        ),
-    )
-
     ltx25_progress_eta_base_s: float = Field(
         default=105.0,
         title="LTX-2.5 progress ETA base seconds",

@@ -2,7 +2,7 @@ DESCRIPTION = """Fast text-to-image generation and LoRA training (Z-Image via mf
 
 Two operations on Alibaba's Z-Image models: `/generate` (text-to-image) and
 `/train` (LoRA finetune). Z-Image is txt2img only — there is no image-to-image
-edit endpoint. To edit an existing image, use the ernie / qwen / flux2 families.
+edit endpoint. To edit an existing image, use the qwen / flux2 families.
 
 ## Upstream docs
 - [mflux — Z-Image](https://github.com/mflux-community/mflux/blob/main/src/mflux/models/z_image/README.md) — the MLX engine kiapi runs

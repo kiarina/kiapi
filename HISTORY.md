@@ -3,6 +3,16 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-08 — ernie・ideogram4 の family と ltx2 の `distilled` を外した
+
+- kiarina の判断で、使っていない family と古いモデルを削った。10/2 以降のサービスのログで、外からの生成の依頼は chat 150・qwen 17・
+  ernie 1・web 1 で、ideogram4 は 0 だった
+- ideogram4: 非商用（Ideogram Non-Commercial）で、ほかのリポジトリから呼ぶところが無い。文字入りの画像は qwen で足りる
+- ernie: zimage・qwen・flux2 と役割が重なる。kiarina-agi-image の `family=ernie` も同時に外す
+- ltx2 の `distilled`（prince-canuma/LTX-2-distilled、101 GB、ライセンスの明記なし）: 既定の LTX-2.5 で置き換わっている。
+  設定の `model_repo`・`text_encoder_repo`・`progress_eta_base_s` も消した（LTX-2.5 の設定名 `ltx25_*` はそのまま）
+- 全部入れたときのディスクは 700 GB 弱から約 500 GB になる。単体テスト 392 件が通った（GPU の verify は削っただけなので流していない）
+
 ## 2026-10-06 — MiniMax H3（Ref2VA）を h3 family として足した
 
 - 事前の評価（2026-10-04、labs `2026/10/04/minimax-h3-ref2va-eval`）で、手元の実装のうち mlx-serve（Zig、MIT）が Ref2VA の入力を

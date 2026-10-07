@@ -1,14 +1,14 @@
 # ltx2
 
-[mlx-video](https://github.com/Blaizzy/mlx-video) runs LTX-2.5 (default) and
-LTX-2 for short video generation.
+[mlx-video](https://github.com/Blaizzy/mlx-video) runs LTX-2.5 for short video
+generation.
 
 - **T2V**: Generate video from text
 - **I2V**: animate image as first or last frame
 - **A2V**: Drive motion and timing with voice
 - **T2V + Audio**: Generate audio along with video
-- **LTX-2.5 only**: automatic duration, prompt enhancement, DFR, and the
-  diffusion video decoder
+- **Options**: automatic duration, prompt enhancement, DFR, and the diffusion
+  video decoder
 
 ## API
 
@@ -47,7 +47,7 @@ Inferred mode:
 
 | Package | License | Description |
 |---|---|---|
-| [mlx-video](https://github.com/Blaizzy/mlx-video) | MIT | Run the LTX-2.5 / LTX-2 distilled pipelines on MLX. Installed by `kiapi activate --family ltx2` from a pinned commit (see below). |
+| [mlx-video](https://github.com/Blaizzy/mlx-video) | MIT | Run the LTX-2.5 distilled pipelines on MLX. Installed by `kiapi activate --family ltx2` from a pinned commit (see below). |
 
 LTX-2.5 support is under review upstream in
 [Blaizzy/mlx-video#52](https://github.com/Blaizzy/mlx-video/pull/52). Until it
@@ -64,7 +64,6 @@ rewritten during review. After the merge, pin an upstream commit again.
 | [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | [LTX-2.x Community License](https://huggingface.co/Lightricks/LTX-2.5) | HF gated. Accept the model terms before `kiapi activate` | 72.6 GB (7 files) | ~44 GB (transient) | `ltx-2.5-distilled` (default). 22B transformer, Gemma 4 text encoder, conv and diffusion video VAEs, audio VAE, spatial upscaler, and duration head. Only these files are downloaded, not the whole repo. |
 | [mlx-community/gemma-4-e2b-it-bf16](https://huggingface.co/mlx-community/gemma-4-e2b-it-bf16) | [Gemma](https://ai.google.dev/gemma/terms) | — | 10.2 GB | loaded only for `enhance_prompt` | Prompt enhancer for `ltx-2.5-distilled`. |
 | [Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler) | LTX-2.x Community License | HF gated | 0.3 GB | — | Detailing IC-LoRA for `pipeline="dfr"`. |
-| [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | [LTX-2 Community License Agreement](https://huggingface.co/Lightricks/LTX-2/blob/main/LICENSE) (derived from [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) Compliant with repo itself (no model card / LICENSE) | HF gated. However, use and distribution require license agreement | 101 GB | ~40 GB (transient) | `distilled`. The previous LTX-2 (19B) two-stage distilled pipeline. No CFG, about 11 steps inside. Does not accept the LTX-2.5 options. |
 
 Both models are transient: they load and release on every call.
 
@@ -81,7 +80,7 @@ Key defaults and limits:
 `duration = num_frames / fps`. At 24 fps, `97` takes about 4 seconds, `161` takes about 6.7 seconds,
 `241` takes about 10 seconds, `481` takes about 20 seconds, and `721` takes about 30 seconds.
 
-LTX-2.5 options (`ltx-2.5-distilled` only; `distilled` returns 422):
+LTX-2.5 options:
 
 | Item | Default value | Notes |
 |---|---:|---|
@@ -100,7 +99,7 @@ below come from that work and measure direct `mlx-video` runs.
 
 ### Architecture and resources
 
-LTX-2.5 is not a model-repository swap for the current 19B checkpoint:
+LTX-2.5 is not a model-repository swap for the previous 19B LTX-2 checkpoint:
 
 - The video/audio transformer has 22B parameters and uses a fixed distilled
   schedule with ancestral Euler sampling in stage 1.
@@ -127,7 +126,7 @@ The following measurements used a Mac Studio M4 Max with 128GB unified memory,
 768x512 output, 121 frames, and 24 fps. They measure direct `mlx-video`
 generation, not kiapi request overhead.
 
-| Mode | LTX-2.5 | Current LTX-2 | Difference |
+| Mode | LTX-2.5 | LTX-2 (19B) | Difference |
 |---|---:|---:|---:|
 | T2V | 108.7s / 37.81GB peak | 96.9s / 37.48GB peak | LTX-2.5 was about 12% slower |
 | I2V | 120.8s / 39.54GB peak | 101.7s / 39.35GB peak | LTX-2.5 was about 19% slower |
@@ -137,7 +136,7 @@ generation, not kiapi request overhead.
 All representative outputs contained 121 H.264 frames. Image checks found no
 NaNs, gray-frame output, or static output; audio checks found no NaNs or
 infinities. In the tested ocean scene, LTX-2.5 produced more natural color,
-finer wave/reflection detail, and better temporal consistency than the current
+finer wave/reflection detail, and better temporal consistency than the 19B
 LTX-2 model.
 
 Automatic duration prediction also completed end to end: a short prompt
@@ -252,9 +251,9 @@ upstream commit and rerun the full ltx2 verify.
 ## Notes
 
 - **transient model**:
-  LTX-2.5 and LTX-2 are not permanent models. Each call loads, generates, and frees the
-  pipeline, reserving a temporary memory budget with `memory.reserve()` first (about 44 GB
-  for `ltx-2.5-distilled`, 40 GB for `distilled`). They never appear as resident models in `/health`.
+  LTX-2.5 is not a permanent model. Each call loads, generates, and frees the
+  pipeline, reserving a temporary memory budget with `memory.reserve()` first (about 44 GB).
+  It never appears as a resident model in `/health`.
 - **Response format**:
   If sync produces only one MP4, it defaults to returning the raw MP4.
   You can trace the metadata from the `X-Kiapi-File-Id` / `X-Kiapi-Job-Id` headers.
@@ -268,11 +267,11 @@ upstream commit and rerun the full ltx2 verify.
   Lowering it makes it easier to tolerate changes.
 - **Progress**:
   mlx-video does not expose per-step progress callbacks. kiapi is
-  Time-based, relative to `progress_eta_base_s`, scaled by number of frames and resolution.
+  Time-based, relative to `ltx25_progress_eta_base_s`, scaled by number of frames and resolution.
   Stream synthetic progress.
 - **Notes on updating dependencies**:
   `mlx-video` is pinned to git commit because the API is changeable. When updating
-  `_models/ltx2.py` calls `generate_video` and routes `PipelineType.DISTILLED`.
+  `_models/ltx25.py` calls `generate_video` and routes `PipelineType.DISTILLED`.
   Please check it and verify it on the actual machine using `make verify-ltx2`.
 
 ## Quickstart
@@ -283,7 +282,7 @@ PARAMS=$(
 jq -n \
 --arg prompt "a cat walking through tall grass, sunny, shallow depth of field" \
 '{
-  model: "distilled",
+  model: "ltx-2.5-distilled",
   mode: "sync",
   prompt: $prompt,
   width: 512,

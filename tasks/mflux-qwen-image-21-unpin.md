@@ -18,7 +18,7 @@ hub 2 と opencv 5 の阻害は 0.21.0 でも解けない。
   `use_kv_cache`）が変わっていないか確かめる。報告した循環 import はマージ版で `reference/__init__.py` の遅延 re-export に
   なっているので、import を variant の module へ戻すかも決める
 - worktree で `mise run ci` を通し、qwen の full verify（`mise run verify --kiapi --family qwen`、image-2.1 は [9]〜[12]）と、
-  mflux を使う zimage / flux2 / ernie / ideogram4 / seedvr2 の full verify を通す。verify はサーバー機の稼働中サービスを止めるので、
+  mflux を使う zimage / flux2 / seedvr2 の full verify を通す。verify はサーバー機の稼働中サービスを止めるので、
   kiarina に時間を確かめてから行う
 - fork の `qwen-image-2.1-edit` branch（force-push しない）を消すのは、旧 kiapi を入れ直す可能性が無くなってから
 

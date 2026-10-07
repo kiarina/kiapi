@@ -1,4 +1,4 @@
-"""End-to-end verification for kiapi's video capability (LTX-2 distilled).
+"""End-to-end verification for kiapi's video capability (LTX-2.5 distilled).
 
 Exercises T2V (sync), I2V (sync, with an image input), async + poll, artifact
 download, and the validation error paths. Video generation is slow; this uses
@@ -231,7 +231,7 @@ def test_dfr_image_rejected(
         "pipeline": "dfr",
         "image": {"type": "file_id", "file_id": image_id},
     }
-    test_validation(client, "13", "pipeline=dfr + image", p, None, results)
+    test_validation(client, "11", "pipeline=dfr + image", p, None, results)
 
 
 SMALL = {"width": 256, "height": 256, "fps": 24}
@@ -302,25 +302,6 @@ def main() -> None:
                     saved_files,
                     results,
                     "7",
-                    "LTX-2 `distilled` T2V regression",
-                    {
-                        "model": "distilled",
-                        "prompt": "a calm ocean wave at sunset",
-                        "num_frames": 25,
-                        "seed": 1,
-                        **SMALL,
-                    },
-                    lambda res: res.get("params", {}).get("num_frames") == 25,
-                ),
-            ),
-            (
-                "8",
-                lambda: test_generate(
-                    client,
-                    verify_dir,
-                    saved_files,
-                    results,
-                    "8",
                     "LTX-2.5 auto_duration + enhance_prompt -> predicted frames",
                     {
                         "prompt": "a paper boat drifting down a rainy street",
@@ -333,13 +314,13 @@ def main() -> None:
                 ),
             ),
             (
-                "9",
+                "8",
                 lambda: test_generate(
                     client,
                     verify_dir,
                     saved_files,
                     results,
-                    "9",
+                    "8",
                     "LTX-2.5 T2V + generated audio -> has_audio",
                     {
                         "prompt": "rain tapping on a tin roof, thunder far away",
@@ -352,13 +333,13 @@ def main() -> None:
                 ),
             ),
             (
-                "10",
+                "9",
                 lambda: test_generate(
                     client,
                     verify_dir,
                     saved_files,
                     results,
-                    "10",
+                    "9",
                     "LTX-2.5 pipeline=dfr T2V -> requested frame count",
                     {
                         "prompt": "a fox walking through tall grass",
@@ -371,13 +352,13 @@ def main() -> None:
                 ),
             ),
             (
-                "11",
+                "10",
                 lambda: test_generate(
                     client,
                     verify_dir,
                     saved_files,
                     results,
-                    "11",
+                    "10",
                     "LTX-2.5 video_decoder=diffusion I2V",
                     {
                         "prompt": "gentle zoom",
@@ -393,18 +374,7 @@ def main() -> None:
                     lambda res: res.get("mode") == "I2V",
                 ),
             ),
-            (
-                "12",
-                lambda: test_validation(
-                    client,
-                    "12",
-                    "auto_duration on LTX-2 `distilled`",
-                    {"prompt": "x", "model": "distilled", "auto_duration": True},
-                    None,
-                    results,
-                ),
-            ),
-            ("13", lambda: test_dfr_image_rejected(client, results)),
+            ("11", lambda: test_dfr_image_rejected(client, results)),
         ]
 
         for cid, test_fn in tests:

@@ -1,24 +1,20 @@
-DESCRIPTION = """Short video generation with LTX-2.5 and LTX-2 distilled.
+DESCRIPTION = """Short video generation with LTX-2.5 distilled.
 
-LTX-2.5 (default) and LTX-2 generate short MP4 videos from text, optional image
+LTX-2.5 generates short MP4 videos from text, optional image
 conditioning, and optional audio.
 
 ## Upstream docs
 - [mlx-video](https://github.com/Blaizzy/mlx-video) — the MLX engine kiapi runs
 - [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) — LTX-2.5 model card, weights, and license
-- [Lightricks/LTX-2](https://huggingface.co/Lightricks/LTX-2) — LTX-2 model card and license source
-- [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) — LTX-2 distilled MLX weights used by kiapi
 
 ## Models
 
 - **`ltx-2.5-distilled`** (default): 22B LTX-2.5 transformer, Gemma 4 text
   encoder, two-stage distilled pipeline. kiapi reserves about 44 GB per run.
-- **`distilled`**: the previous 19B LTX-2 distilled model. kiapi reserves about
-  40 GB per run. It does not accept the LTX-2.5 options below.
 
-Both are transient: the pipeline is loaded for each job, run, then freed.
+It is transient: the pipeline is loaded for each job, run, then freed.
 
-The distilled pipelines do not use classifier-free guidance. Negative prompts
+The distilled pipeline does not use classifier-free guidance. Negative prompts
 and suppression phrases such as `no zoom`, `do not move`, or `avoid blur` are not
 reliable controls. Describe the desired subject, motion, framing, camera behavior,
 lighting, and texture directly.
@@ -82,16 +78,16 @@ At 24 fps, common frame counts are roughly:
 - 512x512 is the sweet spot for general use. Larger resolutions and longer frame
   counts hold the single-flight queue for longer.
 - LTX-2.5 follows multi-shot prompts (for example a medium shot, then a
-  close-up, then a wide shot) better than LTX-2 at 241 frames.
+  close-up, then a wide shot) at 241 frames.
 
 ## Performance Notes
 
 Generation time depends heavily on frame count and resolution. A 512x512,
 97-frame job is the baseline used for synthetic progress; shorter/lower
 resolution jobs complete faster, while long 721-frame jobs can occupy the worker
-for much longer. LTX-2.5 is about 10 to 20% slower than LTX-2 at the same size.
+for much longer.
 
-Because kiapi is single-flight, one LTX-2 job blocks all other heavy jobs until
+Because kiapi is single-flight, one LTX-2.5 job blocks all other heavy jobs until
 it finishes. Use `mode="async"` for longer videos so clients can poll
 `/v1/jobs/{job_id}` instead of holding an HTTP request open.
 """

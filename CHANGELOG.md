@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - web UI: each Web search result can fill its URL into the Fetch form for a
   separate fetch request.
 
+### Removed
+
+- ernie: remove the ERNIE-Image family (`/v1/image/ernie`).
+- ideogram4: remove the Ideogram 4 family (`/v1/image/ideogram4`).
+- ltx2: remove the previous LTX-2 `distilled` model and its `model_repo`,
+  `text_encoder_repo` and `progress_eta_base_s` settings. `ltx-2.5-distilled`
+  is the only model.
+
 ### Fixed
 
 - web UI: file pickers for fields named after videos or audio (such as h3's

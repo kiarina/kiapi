@@ -2,7 +2,6 @@
 
 from kiapi.capabilities import ValidationError
 
-from .._constants.variants import LTX25_VARIANT
 from .._settings import settings_manager
 from .._views.generate_request import GenerateRequest
 
@@ -31,7 +30,7 @@ def validate_generate(req: GenerateRequest, *, variant: str, has_audio: bool) ->
             "cannot combine an audio file (A2V) with generate_audio; choose one"
         )
 
-    _validate_ltx25_options(req, variant=variant, has_audio=has_audio)
+    _validate_pipeline(req, has_audio=has_audio)
 
     if req.auto_duration:
         if req.num_frames is not None:
@@ -51,24 +50,7 @@ def validate_generate(req: GenerateRequest, *, variant: str, has_audio: bool) ->
         )
 
 
-def _validate_ltx25_options(
-    req: GenerateRequest, *, variant: str, has_audio: bool
-) -> None:
-    options = [
-        name
-        for name, used in (
-            ("auto_duration", req.auto_duration),
-            ("enhance_prompt", req.enhance_prompt),
-            ("pipeline=dfr", req.pipeline == "dfr"),
-            ("video_decoder=diffusion", req.video_decoder == "diffusion"),
-        )
-        if used
-    ]
-    if options and variant != LTX25_VARIANT:
-        raise ValidationError(
-            f"{', '.join(options)} requires model {LTX25_VARIANT!r} (got {variant!r})"
-        )
-
+def _validate_pipeline(req: GenerateRequest, *, has_audio: bool) -> None:
     has_image = req.image is not None or req.end_image is not None
     if req.pipeline == "dfr" and (has_image or has_audio):
         raise ValidationError(

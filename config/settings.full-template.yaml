@@ -187,93 +187,6 @@ kiapi.capabilities.depthpro:
   # progress_eta_s: 8.0
 
 #--------------------------------------------------------------------------------
-# Settings for ERNIE-Image model variants, generation/edit defaults, and LoRA training.
-#--------------------------------------------------------------------------------
-kiapi.capabilities.ernie:
-  # Turbo model repo: str
-  #   Hugging Face repo ID used as the ERNIE-Image turbo variant.
-  # turbo_model: baidu/ERNIE-Image-Turbo
-  #--------------------------------------------------
-  # Base model repo: str
-  #   Hugging Face repo ID used as the ERNIE-Image base variant.
-  # base_model: baidu/ERNIE-Image
-  #--------------------------------------------------
-  # Default steps by variant: dict[str, int]
-  #   Diffusion step count used when a generation or edit request omits steps.
-  #   Keys are variant names such as turbo or base; values are step counts.
-  # default_steps:
-  #   turbo: 8
-  #   base: 50
-  #--------------------------------------------------
-  # Default guidance by variant: dict[str, float]
-  #   Guidance strength used when a generation or edit request omits guidance.
-  #   Keys are variant names; values are guidance values.
-  # default_guidance:
-  #   turbo: 1.0
-  #   base: 4.0
-  #--------------------------------------------------
-  # Default quantization bits by variant: dict[str, int | None]
-  #   Default quantization bit count used when loading a model.
-  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
-  # default_quantize:
-  #   turbo: 8
-  #   base: 8
-  #--------------------------------------------------
-  # Default width: int
-  #   Output image width in pixels used when a request omits width.
-  # default_width: 1024
-  #--------------------------------------------------
-  # Default height: int
-  #   Output image height in pixels used when a request omits height.
-  # default_height: 1024
-  #--------------------------------------------------
-  # Maximum width: int
-  #   Upper pixel limit for the output image width accepted in a request.
-  # max_width: 2048
-  #--------------------------------------------------
-  # Maximum height: int
-  #   Upper pixel limit for the output image height accepted in a request.
-  # max_height: 2048
-  #--------------------------------------------------
-  # Maximum inference steps: int
-  #   Upper limit for the diffusion step count accepted in a request.
-  # max_steps: 100
-  #--------------------------------------------------
-  # Maximum LoRA count: int
-  #   Maximum number of LoRA adapters that can be applied in one generation or edit request.
-  # max_loras: 4
-  #--------------------------------------------------
-  # Require square edit input: bool
-  #   When true, ERNIE image-to-image/edit avoids non-square sizes.
-  #   This conservative default works around mflux VAE latent-packing constraints.
-  # edit_require_square: true
-  #--------------------------------------------------
-  # LoRA training reserved memory GB: float
-  #   Memory in GB reserved for the runtime peak of an ERNIE-Image LoRA training job.
-  # train_reserve_gb: 24.0
-  #--------------------------------------------------
-  # Training steps by variant: dict[str, int]
-  #   Step count used when a LoRA training request omits steps.
-  #   Keys are variant names; values are training step counts.
-  # train_steps:
-  #   turbo: 8
-  #   base: 50
-  #--------------------------------------------------
-  # Training timestep lower bound by variant: dict[str, int]
-  #   Lower bound of the timestep range used during LoRA training.
-  #   Keys are variant names; values are lower-bound timestep values.
-  # train_timestep_low:
-  #   turbo: 1
-  #   base: 1
-  #--------------------------------------------------
-  # Training quantization bits by variant: dict[str, int | None]
-  #   Quantization bit count applied to the model during LoRA training.
-  #   Keys are variant names; values are bit counts such as 8, or None for no quantization.
-  # train_quantize:
-  #   turbo: 8
-  #   base: 8
-
-#--------------------------------------------------------------------------------
 # Settings for FLUX.2 model variants, generation defaults, and LoRA training.
 #--------------------------------------------------------------------------------
 kiapi.capabilities.flux2:
@@ -366,55 +279,6 @@ kiapi.capabilities.flux2:
   # train_quantize:
   #   klein-base-4b: 8
   #   klein-base-9b: 8
-
-#--------------------------------------------------------------------------------
-# Settings for the Ideogram 4 model, image sizes, presets, and quantization.
-#--------------------------------------------------------------------------------
-kiapi.capabilities.ideogram4:
-  # Ideogram 4 model repo: str
-  #   Hugging Face repo ID for the Ideogram 4 model used for image generation.
-  # model_repo: ideogram-ai/ideogram-4-fp8
-  #--------------------------------------------------
-  # Default width: int
-  #   Output image width in pixels used when a request omits width.
-  # default_width: 1024
-  #--------------------------------------------------
-  # Default height: int
-  #   Output image height in pixels used when a request omits height.
-  # default_height: 1024
-  #--------------------------------------------------
-  # Minimum width: int
-  #   Lower pixel limit for the output image width accepted in a request.
-  # min_width: 256
-  #--------------------------------------------------
-  # Minimum height: int
-  #   Lower pixel limit for the output image height accepted in a request.
-  # min_height: 256
-  #--------------------------------------------------
-  # Maximum width: int
-  #   Upper pixel limit for the output image width accepted in a request.
-  # max_width: 2048
-  #--------------------------------------------------
-  # Maximum height: int
-  #   Upper pixel limit for the output image height accepted in a request.
-  # max_height: 2048
-  #--------------------------------------------------
-  # Default preset: str
-  #   Ideogram 4 preset name used when a request omits preset.
-  #   The value must be included in presets.
-  # default_preset: V4_DEFAULT_20
-  #--------------------------------------------------
-  # Available presets: tuple[str, Ellipsis]
-  #   List of Ideogram 4 preset names accepted by the API.
-  # presets:
-  #   - V4_DEFAULT_20
-  #   - V4_QUALITY_48
-  #   - V4_TURBO_12
-  #--------------------------------------------------
-  # Default quantization bits: int | None
-  #   Default quantization bit count used when loading the Ideogram 4 model.
-  #   When None, the model repo's default precision is used. A numeric value quantizes to that bit count.
-  # default_quantize: 
 
 #--------------------------------------------------------------------------------
 # Settings for Qwen Image models, generation defaults, and LoRA limits.
@@ -691,15 +555,6 @@ kiapi.capabilities.audiogen:
 # Settings for LTX-2 models, video dimensions, frame counts, and progress display.
 #--------------------------------------------------------------------------------
 kiapi.capabilities.ltx2:
-  # LTX-2 model repo: str
-  #   Hugging Face repo ID for the LTX-2 model used for video generation.
-  # model_repo: prince-canuma/LTX-2-distilled
-  #--------------------------------------------------
-  # Text encoder repo: str | None
-  #   Hugging Face repo ID for a text encoder from a separate repo.
-  #   When None, the model's default text encoder is used.
-  # text_encoder_repo: 
-  #--------------------------------------------------
   # LTX-2.5 model repo: str
   #   Hugging Face repo ID for the split LTX-2.5 checkpoint.
   # ltx25_model_repo: Lightricks/LTX-2.5
@@ -739,11 +594,6 @@ kiapi.capabilities.ltx2:
   # Default FPS: int
   #   Output video FPS used when a request omits fps.
   # default_fps: 24
-  #--------------------------------------------------
-  # Progress ETA base seconds: float
-  #   Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2 job.
-  #   The value is scaled by frame count and resolution. Set to 0 to disable it.
-  # progress_eta_base_s: 90.0
   #--------------------------------------------------
   # LTX-2.5 progress ETA base seconds: float
   #   Expected seconds for synthetic progress, based on a 97-frame 512x512 LTX-2.5 distilled job.

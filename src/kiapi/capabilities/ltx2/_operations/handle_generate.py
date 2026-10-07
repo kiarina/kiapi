@@ -6,7 +6,6 @@ from kiapi.core.file import FileID
 from kiapi.core.job import JobResult, creep_progress
 from kiapi.core.model import model_registry
 
-from .._constants.variants import LTX25_VARIANT
 from .._settings import LTX2Settings, settings_manager
 from .._views.generate_params import GenerateParams
 from .._views.generate_request import GenerateRequest
@@ -48,15 +47,12 @@ def _resolve_staged_inputs(ctx: AppContext, req: GenerateRequest) -> dict[str, s
 
 
 def _calc_eta_s(params: GenerateParams, settings: LTX2Settings) -> float:
-    if params.model != LTX25_VARIANT:
-        base_s = settings.progress_eta_base_s
-    else:
-        base_s = settings.ltx25_progress_eta_base_s
-        # Ratios measured at 768x512 / 121 frames against conv distilled.
-        if params.pipeline == "dfr":
-            base_s *= 1.75
-        if params.video_decoder == "diffusion":
-            base_s *= 1.6
+    base_s = settings.ltx25_progress_eta_base_s
+    # Ratios measured at 768x512 / 121 frames against conv distilled.
+    if params.pipeline == "dfr":
+        base_s *= 1.75
+    if params.video_decoder == "diffusion":
+        base_s *= 1.6
     # Auto duration is unknown until the model predicts it; ~5 s is typical.
     num_frames = params.num_frames if params.num_frames is not None else 121
     frames = num_frames / 97

@@ -36,9 +36,8 @@ CAPABILITIES_DIR = HERE / "capabilities"
 KIAPI_PORT = int(os.environ.get("KIAPI_PORT", "8000"))
 
 # Capability scripts that expect their "train" flag set (ported from the old
-# mise task, which special-cased these three).
+# mise task, which special-cased these).
 _TRAIN_ENV = {
-    "verify_ernie": "KIAPI_VERIFY_ERNIE_TRAIN",
     "verify_flux2": "KIAPI_VERIFY_FLUX2_TRAIN",
     "verify_zimage": "KIAPI_VERIFY_ZIMAGE_TRAIN",
 }

@@ -14,9 +14,9 @@ def test_resolve_generate_params_applies_settings_defaults() -> None:
     )
     req = GenerateRequest.model_validate({"prompt": "clouds drifting", "seed": 123})
 
-    params = resolve_generate_params(settings, req, variant="distilled")
+    params = resolve_generate_params(settings, req, variant="ltx-2.5-distilled")
 
-    assert params.model == "distilled"
+    assert params.model == "ltx-2.5-distilled"
     assert params.prompt == "clouds drifting"
     assert params.seed == 123
     assert params.width == 640
@@ -41,7 +41,7 @@ def test_resolve_generate_params_preserves_request_overrides() -> None:
         }
     )
 
-    params = resolve_generate_params(settings, req, variant="distilled")
+    params = resolve_generate_params(settings, req, variant="ltx-2.5-distilled")
 
     assert params.width == 256
     assert params.height == 320
@@ -57,7 +57,7 @@ def test_resolve_generate_params_generates_seed_when_omitted() -> None:
     settings = LTX2Settings()
     req = GenerateRequest.model_validate({"prompt": "keyboard typing"})
 
-    params = resolve_generate_params(settings, req, variant="distilled")
+    params = resolve_generate_params(settings, req, variant="ltx-2.5-distilled")
 
     assert 0 <= params.seed <= 2**31 - 1
 

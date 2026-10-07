@@ -77,8 +77,8 @@ outputs of models that forbid commercial use. To retake them:
    ```
 
 2. Generate the pictures with models whose licenses allow commercial use, such
-   as Z-Image `turbo` and ERNIE-Image `turbo`. Not Qwen Image `image-2.1`,
-   FLUX.2 `klein-9b` / `klein-base-9b`, Ideogram 4, or AudioGen.
+   as Z-Image `turbo` and Qwen Image `image`. Not Qwen Image `image-2.1`,
+   FLUX.2 `klein-9b` / `klein-base-9b`, or AudioGen.
 3. Capture with Chrome driven by puppeteer-core at 1440x1000 and a device scale
    factor of 2. Switch themes by emulating `prefers-color-scheme`, hide the
    floating assistant button except in its own shot, and wait until every

@@ -19,16 +19,15 @@ def model_registry(monkeypatch: pytest.MonkeyPatch) -> ModelRegistry:
 
 def test_register_defaults_to_ltx25(model_registry: ModelRegistry) -> None:
     assert model_registry.default_name("ltx2") == "ltx-2.5-distilled"
-    assert model_registry.resolve("ltx2", "distilled").repo == (
-        "prince-canuma/LTX-2-distilled"
-    )
+    assert [spec.name for spec in model_registry.list_specs("ltx2")] == [
+        "ltx-2.5-distilled"
+    ]
 
 
-@pytest.mark.parametrize("variant", ["ltx-2.5-distilled", "distilled"])
 def test_register_adds_mlx_video_python_package_resource(
-    model_registry: ModelRegistry, variant: str
+    model_registry: ModelRegistry,
 ) -> None:
-    resources = model_registry.resolve("ltx2", variant).setup_resources
+    resources = model_registry.resolve("ltx2", "ltx-2.5-distilled").setup_resources
 
     assert isinstance(resources[0], PythonPackageResource)
     assert resources[0].package == "mlx-video"

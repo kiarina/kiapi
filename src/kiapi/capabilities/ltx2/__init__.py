@@ -1,4 +1,4 @@
-"""ltx2 family — LTX-2 distilled video generation via mlx-video.
+"""ltx2 family — LTX-2.5 distilled video generation via mlx-video.
 
 Endpoint: ``POST /v1/video/ltx2/generate`` (multipart; T2V/I2V/A2V inferred from
 attached inputs). mlx-video loads and frees its own weights per call, so this

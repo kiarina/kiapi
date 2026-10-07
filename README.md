@@ -82,9 +82,6 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  | [qwen](src/kiapi/capabilities/qwen/README.md) | [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwen-Image) | model weights | Apache-2.0 | Text-to-image model. |
 |  |  | [Qwen/Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | model weights | Apache-2.0 | Image editing model. |
 |  |  | [Qwen/Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) | model weights | Qwen Research License | Non-commercial (research and evaluation) only; commercial use needs a separate license from Alibaba. Unified generation and editing, RGBA output. Editing is pinned from the [kiarina fork](https://github.com/kiarina/mflux/tree/qwen-image-2.1-edit) of mflux until [#741](https://github.com/mflux-community/mflux/pull/741) is released. |
-|  | [ideogram4](src/kiapi/capabilities/ideogram4/README.md) | [ideogram-ai/ideogram-4-fp8](https://huggingface.co/ideogram-ai/ideogram-4-fp8) | model weights | Ideogram Non-Commercial Model Agreement | Gated upstream model. Confirm hosted-service and commercial-use terms. |
-|  | [ernie](src/kiapi/capabilities/ernie/README.md) | [baidu/ERNIE-Image-Turbo](https://huggingface.co/baidu/ERNIE-Image-Turbo) | model weights | Apache-2.0 | Turbo ERNIE-Image variant. |
-|  |  | [baidu/ERNIE-Image](https://huggingface.co/baidu/ERNIE-Image) | model weights | Apache-2.0 | Base ERNIE-Image variant. |
 |  | [seedvr2](src/kiapi/capabilities/seedvr2/README.md) | [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI) | model weights | Apache-2.0 | SeedVR2 3B and 7B upscaling checkpoints. |
 |  | [depthpro](src/kiapi/capabilities/depthpro/README.md) | [apple/ml-depth-pro](https://github.com/apple/ml-depth-pro) / [depth_pro.pt](https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt) | code + model file | Apple custom license | GitHub reports `NOASSERTION`; review Apple's license text before redistribution or commercial use. |
 | audio | [acestep](src/kiapi/capabilities/acestep/README.md) | [ace-step/ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5) | Python package | MIT | Installed into the ACE-Step dedicated venv. |
@@ -95,7 +92,6 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  |  | [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | model weights | LTX-2.x Community License | Gated; accept the model terms on Hugging Face. Used by the default `ltx-2.5-distilled`. |
 |  |  | [Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler) | model weights | LTX-2.x Community License | Gated. Detailing adapter for `pipeline="dfr"`. |
 |  |  | [mlx-community/gemma-4-e2b-it-bf16](https://huggingface.co/mlx-community/gemma-4-e2b-it-bf16) | model weights | Gemma Terms of Use | Prompt enhancer for `enhance_prompt`. |
-|  |  | [prince-canuma/LTX-2-distilled](https://huggingface.co/prince-canuma/LTX-2-distilled) | model weights | Not declared upstream | The model card has no license metadata; verify rights before use. |
 |  | [h3](src/kiapi/capabilities/h3/README.md) | [ddalcu/mlx-serve](https://github.com/ddalcu/mlx-serve) | binary release | MIT | Pinned release archive; kiapi starts it for each MiniMax H3 job. |
 |  |  | [ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit](https://huggingface.co/ddalcu/MiniMax-H3-REF2VA-MLX-Serve-8bit) | model weights | MiniMax H3 Community License | 8-bit pack of [MiniMaxAI/MiniMax-H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) Ref2VA. Not licensed in the EU, the UK, South Korea, or the United States; commercial use above USD 20M annual revenue needs a separate license; redistribution must show "Powered by MiniMax H3". |
 |  |  | [lightx2v/Minimax-h3-Turbo](https://huggingface.co/lightx2v/Minimax-h3-Turbo) | LoRA weights | Apache-2.0 | Ref2VA Turbo 8-step LoRA used by `turbo=true`. |
@@ -103,7 +99,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  |  | [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) / `unclecode/crawl4ai:latest` | Docker image | Apache-2.0 | Web fetch backend. |
 
 > [!NOTE]
-> Using all resources at once requires a little under 700GB of disk space in total.
+> Using all resources at once requires about 500GB of disk space in total.
 > It also consumes a little under 50GB of memory at peak.
 > For the size and memory consumption of each resource, see the per-family links above.
 
@@ -137,8 +133,6 @@ Always review the upstream license to confirm the terms and whether commercial u
 | image | zimage | `POST /v1/image/zimage` | [Z-Image API details](src/kiapi/capabilities/zimage/README.md) |
 |  | flux2 | `POST /v1/image/flux2` | [FLUX.2 API details](src/kiapi/capabilities/flux2/README.md) |
 |  | qwen | `POST /v1/image/qwen` | [Qwen Image API details](src/kiapi/capabilities/qwen/README.md) |
-|  | ideogram4 | `POST /v1/image/ideogram4` | [Ideogram 4 API details](src/kiapi/capabilities/ideogram4/README.md) |
-|  | ernie | `POST /v1/image/ernie` | [ERNIE-Image API details](src/kiapi/capabilities/ernie/README.md) |
 |  | seedvr2 | `POST /v1/image/seedvr2` | [SeedVR2 API details](src/kiapi/capabilities/seedvr2/README.md) |
 |  | depthpro | `POST /v1/image/depthpro` | [Depth Pro API details](src/kiapi/capabilities/depthpro/README.md) |
 | audio | acestep | `POST /v1/audio/acestep` | [ACE-Step API details](src/kiapi/capabilities/acestep/README.md) |
@@ -180,7 +174,7 @@ kiapi automatically uses 80% of installed memory as the effective budget on
 startup. If a model's required memory does not fit in that budget, requests
 return 503 as an insufficient memory budget error.
 
-`kiapi activate --all` uses a little under 700GB of disk capacity, including
+`kiapi activate --all` uses about 500GB of disk capacity, including
 model weights and Docker images. At first, it is recommended to use `kiapi activate`
 to set up only the capabilities you need.
 
@@ -201,7 +195,7 @@ kiapi status
 
 # Prepare model weights, Docker images, and dedicated venv environments
 kiapi activate                   # Choose targets from the interactive list
-kiapi activate --all             # Set up everything (just under 700GB)
+kiapi activate --all             # Set up everything (about 500GB)
 kiapi activate --family acestep  # Set up only the specified family
 
 # Verify the setup

@@ -5,8 +5,8 @@ from kiapi.core.model import ModelSpec, model_registry
 from kiapi.core.setup import HfSnapshotResource, PythonPackageResource
 
 from .._constants.description import DESCRIPTION
-from .._constants.variants import LTX2_VARIANT, LTX25_VARIANT
-from .._models import ltx2, ltx25
+from .._constants.variants import LTX25_VARIANT
+from .._models import ltx25
 from .._settings import settings_manager
 
 # LTX-2.5 support is still under review upstream (Blaizzy/mlx-video#52), so this
@@ -81,25 +81,6 @@ def register() -> None:
                     allow_patterns=("*.safetensors",),
                     disk_gb=0.3,
                 ),
-            ),
-        )
-    )
-
-    model_registry.register(
-        ModelSpec(
-            name=LTX2_VARIANT,
-            family="ltx2",
-            domain="video",
-            repo=settings.model_repo,
-            module=ltx2,
-            weight_gb=0.0,  # transient: not held resident
-            peak_headroom_gb=40.0,  # transient peak to reserve; reconciled on device
-            framework="mlx",
-            priority=0,
-            resident=False,
-            setup_resources=(
-                mlx_video,
-                HfSnapshotResource(repo=settings.model_repo, disk_gb=101.0),
             ),
         )
     )
