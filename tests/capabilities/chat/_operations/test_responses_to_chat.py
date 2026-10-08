@@ -188,3 +188,49 @@ def test_tools_tool_choice_and_limits_map_to_chat_fields() -> None:
 def test_unsupported_requests_are_rejected(fields: dict) -> None:
     with pytest.raises(ValidationError):
         _convert(**fields)
+
+
+def test_namespace_tools_flatten_and_namespaced_calls_rejoin() -> None:
+    chat = _convert(
+        tools=[
+            {
+                "type": "namespace",
+                "name": "mcp__docs",
+                "description": "Docs tools.",
+                "tools": [
+                    {
+                        "type": "function",
+                        "name": "search",
+                        "parameters": {"type": "object"},
+                    }
+                ],
+            }
+        ],
+        input=[
+            {"type": "message", "role": "user", "content": "Find it"},
+            {
+                "type": "function_call",
+                "call_id": "call_1",
+                "namespace": "mcp__docs",
+                "name": "search",
+                "arguments": "{}",
+            },
+            {
+                "type": "function_call_output",
+                "call_id": "call_1",
+                "output": [
+                    {"type": "input_text", "text": "a"},
+                    {"type": "input_image", "image_url": "x"},
+                ],
+            },
+        ],
+    )
+
+    assert chat.tools == [
+        {
+            "type": "function",
+            "function": {"name": "mcp__docs__search", "parameters": {"type": "object"}},
+        }
+    ]
+    assert chat.messages[1]["tool_calls"][0]["function"]["name"] == "mcp__docs__search"
+    assert chat.messages[2]["content"] == "a\n[input_image omitted]"

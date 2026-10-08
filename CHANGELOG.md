@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chat: `POST /v1/responses`, an OpenAI-compatible Responses API (stateless subset)
   over the chat models, with function tools and streaming events. Codex can use
   kiapi as a model provider through it.
+  `namespace` tools (Codex's MCP tools) are flattened for the model and split
+  back into `namespace` and `name` on the way out.
 - h3: new video family for MiniMax H3 Ref2VA (`POST /v1/video/h3/generate`).
   Generates video with stereo audio from text and up to 9 image, 3 video and 3
   audio references, through a per-job mlx-serve subprocess, with the LightX2V

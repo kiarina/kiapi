@@ -152,3 +152,70 @@ def test_stream_failure_emits_response_failed() -> None:
 
     assert events[-1]["type"] == "response.failed"
     assert events[-1]["response"]["error"]["message"] == "boom"
+
+
+def test_flattened_namespaced_calls_split_back() -> None:
+    req = ResponsesRequest.model_validate(
+        {
+            "model": "vlm",
+            "input": "x",
+            "tools": [
+                {
+                    "type": "namespace",
+                    "name": "mcp__docs",
+                    "tools": [{"type": "function", "name": "search"}],
+                }
+            ],
+        }
+    )
+    completion = {
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "mcp__docs__search",
+                                "arguments": "{}",
+                            },
+                        }
+                    ],
+                },
+                "finish_reason": "tool_calls",
+            }
+        ],
+        "usage": USAGE,
+    }
+
+    item = completion_to_response(completion, req)["output"][0]
+    assert (item["namespace"], item["name"]) == ("mcp__docs", "search")
+
+    stream = ResponsesStream(req)
+    stream.feed(
+        _chunk(
+            {
+                "tool_calls": [
+                    {
+                        "index": 0,
+                        "id": "call_1",
+                        "function": {"name": "mcp__docs__search"},
+                    }
+                ]
+            }
+        )
+    )
+    stream.feed(
+        _chunk(
+            {
+                "tool_calls": [
+                    {"index": 0, "id": "call_1", "function": {"arguments": "{}"}}
+                ]
+            }
+        )
+    )
+    done = stream.complete(USAGE)[-1]["response"]["output"][0]
+    assert (done["namespace"], done["name"]) == ("mcp__docs", "search")

@@ -159,7 +159,12 @@ API (the OpenAI SDK's `client.responses`, Codex) can use kiapi.
 - `instructions` and leading `system` / `developer` messages merge into one
   system message, since the chat templates accept a system message only first.
   A later `developer` message is sent as a user message.
-- Tools: `function` tools only. `tool_choice`, `parallel_tool_calls`,
+- Tools: `function` tools, and `namespace` tools (Codex groups each MCP server's
+  tools this way). A namespace's tools reach the model as functions named
+  `<namespace>__<name>`; calls go back out as `function_call` items with
+  `namespace` and `name`, as Codex expects. `function_call_output` may be a list
+  of parts; text parts join with newlines and other parts become a short
+  placeholder. `tool_choice`, `parallel_tool_calls`,
   `max_output_tokens`, `temperature`, and `top_p` map to their chat fields.
 - `reasoning`, `include`, `text`, `store`, and `prompt_cache_key` are accepted and
   ignored. Reasoning stays off; `chat_template_kwargs` is forwarded as in chat.

@@ -4,6 +4,10 @@ Leading ``system`` / ``developer`` messages (and ``instructions``) merge into on
 system message, because the Qwen chat templates accept a system message only at
 the start. A later ``developer`` message becomes a user message. Consecutive
 ``function_call`` items join the preceding assistant message as ``tool_calls``.
+
+``namespace`` tools (Codex groups each MCP server's tools this way) flatten into
+plain functions named ``<namespace>__<name>``; ``namespaced_tool_names`` maps
+those names back so the output can carry ``namespace`` and ``name`` again.
 """
 
 import json
@@ -16,6 +20,24 @@ from .._views.responses_request import ResponsesRequest
 
 _TEXT_PARTS = ("input_text", "output_text", "text", "summary_text")
 _IGNORED_ITEMS = ("reasoning",)
+_NAMESPACE_SEPARATOR = "__"
+
+
+def namespaced_tool_names(req: ResponsesRequest) -> dict[str, tuple[str, str]]:
+    """Flattened function name -> (namespace, name) for every namespaced tool."""
+    names: dict[str, tuple[str, str]] = {}
+    for tool in req.tools or []:
+        if tool.get("type") == "namespace":
+            for inner in tool.get("tools") or []:
+                names[_joined(tool["name"], inner["name"])] = (
+                    tool["name"],
+                    inner["name"],
+                )
+    return names
+
+
+def _joined(namespace: str, name: str) -> str:
+    return f"{namespace}{_NAMESPACE_SEPARATOR}{name}"
 
 
 def responses_to_chat(req: ResponsesRequest, *, stream: bool) -> ChatRequest:
@@ -31,7 +53,7 @@ def responses_to_chat(req: ResponsesRequest, *, stream: bool) -> ChatRequest:
         "stream": stream,
     }
     if req.tools:
-        data["tools"] = [_tool(t) for t in req.tools]
+        data["tools"] = [f for t in req.tools for f in _tools(t)]
     if req.tool_choice is not None:
         data["tool_choice"] = _tool_choice(req.tool_choice)
     if req.max_output_tokens is not None:
@@ -75,7 +97,11 @@ def _messages(req: ResponsesRequest) -> list[dict[str, Any]]:
                 "id": item.get("call_id") or item.get("id"),
                 "type": "function",
                 "function": {
-                    "name": item.get("name"),
+                    "name": (
+                        _joined(item["namespace"], item.get("name", ""))
+                        if item.get("namespace")
+                        else item.get("name")
+                    ),
                     "arguments": item.get("arguments") or "{}",
                 },
             }
@@ -143,17 +169,29 @@ def _output(output: Any) -> str:
     if isinstance(output, str):
         return output
     if isinstance(output, list):
-        texts = [p.get("text", "") for p in output if p.get("type") in _TEXT_PARTS]
-        if len(texts) != len(output):
-            raise ValidationError("function_call_output accepts text output only")
-        return "".join(texts)
+        # MCP tools return several parts; images cannot go into a tool message.
+        return "\n".join(
+            p.get("text", "")
+            if p.get("type") in _TEXT_PARTS
+            else f"[{p.get('type')} omitted]"
+            for p in output
+        )
     return json.dumps(output, ensure_ascii=False)
 
 
-def _tool(tool: dict[str, Any]) -> dict[str, Any]:
+def _tools(tool: dict[str, Any]) -> list[dict[str, Any]]:
+    if tool.get("type") == "namespace":
+        return [
+            _function(inner, name=_joined(tool["name"], inner["name"]))
+            for inner in tool.get("tools") or []
+        ]
+    return [_function(tool, name=tool.get("name"))]
+
+
+def _function(tool: dict[str, Any], *, name: str | None) -> dict[str, Any]:
     if tool.get("type") != "function":
         raise ValidationError(f"unsupported tool type: {tool.get('type')!r}")
-    function: dict[str, Any] = {"name": tool.get("name")}
+    function: dict[str, Any] = {"name": name}
     if tool.get("description"):
         function["description"] = tool["description"]
     function["parameters"] = tool.get("parameters") or {

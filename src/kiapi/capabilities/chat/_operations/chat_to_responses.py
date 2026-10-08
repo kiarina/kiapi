@@ -11,6 +11,7 @@ import uuid
 from typing import Any
 
 from .._views.responses_request import ResponsesRequest
+from .responses_to_chat import namespaced_tool_names
 
 
 def completion_to_response(
@@ -18,6 +19,7 @@ def completion_to_response(
 ) -> dict[str, Any]:
     choice = completion["choices"][0]
     message = choice["message"]
+    namespaces = namespaced_tool_names(req)
     output: list[dict[str, Any]] = []
     if message.get("content"):
         output.append(_message_item(_new_id("msg"), message["content"]))
@@ -28,6 +30,7 @@ def completion_to_response(
                 call["id"],
                 call["function"]["name"],
                 call["function"]["arguments"],
+                namespaces,
             )
         )
     return _response(
@@ -42,6 +45,7 @@ def completion_to_response(
 class ResponsesStream:
     def __init__(self, req: ResponsesRequest) -> None:
         self.req = req
+        self.namespaces = namespaced_tool_names(req)
         self.id = _new_id("resp")
         self.created_at = int(time.time())
         self.output: list[dict[str, Any]] = []
@@ -174,6 +178,7 @@ class ResponsesStream:
                 call.get("id") or _new_id("call"),
                 function.get("name", ""),
                 "",
+                self.namespaces,
             )
             item["status"] = "in_progress"
             state = {"item": item, "output_index": len(self.output)}
@@ -188,7 +193,7 @@ class ResponsesStream:
             )
         item = state["item"]
         if function.get("name") and not item["name"]:
-            item["name"] = function["name"]
+            item.update(_split_name(function["name"], self.namespaces))
         # Chat chunks carry each call's arguments complete, in one delta.
         if "arguments" in function:
             item["arguments"] = function["arguments"]
@@ -287,16 +292,28 @@ def _message_item(item_id: str, text: str) -> dict[str, Any]:
 
 
 def _function_call_item(
-    item_id: str, call_id: str, name: str, arguments: str
+    item_id: str,
+    call_id: str,
+    name: str,
+    arguments: str,
+    namespaces: dict[str, tuple[str, str]],
 ) -> dict[str, Any]:
     return {
         "type": "function_call",
         "id": item_id,
         "call_id": call_id,
-        "name": name,
+        **_split_name(name, namespaces),
         "arguments": arguments,
         "status": "completed",
     }
+
+
+def _split_name(name: str, namespaces: dict[str, tuple[str, str]]) -> dict[str, str]:
+    """``{"name"}``, or ``{"namespace", "name"}`` for a flattened namespaced tool."""
+    if name in namespaces:
+        namespace, inner = namespaces[name]
+        return {"namespace": namespace, "name": inner}
+    return {"name": name}
 
 
 def _new_id(prefix: str) -> str:
