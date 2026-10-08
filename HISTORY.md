@@ -15,6 +15,10 @@
 - 確かめたこと（サーバー機）: OpenAI の Python SDK の `responses.stream` と `responses.create` でツールの往復（2 回目の 342 トークンのうち 274 がキャッシュ）。
   Codex を `qwen3.8-flash-next` につなぎ、バグ 3 つの `calc.py` を直してテストを通す仕事が 3 回中 3 回通った（34〜42 秒、入力の 77〜86% がキャッシュ。
   labs `2026/10/08/codex-on-kiapi`）。単体テスト 406 件
+- 続き（同日）: 司令塔のアプリで、ホームフォルダを作業フォルダにした kiapi のワーカーが「unsupported tool type: 'namespace'」で落ちた。Codex は作業フォルダの
+  `.codex/config.toml`（ホームでは普段の設定）の MCP サーバーを読み、そのツールをサーバーごとに `namespace` の形で送る（`danger-full-access` のとき）。
+  モデルには `<namespace>__<name>` の function として見せ、出力では `namespace` と `name` に分け直す形で受けた（`2a1de66`。つないだ名前で返すと Codex は
+  「unsupported call」にする）。MCP の結果の部品のリストは改行でつなぎ、画像などは短い置き換えにする
 
 ## 2026-10-08 — ernie・ideogram4 の family と ltx2 の `distilled` を外した
 

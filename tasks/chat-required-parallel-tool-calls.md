@@ -25,6 +25,10 @@ prefill が 1 件目の tool call の書き出しに固定されていて、そ�
 - 原因がモデルなのか、`required` の prefill・tool call の parse（`apply_parallel_tool_call_policy` を含む）なのかを切り分ける
 - kiapi で直せるなら直し、回帰テストを足す。モデルの限界なら chat の README の `parallel_tool_calls` の節に書く
 
+## 申し送り
+
+- Codex を kiapi につなぐ用途（`/v1/responses`、2026-10-08）は `tool_choice: "auto"`・`parallel_tool_calls: true` で送ってくるので、この件には当たらない
+
 ## 完了条件
 
 - 原因が分かり、直したか、モデルの挙動として README に書いた
