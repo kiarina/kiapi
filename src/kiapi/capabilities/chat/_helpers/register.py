@@ -23,7 +23,7 @@ def register() -> None:
             docs_path="/v1/chat/docs",
             redoc_path="/v1/chat/redoc",
             path_prefixes=("/v1/chat",),
-            include_paths=("/v1/models",),
+            include_paths=("/v1/models", "/v1/responses"),
         )
     )
 

@@ -219,13 +219,14 @@ def test_files_upload_remains_multipart() -> None:
     assert "multipart/form-data" in operation["requestBody"]["content"]
 
 
-def test_chat_openapi_includes_openai_compatible_models_endpoint() -> None:
+def test_chat_openapi_includes_openai_compatible_endpoints() -> None:
     schema = _capability_schema("chat")
 
     assert sorted(schema["paths"]) == [
         "/v1/chat/completions",
         "/v1/chat/models",
         "/v1/models",
+        "/v1/responses",
     ]
     assert schema["x-kiapi-capability"] == "chat"
     assert schema["x-kiapi-domain"] == "chat"

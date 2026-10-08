@@ -60,6 +60,58 @@
         }
       }
     },
+    "/v1/responses": {
+      "post": {
+        "summary": "Responses",
+        "description": "Generate a response (OpenAI Responses API, stateless subset).\n\nRuns the same chat models as `POST /v1/chat/completions`. The client sends\nthe whole conversation in `input` every time; nothing is stored, so\n`previous_response_id` is rejected. Function tools and `function_call` /\n`function_call_output` items are supported; `reasoning` is ignored.",
+        "operationId": "responses_v1_responses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponsesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Non-streaming: a `response` object. Streaming (`stream: true`): Responses API events as `text/event-stream` (`event: <type>` and `data: {...}`), from `response.created` to `response.completed`.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, unknown model, or unsupported input item or tool."
+          },
+          "503": {
+            "description": "Model not set up, or memory budget exceeded."
+          },
+          "504": {
+            "description": "Sync timeout exceeded; the job keeps running."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/chat/models": {
       "get": {
         "summary": "List Models",
@@ -515,6 +567,161 @@
         ],
         "title": "OpenAIModelSpec",
         "description": "An OpenAI-compatible model spec (one entry in a model list)."
+      },
+      "ResponsesRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model",
+            "description": "Registered chat model name, alias, or repo id (see GET /v1/models).",
+            "examples": [
+              "vlm"
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Input",
+            "description": "A user message as a string, or the whole conversation as items: `message` (`role` `user` / `assistant` / `system` / `developer`, `content` a string or `input_text` / `output_text` / `input_image` parts), `function_call`, and `function_call_output`. `reasoning` items are ignored."
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions",
+            "description": "System instructions placed before the conversation."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Function tools: `{type: 'function', name, description, parameters}`. Other tool types are rejected."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "`'auto'`, `'none'`, `'required'`, or `{type: 'function', name}`."
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "When false, at most one function call is returned.",
+            "default": true
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens",
+            "description": "Upper bound on generated tokens."
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature."
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Nucleus sampling cutoff in (0, 1]."
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "When true, stream Responses API events (`response.created`, `response.output_item.added`, `response.output_text.delta`, ..., `response.completed`) as `text/event-stream`.",
+            "default": false
+          },
+          "store": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store",
+            "description": "Accepted for compatibility. kiapi never stores responses, so `previous_response_id` is not supported."
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "kiapi extension (non-OpenAI). Forwarded to the chat template, as in `POST /v1/chat/completions`. The `reasoning` field is ignored."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "title": "ResponsesRequest",
+        "examples": [
+          {
+            "input": "Hello!",
+            "instructions": "You are a helpful assistant.",
+            "model": "vlm"
+          }
+        ]
       },
       "StreamOptions": {
         "properties": {

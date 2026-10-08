@@ -137,12 +137,56 @@ different from a disconnect: a timed-out job continues and can be polled.
 | Endpoint | Name | Description |
 |---|---|---|
 | `POST /v1/chat/completions` | Chat Completions | OpenAI-compatible Chat Completions API. |
+| `POST /v1/responses` | Responses | OpenAI-compatible Responses API (stateless subset). See [Responses API](#responses-api). |
 | `GET /v1/models` | Model list | Returns a list of available models. |
 | `GET /v1/chat/openapi.json` | OpenAPI | Returns detailed input/output specifications, usage, and TIPS. |
 
 - Unique extensions:
   - `fps`: Conversion frame rate of video
   - `use_audio_in_video`: Whether to include audio in video in model input
+
+## Responses API
+
+`POST /v1/responses` runs the same models as Chat Completions. It converts the
+request to a chat request and the result back, so clients built on the Responses
+API (the OpenAI SDK's `client.responses`, Codex) can use kiapi.
+
+- Stateless: send the whole conversation in `input` every time. Nothing is
+  stored; `previous_response_id` and `item_reference` items are rejected.
+- `input` items: `message` (`user` / `assistant` / `system` / `developer`;
+  `input_text`, `output_text`, `input_image` with `image_url`),
+  `function_call`, and `function_call_output`. `reasoning` items are skipped.
+- `instructions` and leading `system` / `developer` messages merge into one
+  system message, since the chat templates accept a system message only first.
+  A later `developer` message is sent as a user message.
+- Tools: `function` tools only. `tool_choice`, `parallel_tool_calls`,
+  `max_output_tokens`, `temperature`, and `top_p` map to their chat fields.
+- `reasoning`, `include`, `text`, `store`, and `prompt_cache_key` are accepted and
+  ignored. Reasoning stays off; `chat_template_kwargs` is forwarded as in chat.
+- Streaming sends `event:` / `data:` pairs from `response.created` to
+  `response.completed` (`response.incomplete` when generation hits the token
+  limit, `response.failed` on errors). Text arrives as `response.output_text.delta`;
+  each function call arrives complete, as one `response.function_call_arguments.delta`.
+- `usage.input_tokens_details.cached_tokens` reports the prefix cache hits.
+
+### Codex
+
+Codex can use kiapi as a model provider. Codex picks how to send tools from its
+model catalog, and the catalog entries of OpenAI's models send them in a form
+kiapi does not accept (code mode and `additional_tools`). Give Codex a catalog
+entry for the kiapi model with `tool_mode`, `multi_agent_version`, and
+`apply_patch_tool_type` set to null and `use_responses_lite` set to false, and
+point the provider at kiapi:
+
+```sh
+codex app-server \
+  -c 'model_providers.kiapi={name="kiapi", base_url="http://127.0.0.1:8500/v1", wire_api="responses"}' \
+  -c 'model_provider="kiapi"' -c 'model="qwen3.8-flash-next"' \
+  -c 'model_catalog_json="/path/to/models.json"'
+```
+
+Codex then sends `exec_command`, `write_stdin`, `request_user_input`, and
+`view_image` as function tools and edits files through the shell.
 
 ## API Docs
 

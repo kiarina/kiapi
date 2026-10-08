@@ -3,6 +3,19 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-08 — chat に Responses API（`POST /v1/responses`）を足した
+
+- 目的: Codex のモデルの送り先を kiapi にし、Codex・Claude Code と並べて使えるローカルのエージェントにする（kiarina の希望）。
+  Codex は Chat Completions ではなく Responses API で話す
+- 作り: 会話を持たない最小の形。Responses の依頼を chat の依頼に変え、結果とストリームを Responses の形に戻すだけ（`responses_to_chat`・`chat_to_responses`）。
+  `instructions` と先頭の system・developer は 1 つの system にまとめる（Qwen のテンプレートは system を先頭にしか置けない）。`reasoning` は無視し、thinking は切ったまま
+  （thinking の文を reasoning の項目に分ける作りがまだ無いため）
+- Codex が送るもの・受け付ける返事は、偽サーバーで先に洗い出した（labs `2026/10/08/codex-responses-provider`）。Codex の既定のモデル表のままだとツールを
+  code mode と `additional_tools` で送るので、自前のモデル表で外す（chat の README の「Codex」）
+- 確かめたこと（サーバー機）: OpenAI の Python SDK の `responses.stream` と `responses.create` でツールの往復（2 回目の 342 トークンのうち 274 がキャッシュ）。
+  Codex を `qwen3.8-flash-next` につなぎ、バグ 3 つの `calc.py` を直してテストを通す仕事が 3 回中 3 回通った（34〜42 秒、入力の 77〜86% がキャッシュ。
+  labs `2026/10/08/codex-on-kiapi`）。単体テスト 406 件
+
 ## 2026-10-08 — ernie・ideogram4 の family と ltx2 の `distilled` を外した
 
 - kiarina の判断で、使っていない family と古いモデルを削った。10/2 以降のサービスのログで、外からの生成の依頼は chat 150・qwen 17・

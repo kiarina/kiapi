@@ -1,4 +1,4 @@
-"""Chat API: OpenAI-compatible ``POST /v1/chat/completions``.
+"""Chat API: OpenAI-compatible ``POST /v1/chat/completions`` and ``POST /v1/responses``.
 
 Internally still a job (so it shows up in /v1/jobs and shares the single-flight
 worker). Non-streaming callers wait for the completion dict. Streaming callers
@@ -12,13 +12,14 @@ import binascii
 import json
 import logging
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
+from pydantic import ValidationError as PydanticValidationError
 
 from kiapi.api import (
     REQUIRE_AUTH,
@@ -27,7 +28,14 @@ from kiapi.api import (
     register_capability_endpoints,
 )
 from kiapi.api._settings import settings_manager
-from kiapi.capabilities.chat import ChatRequest, handle_chat
+from kiapi.capabilities.chat import (
+    ChatRequest,
+    ResponsesRequest,
+    ResponsesStream,
+    completion_to_response,
+    handle_chat,
+    responses_to_chat,
+)
 from kiapi.core.app import AppContext
 from kiapi.core.job import Job
 from kiapi.core.memory import MemoryBudgetError
@@ -90,72 +98,174 @@ async def chat_completions(
     keeps running and can be polled at /v1/jobs/{id}. Set `stream: true` to
     receive incremental `chat.completion.chunk` SSE events instead.
     """
-    settings = settings_manager.get_settings()
-
     logger.debug(
         "chat/completions request validated: %s",
         _redacted_chat_request_dump(req),
     )
 
     if req.stream:
-        try:
-            model_registry.resolve("chat", req.model)
-        except UnknownModelError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
-
-        loop = asyncio.get_running_loop()
-        queue: asyncio.Queue[dict | None] = asyncio.Queue()
+        include_usage = bool(req.stream_options and req.stream_options.include_usage)
         last_chunk: dict[str, Any] | None = None
 
-        def emit(chunk: dict) -> None:
+        def on_chunk(chunk: dict) -> list[str]:
             nonlocal last_chunk
             last_chunk = chunk
-            loop.call_soon_threadsafe(queue.put_nowait, chunk)
+            return [_sse(chunk)]
 
-        def finish_stream() -> None:
-            loop.call_soon_threadsafe(queue.put_nowait, None)
+        def on_result(result: dict) -> list[str]:
+            if include_usage:
+                return [_sse(_stream_usage_chunk(result, last_chunk))]
+            return []
 
-        def thunk():  # type: ignore
-            try:
-                return handle_chat(ctx, req, emit=emit, job=job)
-            finally:
-                finish_stream()
+        def on_error(exc: BaseException) -> list[str]:
+            return [_sse(_stream_error(exc))]
 
-        job = ctx.job_store.create(
-            type="chat", params={"model": req.model, "stream": True}
+        return await _stream_chat(
+            req,
+            ctx,
+            worker,
+            on_chunk=on_chunk,
+            on_result=on_result,
+            on_error=on_error,
+            done=[_sse("[DONE]")],
         )
-        fut = await worker.submit(job, thunk)
 
-        async def events() -> AsyncIterator[str]:
-            try:
-                while True:
-                    item = await queue.get()
-                    if item is None:
-                        break
-                    yield _sse(item)
+    return await _complete_chat(req, request, ctx, worker)
 
-                try:
-                    result = await asyncio.shield(fut)
-                except Exception as exc:
-                    yield _sse(_stream_error(exc))
-                else:
-                    if req.stream_options and req.stream_options.include_usage:
-                        yield _sse(_stream_usage_chunk(result, last_chunk))
-                yield _sse("[DONE]")
-            except asyncio.CancelledError:
-                job.request_cancel()
-                fut.cancel()
-                raise
 
-        return StreamingResponse(
-            events(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
+@router.post(
+    "/v1/responses",
+    response_model=None,
+    responses={
+        200: {
+            "description": (
+                "Non-streaming: a `response` object. Streaming (`stream: true`): "
+                "Responses API events as `text/event-stream` (`event: <type>` and "
+                "`data: {...}`), from `response.created` to `response.completed`."
+            ),
+            "content": {
+                "text/event-stream": {"schema": {"type": "string", "format": "binary"}},
             },
+        },
+        400: {
+            "description": "Invalid request, unknown model, or unsupported input item or tool."
+        },
+        503: {"description": "Model not set up, or memory budget exceeded."},
+        504: {"description": "Sync timeout exceeded; the job keeps running."},
+    },
+)
+async def responses(
+    req: ResponsesRequest,
+    request: Request,
+    ctx: AppContext = Depends(get_ctx),
+    worker: Worker = Depends(get_worker),
+) -> dict | Response:
+    """Generate a response (OpenAI Responses API, stateless subset).
+
+    Runs the same chat models as `POST /v1/chat/completions`. The client sends
+    the whole conversation in `input` every time; nothing is stored, so
+    `previous_response_id` is rejected. Function tools and `function_call` /
+    `function_call_output` items are supported; `reasoning` is ignored.
+    """
+    try:
+        chat_req = responses_to_chat(req, stream=req.stream)
+    except (ValueError, PydanticValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
+
+    if req.stream:
+        translator = ResponsesStream(req)
+        return await _stream_chat(
+            chat_req,
+            ctx,
+            worker,
+            on_chunk=lambda chunk: [_sse_event(e) for e in translator.feed(chunk)],
+            on_result=lambda result: [
+                _sse_event(e) for e in translator.complete(result.get("usage"))
+            ],
+            on_error=lambda exc: [_sse_event(e) for e in translator.fail(exc)],
+            done=[],
         )
 
+    completion = await _complete_chat(chat_req, request, ctx, worker)
+    if isinstance(completion, Response):
+        return completion
+    return completion_to_response(completion, req)
+
+
+async def _stream_chat(
+    req: ChatRequest,
+    ctx: AppContext,
+    worker: Worker,
+    *,
+    on_chunk: Callable[[dict], list[str]],
+    on_result: Callable[[dict], list[str]],
+    on_error: Callable[[BaseException], list[str]],
+    done: list[str],
+) -> Response:
+    try:
+        model_registry.resolve("chat", req.model)
+    except UnknownModelError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+    def emit(chunk: dict) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, chunk)
+
+    def finish_stream() -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    def thunk():  # type: ignore
+        try:
+            return handle_chat(ctx, req, emit=emit, job=job)
+        finally:
+            finish_stream()
+
+    job = ctx.job_store.create(type="chat", params={"model": req.model, "stream": True})
+    fut = await worker.submit(job, thunk)
+
+    async def events() -> AsyncIterator[str]:
+        try:
+            while True:
+                item = await queue.get()
+                if item is None:
+                    break
+                for line in on_chunk(item):
+                    yield line
+
+            try:
+                result = await asyncio.shield(fut)
+            except Exception as exc:
+                for line in on_error(exc):
+                    yield line
+            else:
+                for line in on_result(result):
+                    yield line
+            for line in done:
+                yield line
+        except asyncio.CancelledError:
+            job.request_cancel()
+            fut.cancel()
+            raise
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+async def _complete_chat(
+    req: ChatRequest,
+    request: Request,
+    ctx: AppContext,
+    worker: Worker,
+) -> dict | Response:
+    settings = settings_manager.get_settings()
     job = ctx.job_store.create(type="chat", params={"model": req.model})
     fut = await worker.submit(job, lambda: handle_chat(ctx, req, job=job))
     disconnect_task = asyncio.create_task(
@@ -273,6 +383,10 @@ def _sse(payload) -> str:  # type: ignore
     if payload == "[DONE]":
         return "data: [DONE]\n\n"
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def _sse_event(event: dict) -> str:
+    return f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
 def _stream_error(exc: BaseException) -> dict:
