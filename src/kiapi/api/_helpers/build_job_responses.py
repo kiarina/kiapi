@@ -25,10 +25,13 @@ def build_job_responses(
 
     job_model: type[BaseModel] = Job
     if result_model is not None:
+        # pydantic 2.14 types field definitions as TypeForm, which mypy does
+        # not infer for a runtime union.
+        result_type: Any = result_model | None
         job_model = create_model(
             f"Job{result_model.__name__}",
             __base__=Job,
-            result=(result_model | None, None),
+            result=(result_type, None),
         )
 
     # Pass the models via FastAPI's ``model`` key (not inline ``schema``) so

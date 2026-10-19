@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web UI: source-map-js 1.2.2 (security), vite 8.3.4, react and react-dom
   19.3.1, `@vitejs/plugin-react` 6.1.2 and `@types/node` 26.6.5. Development
   tooling: ruff 0.17.1.
+- Lockfile refresh: transformers 5.18.0 -> 5.20.1, mlx 0.32.3 -> 0.32.4, mlx-lm
+  0.32.0 -> 0.32.2, mlx-audio 0.5.7 -> 0.5.9, pillow 12.3.0 -> 13.0.0, omegaconf
+  2.3.1 -> 2.4.0 (drops antlr4-python3-runtime), fastapi 0.148.0, pydantic
+  2.14.1, starlette 1.9.0 and other transitive updates. huggingface-hub 2 and
+  opencv-python 5 stay blocked by mflux only (`<2.0`, `<5.0`, also in 0.23.0).
 
 ## [0.8.0] - 2026-09-26
 
