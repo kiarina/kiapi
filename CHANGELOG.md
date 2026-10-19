@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   0.31.3 -> 0.32.0, mlx-audio 0.5.6 -> 0.5.7, torch 2.14.1, fastapi 0.142.2 and
   other transitive updates. huggingface-hub 2 stays blocked by tokenizers and
   mflux (`<2.0`), and opencv-python 5 by mflux (`<5.0`).
+- Web UI: source-map-js 1.2.2 (security), vite 8.3.4, react and react-dom
+  19.3.1, `@vitejs/plugin-react` 6.1.2 and `@types/node` 26.6.5. Development
+  tooling: ruff 0.17.1.
 
 ## [0.8.0] - 2026-09-26
 
