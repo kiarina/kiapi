@@ -42,7 +42,10 @@ dependencies = [
     # numpy>=2.5 needs numba>=0.67 in the out-of-band LTX-2 install
     # (`kiapi activate --family ltx2` pulls mlx-video -> librosa -> numba).
     "numpy",
-    "pillow",
+    # pillow 13.0.0 imports numbers._IntegralLike in PIL._typing and relies on
+    # PEP 810 lazy imports to skip it; on Python 3.12 the import runs and fails,
+    # breaking every mflux-based family (mflux imports PIL._typing).
+    "pillow<13",
     "psutil", # process RSS measurement (framework-agnostic fallback)
     "httpx", # web search capability: async HTTP client for the SearXNG backend
     "kiarina-utils-common>=2.2.0",
