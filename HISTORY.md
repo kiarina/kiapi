@@ -3,6 +3,15 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-20 — 推論経路の依存を上げて本番へ入れた（Pillow 13 は止めた）
+
+- 上げたもの: transformers 5.20.1、mlx 0.32.4、mlx-lm 0.32.2、mlx-audio 0.5.9、omegaconf 2.4.0（antlr4 が外れる）、fastapi 0.148.0、pydantic 2.14.1、starlette 1.9.0 ほか（`16d79e1`）
+- **Pillow 13.0.0 は Python 3.12 で `PIL._typing` の import が失敗する**（`from numbers import _IntegralLike` を PEP 810 の lazy import で飛ばす前提）。mflux が `PIL._typing` を読むので、
+  depthpro・flux2・qwen・seedvr2・zimage が全部 500 になった。`pillow<13` で止めた（`14450f5`）
+- full verify（全 family）: acestep・audiogen・chat（3 モデル）・embedding・h3・ltx2 は 1 回目で通り、画像系 5 family は Pillow を 12.3.0 に戻して全部通った（depthpro 7/7、flux2 12/12、qwen 13/13、seedvr2 6/6、zimage 12/12）。
+  web search は SearXNG が未 activate で 503（前から）
+- サービスの停止: 1 回目の verify 約 18 分（23:37〜23:55 JST）と、画像系の流し直し約 19 分（23:57〜00:16）。反映後に health・Web UI・chat（qwen3.8-27b）の疎通を確かめた
+
 ## 2026-10-08 — chat に Responses API（`POST /v1/responses`）を足した
 
 - 目的: Codex のモデルの送り先を kiapi にし、Codex・Claude Code と並べて使えるローカルのエージェントにする（kiarina の希望）。
