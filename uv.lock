@@ -319,6 +319,7 @@ dependencies = [
     { name = "kiarina-utils-app" },
     { name = "kiarina-utils-common" },
     { name = "mflux" },
+    { name = "mlx-audio" },
     { name = "mlx-audiocraft" },
     { name = "mlx-embeddings" },
     { name = "mlx-lm" },
@@ -361,6 +362,7 @@ requires-dist = [
     { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", git = "https://github.com/kiarina/mflux.git?rev=144a6becfb587bcaa0139758131faf0a7930ae18" },
+    { name = "mlx-audio", specifier = "==0.6.0" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
@@ -558,7 +560,7 @@ wheels = [
 
 [[package]]
 name = "mlx-audio"
-version = "0.5.9"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
@@ -566,13 +568,14 @@ dependencies = [
     { name = "mlx" },
     { name = "numpy" },
     { name = "scipy" },
+    { name = "sentencepiece" },
     { name = "sounddevice" },
     { name = "tqdm" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/4a/ea4746d0c14b75d835dd5164d0e8bba19598248cb29831c0c8e8b98310b9/mlx_audio-0.5.9.tar.gz", hash = "sha256:ad2862464d2d5b8ab4b9394a226d044e7022da594329427ef16ca8e93c08e6b5", size = 1776885, upload-time = "2026-10-13T18:37:33.452Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/37/9e25593fdb67bff1522105ab00f8b36af5fbbb45470e7180e80aa8fea1c7/mlx_audio-0.6.0.tar.gz", hash = "sha256:9b6a2cbc9b03fe0d4d14459d55744e5ac78e9ff48e339928df5c5785a2cb4ef3", size = 1895086, upload-time = "2026-10-19T15:28:29.96Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/3c/5864cf8c30661049db2ed22d6c2ab1137691f3f49df3c1fd4c7b885953da/mlx_audio-0.5.9-py3-none-any.whl", hash = "sha256:fa662cf24cbca69cdd912612cdb677e65f77c6329a95906cc80b50e5b4689d6b", size = 2136508, upload-time = "2026-10-13T18:37:31.225Z" },
+    { url = "https://files.pythonhosted.org/packages/40/93/ab3595aedfbb1e8e870f9962d4cdde27a6fee36467ca7c324fb996d111e1/mlx_audio-0.6.0-py3-none-any.whl", hash = "sha256:8b397405c9d2dfb4e2283dd8a4be7ae6cd5fdef015c379e878f607ced9bd5ad3", size = 2279201, upload-time = "2026-10-19T15:28:28.024Z" },
 ]
 
 [[package]]

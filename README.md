@@ -88,6 +88,8 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  |  | [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5) | shared checkpoints | MIT | Shared ACE-Step 1.5 checkpoint resources. |
 |  |  | [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base) | model weights | MIT | Extra checkpoint used by `xl-base`. |
 | audio | [audiogen](src/kiapi/capabilities/audiogen/README.md) | [facebook/audiogen-medium](https://huggingface.co/facebook/audiogen-medium) | model weights | CC-BY-NC-4.0 | Non-commercial license. |
+| audio | [speech](src/kiapi/capabilities/speech/README.md) | [Blaizzy/mlx-audio](https://github.com/Blaizzy/mlx-audio) | Python package | MIT | Pinned to 0.6.0; kiapi patches its Qwen3-TTS voice cloning. |
+|  |  | [mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16](https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16) | model weights | Apache-2.0 | MLX conversion of [Qwen/Qwen3-TTS-12Hz-1.7B-Base](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base). |
 | video | [ltx2](src/kiapi/capabilities/ltx2/README.md) | [Blaizzy/mlx-video](https://github.com/Blaizzy/mlx-video) | Python package | MIT | Installed from a pinned Git commit for LTX-2.5 / LTX-2 inference. LTX-2.5 support is pinned from the [kiarina fork](https://github.com/kiarina/mlx-video/tree/kiapi/ltx-2.5) until [#52](https://github.com/Blaizzy/mlx-video/pull/52) is merged. |
 |  |  | [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | model weights | LTX-2.x Community License | Gated; accept the model terms on Hugging Face. Used by the default `ltx-2.5-distilled`. |
 |  |  | [Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Pixel-Spatial-Upscaler) | model weights | LTX-2.x Community License | Gated. Detailing adapter for `pipeline="dfr"`. |
@@ -138,6 +140,8 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  | depthpro | `POST /v1/image/depthpro` | [Depth Pro API details](src/kiapi/capabilities/depthpro/README.md) |
 | audio | acestep | `POST /v1/audio/acestep` | [ACE-Step API details](src/kiapi/capabilities/acestep/README.md) |
 |  | audiogen | `POST /v1/audio/audiogen` | [AudioGen API details](src/kiapi/capabilities/audiogen/README.md) |
+|  | speech | `POST /v1/audio/speech` | OpenAI-compatible text-to-speech in a registered voice. [Speech API details](src/kiapi/capabilities/speech/README.md) |
+|  |  | `POST /v1/audio/voices` | Register a voice from reference audio and its transcript. |
 | video | ltx2 | `POST /v1/video/ltx2` | [LTX-2 API details](src/kiapi/capabilities/ltx2/README.md) |
 |  | h3 | `POST /v1/video/h3` | [MiniMax H3 API details](src/kiapi/capabilities/h3/README.md) |
 | web |  | `POST /v1/web` | [Web API details](src/kiapi/capabilities/web/README.md) |

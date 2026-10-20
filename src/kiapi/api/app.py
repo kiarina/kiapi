@@ -16,6 +16,7 @@ from kiapi.core.worker import create_worker
 
 from .audio.acestep.router import router as acestep_router
 from .audio.audiogen.router import router as audiogen_router
+from .audio.speech.router import router as speech_router
 from .chat.router import router as chat_router
 from .embedding.router import router as embedding_router
 from .files.router import router as files_router
@@ -151,6 +152,7 @@ app.include_router(seedvr2_router)
 app.include_router(zimage_router)
 app.include_router(acestep_router)
 app.include_router(audiogen_router)
+app.include_router(speech_router)
 app.include_router(ltx2_router)
 app.include_router(h3_router)
 app.include_router(web_router)

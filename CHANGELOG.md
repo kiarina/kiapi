@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- speech: new audio family with an OpenAI-compatible `POST /v1/audio/speech`
+  that speaks in a registered voice (Qwen3-TTS 1.7B Base on mlx-audio, voice
+  cloning). `response_format: pcm` streams 24 kHz 16-bit mono PCM while it is
+  generated; closing the connection stops it. Voices are registered from
+  reference audio and its transcript at `/v1/audio/voices` and kept on disk.
+  kiapi aligns mlx-audio 0.6.0's voice cloning with the reference
+  implementation (repetition penalty, prompt layout) and primes the streaming
+  decoder with the end of the reference so the first chunk does not sound off.
 - chat: `POST /v1/responses`, an OpenAI-compatible Responses API (stateless subset)
   over the chat models, with function tools and streaming events. Codex can use
   kiapi as a model provider through it.

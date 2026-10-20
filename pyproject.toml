@@ -58,6 +58,10 @@ dependencies = [
     # --- sound-effect capability (mlx-audiocraft / AudioGen) ---
     "mlx-audiocraft>=0.1.0",
     "soundfile>=0.13.1",
+    # --- speech capability (mlx-audio / Qwen3-TTS) ---
+    # Exact pin: the speech family patches mlx-audio internals (voice-clone
+    # prompt, repetition penalty, streaming decoder); re-verify before bumping.
+    "mlx-audio==0.6.0",
     # --- video capability (mlx-video / LTX-2 distilled) ---
     # GitHub-only upstream is installed by `kiapi activate --family ltx2`
     # as a PythonPackageResource to keep PyPI metadata free of direct URLs.
