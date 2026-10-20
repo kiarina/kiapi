@@ -57,14 +57,14 @@ seconds of reference audio and its transcript.
 
 ## Measured
 
-Apple M1 Max, a 6.6-second reference with its transcript, Japanese sentences of 3.6 to
-10.9 seconds, after the model was loaded:
+A 6.6-second reference with its transcript, Japanese sentences of 3.6 to 10.9 seconds,
+after the model was loaded (the first request after a load takes 6 to 10 seconds more):
 
-| Measure | Value |
-|---|---|
-| First PCM chunk | 0.37 to 0.38 s |
-| Generation time / audio length | 0.52 to 0.56 |
-| Resident memory | ~4.9 GB |
+| Measure | Apple M4 Max (over Tailscale) | Apple M1 Max (local) |
+|---|---|---|
+| First PCM chunk | 0.22 to 0.23 s | 0.37 to 0.38 s |
+| Generation time / audio length | 0.30 to 0.32 | 0.52 to 0.56 |
+| Resident memory | ~4.3 GB | ~4.9 GB |
 
 ## Quickstart
 
