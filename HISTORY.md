@@ -3,6 +3,19 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-21 — OpenAI 互換の音声合成（`/v1/audio/speech`）を Qwen3-TTS の声のクローンで足し、本番へ入れた
+
+- Spirits Garden の試作の body が話す声を差し替えられるようにする方針（オーナー、2026-10-21）の、差し替え先として作った。調べは kiarina/labs の
+  `2026/10/20/japanese-zero-shot-tts-compare`（MLX bf16 が聞いて PyTorch 版と同じ質）
+- 新しい family `speech`（`f1e0d4c`）: `POST /v1/audio/voices` で参照の声と文字起こしを登録し、`POST /v1/audio/speech` で生成しながら 24 kHz の PCM を返す。
+  モデルは `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16`（`qwen3-tts-1.7b`）。mlx-audio を 0.6.0 に固定し、声のクローンの生成の設定（罰則・並べ方）と
+  ストリーミングの話し始め（復号器を参照の末尾 12 符号で温める）を kiapi 側で直す
+- 推論は他と同じ 1 本の worker で順番に処理する（オーナー、2026-10-21）。TTS だけ順番の外に出す案は採らなかった
+- 本番（サーバー機、M4 Max）で、Tailscale 越しに開発機から: 最初の PCM 0.22〜0.23 秒（読み込み後。最初の 1 回は読み込みを含めて 6.7 秒）、
+  生成時間は音声の 0.30〜0.32 倍、`wav` は 7.3 秒の文で 2.3 秒、途中で切った次の頼みの最初の音 0.32 秒。開発機（M1 Max）のローカルでは最初の PCM 0.37〜0.38 秒・0.52〜0.56 倍
+- mlx-audio は mlx-vlm の推移的な依存として 0.5.9 が入っていた。0.6.0 で chat（qwen3-omni）の音声の入力が動くことを本番で確かめた（Qwen3-TTS の出力を正しく文字にした）
+- lockfile は古い uv（0.10）で作ると形式が変わる（revision 5 → 3）。mise で uv を最新（0.13.1）にしてから `uv lock` した
+
 ## 2026-10-20 — 推論経路の依存を上げて本番へ入れた（Pillow 13 は止めた）
 
 - 上げたもの: transformers 5.20.1、mlx 0.32.4、mlx-lm 0.32.2、mlx-audio 0.5.9、omegaconf 2.4.0（antlr4 が外れる）、fastapi 0.148.0、pydantic 2.14.1、starlette 1.9.0 ほか（`16d79e1`）

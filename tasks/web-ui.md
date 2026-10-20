@@ -21,6 +21,7 @@ README での紹介（2026-09-26、`docs/images/web-ui/*.webp`）と 0.8.0 の�
 - ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。生成時に
   `meta.family` を書くと確実になる
 - family ごとの工夫（サイズのプリセット、音声の波形など）: 汎用フォームで一通り使えるので、使って欲しくなったものから足す
+- speech（2026-10-21 に足した）: `pcm` の流しは汎用フォームでは鳴らせない。声の登録（`/v1/audio/voices`）と `wav` での試しが要るか、使ってから決める
 - 実行中ジョブの中断: kiapi に中断の API が無い（`DELETE /v1/jobs/{id}` は実行中を止めない）ので UI にも無い
 - ltx2 の `enhance_prompt` と「Write with chat」の使い分けは未検討
 
