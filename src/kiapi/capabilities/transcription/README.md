@@ -55,16 +55,18 @@ detects the language; Qwen3-ForcedAligner 0.6B times sentences and words.
 
 ## Measured
 
-Apple M1 Max, Japanese speech, after the model was loaded (loading takes about
-6 seconds):
+Japanese speech, after the model was loaded (the first request after a load
+takes about 3 seconds more on Apple M4 Max and 6 on Apple M1 Max). Times are
+request to response; M4 Max over Tailscale, M1 Max local. The time over the
+audio length is in parentheses.
 
-| Audio | Format | Time | Time / audio length | Peak over the weights |
+| Audio | Format | Apple M4 Max | Apple M1 Max | Peak over the weights (M1 Max) |
 |---|---|---:|---:|---:|
-| 14 s conversation | `json` | 1.1 s | 0.08 | 1.1 GB |
-| 14 s conversation | `verbose_json` + words | 2.1 s | 0.15 | — |
-| 3 min | `json` | 68 s | 0.37 | 2.3 GB |
-| 3 min | `verbose_json` + words | 74 s | 0.40 | 2.3 GB |
-| 20 min in one chunk | `json` | 667 s | 0.55 | 11.4 GB |
+| 14 s conversation | `json` | 0.8 s (0.06) | 1.1 s (0.08) | 1.1 GB |
+| 14 s conversation | `verbose_json` + words | 1.4 s (0.10) | 2.1 s (0.15) | — |
+| 3 min | `json` | 35 s (0.19) | 68 s (0.37) | 2.3 GB |
+| 3 min | `verbose_json` + words | 37 s (0.20) | 74 s (0.40) | 2.3 GB |
+| 20 min in one chunk | `json` | — | 667 s (0.55) | 11.4 GB |
 
 The last row is why the chunk is 3 minutes. Resident memory is about 5.5 GB.
 

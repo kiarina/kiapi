@@ -3,6 +3,19 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-22 — OpenAI 互換の文字起こし（`/v1/audio/transcriptions`）を Qwen3-ASR で足し、本番へ入れた
+
+- 範囲はファイルの文字起こしと、声の登録の書き起こし（kiarina、2026-10-22）。Spirits Garden のリアルタイムの聞き取りは端末の pcm_asr のまま。
+  モデルは Qwen3-ASR 1.7B だけ（0.6B は入れない。kiarina）。本家（PyTorch）との突き合わせや whisper との比較はしない（kiarina）
+- 新しい family `transcription`（`7abb02c`）: multipart で `json`・`text`・`verbose_json`。`verbose_json` は Qwen3-ForcedAligner 0.6B の単語を文に束ねた
+  `segments` と `words`。ASR と aligner を 1 つの ModelSpec で読む（常駐 5.5 GB）。日本語の単語分けに nagisa（MIT、DyNet は Apache-2.0）
+- 区切りは 3 分。本家の既定の 20 分は M1 Max で重みの上に 11.4 GB・実時間の 0.55 倍、3 分は 2.3 GB・0.37 倍だった。
+  上限は 1 時間・100 MB。区切った文はスペースを使わない言語ではそのまま繋ぐ（本家どおり。mlx-audio は常にスペース）
+- `POST /v1/audio/voices` は `transcript` が無ければ参照を書き起こす（`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`、既定 on）
+- 開発機（M1 Max）で `mise run ci`（450 passed）・verify 5/5・OpenAI の Python SDK の 3 形式。本番（サーバー機、M4 Max）で verify 5/5、
+  Tailscale 越しに 14 秒 0.8 秒、3 分 35 秒（`verbose_json` と単語で 37 秒）。読み込み込みの最初の 1 回は 3.7 秒
+- Web UI の汎用フォームは JSON で送るので、multipart のこの口は試せない（`tasks/web-ui.md`）
+
 ## 2026-10-21 — OpenAI 互換の音声合成（`/v1/audio/speech`）を Qwen3-TTS の声のクローンで足し、本番へ入れた
 
 - Spirits Garden の試作の body が話す声を差し替えられるようにする方針（オーナー、2026-10-21）の、差し替え先として作った。調べは kiarina/labs の
