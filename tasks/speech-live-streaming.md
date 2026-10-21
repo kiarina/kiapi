@@ -16,3 +16,11 @@
 - CLI script `scripts/capabilities/verify_speech_live.py` は稼働中の検証サーバーと登録済みvoiceを指定して実行する。
 - `mise run verify --kiapi --family transcriptions` をfullで実行。speechは上記scriptでHTTP回帰とWebSocket成功/cancel/切断を確認する。
 - 音声の自然さ・声の似方は成果物を実際に試聴する。
+
+## 自己監査
+
+- queued cancelは受信側から即座にjob/sourceを止め、workerは未実行jobをskip。futureを待たずsocketを終え、完了時例外を回収する。
+- socket書込が詰まっていても受信側finallyがcancelを通知し、bounded queueのputは100ms周期でキャンセルを検知する。CPU回帰でworker解放を確認。
+- ready前の入力はUnicode sourceに保持し、tokenizerはworkerだけでbind。
+- HTTP/liveは同じsingle workerで直列。liveは元prepareのみ使い、pending primeを前後でclearしdecoderの状態をfinallyでreset。
+- voiceは各発話で再resolveし、参照ファイルを毎回hash。変更は新key、削除は失敗となり旧cacheを使わない。cacheはpayload所有で4件上限。

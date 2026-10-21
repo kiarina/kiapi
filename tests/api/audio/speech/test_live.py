@@ -155,3 +155,66 @@ def test_backpressure_cancel_releases_worker(
                 assert '"canceled"' in event["text"]
                 break
     assert finished.wait(timeout=1)
+
+
+@pytest.mark.asyncio
+async def test_cancel_releases_inference_while_socket_write_is_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+    import threading
+
+    from kiapi.core.job import JobCanceledError
+
+    inputs: asyncio.Queue[dict] = asyncio.Queue()
+    writer_blocked = asyncio.Event()
+    finished = threading.Event()
+
+    class Socket:
+        async def accept(self) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
+
+        async def receive_json(self) -> dict:
+            return await inputs.get()
+
+        async def send_json(self, event: dict) -> None:
+            pass
+
+        async def send_bytes(self, chunk: bytes) -> None:
+            writer_blocked.set()
+            await asyncio.Event().wait()
+
+    def flood(ctx: Any, req: Any, source: Any, job: Any, emit: Any) -> Any:
+        try:
+            while True:
+                emit(b"x")
+        except JobCanceledError:
+            raise
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(
+        _live.model_registry, "resolve", lambda *args: SimpleNamespace(name="test")
+    )
+    monkeypatch.setattr(
+        _live, "get_voice_store", lambda: SimpleNamespace(get=lambda voice: None)
+    )
+    monkeypatch.setattr(_live, "handle_live_speech", flood)
+    ctx = SimpleNamespace(job_store=JobStore())
+    worker = Worker(WorkerSettings(ttl_sweep_interval_s=0), ctx)  # type: ignore[arg-type]
+    worker.start()
+    task = asyncio.create_task(_live.stream_speech(Socket(), ctx, worker))  # type: ignore[arg-type]
+    try:
+        await inputs.put({"type": "start", "voice": "voice_test"})
+        await asyncio.wait_for(writer_blocked.wait(), 1)
+        await inputs.put({"type": "cancel"})
+        assert await asyncio.to_thread(finished.wait, 1)
+    finally:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        worker._task.cancel()  # type: ignore[union-attr]
+        worker.executor.shutdown(wait=True)

@@ -63,7 +63,7 @@ async def stream_speech(socket: WebSocket, ctx: AppContext, worker: Worker) -> N
             }
         )
 
-        async def receive() -> None:
+        async def receive_messages() -> None:
             while True:
                 message = await asyncio.wait_for(
                     socket.receive_json(), timeout=None if source.closed else 30
@@ -84,6 +84,15 @@ async def stream_speech(socket: WebSocket, ctx: AppContext, worker: Worker) -> N
                     return
                 else:
                     raise ValueError("Unknown message type")
+
+        async def receive() -> None:
+            try:
+                await receive_messages()
+            finally:
+                # Do not wait for a blocked socket writer before freeing inference.
+                source.cancel()
+                if job.finished_at is None:
+                    job.request_cancel()
 
         receiver = asyncio.create_task(receive())
         future = await worker.submit(
