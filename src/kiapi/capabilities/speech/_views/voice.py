@@ -44,6 +44,26 @@ class VoiceCreateRequest(BaseModel):
     )
 
 
+class VoiceUpdateRequest(BaseModel):
+    """Fields to change on a registered voice; omitted fields stay as they are."""
+
+    name: str | None = Field(
+        default=None,
+        max_length=200,
+        title="Name",
+        description="New label. Empty or null clears it.",
+    )
+    transcript: str | None = Field(
+        default=None,
+        max_length=2000,
+        title="Transcript",
+        description=(
+            "What the reference says, word for word. Used by the next speech in "
+            "this voice. Empty or null clones from the speaker embedding only."
+        ),
+    )
+
+
 class Voice(BaseModel):
     """A voice registered for `/v1/audio/speech`."""
 

@@ -11,6 +11,7 @@ import { useToken } from "../session";
 import { FieldInput } from "./fields";
 import { acceptFor } from "./FilePicker";
 import { setFormBridge } from "./formBridge";
+import { VoiceList } from "./VoiceList";
 import { buildPayload, operationsOf, valuesFromParams, type Field, type Operation, type Values } from "./schema";
 import { WriteWithChat } from "./WriteWithChat";
 
@@ -72,6 +73,7 @@ export function Playground({
   const [error, setError] = useState<Error>();
   const [outcome, setOutcome] = useState<Outcome>();
   const [flash, setFlash] = useState<Set<string>>(new Set());
+  const [voicesVersion, setVoicesVersion] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   const { jobs } = useData();
 
@@ -127,6 +129,7 @@ export function Playground({
         jobs.reload();
       } else {
         setOutcome({ kind: "json", data: await postJson(op.path, payload) });
+        if (op.path === "/v1/audio/voices") setVoicesVersion((v) => v + 1);
       }
     } catch (e) {
       setError(e as Error);
@@ -177,10 +180,21 @@ export function Playground({
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const useVoice = (voiceId: string) => {
+    const index = ops.findIndex((o) => o.fields.some((f) => f.name === "voice"));
+    if (index === -1) return;
+    const path = ops[index].path;
+    setValuesByOp((current) => ({ ...current, [path]: { ...(current[path] ?? {}), voice: voiceId } }));
+    setOpIndex(index);
+    setFlash(new Set(["voice"]));
+    window.setTimeout(() => setFlash(new Set()), 2400);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (!op) return <div className="card empty">This family has no operations to run from the UI.</div>;
   const canUseAsInput = ops.some((o) => o.fields.some(takesImage));
 
-  return (
+  const playground = (
     <div className="playground">
       <form
         ref={formRef}
@@ -308,8 +322,14 @@ export function Playground({
       )}
     </div>
   );
+  if (family !== "speech") return playground;
+  return (
+    <div className="pg-stack">
+      {playground}
+      <VoiceList version={voicesVersion} onUse={useVoice} />
+    </div>
+  );
 }
-
 function EmptyResult({ family }: { family: string }) {
   return (
     <div className="stage" style={{ minHeight: 420 }}>

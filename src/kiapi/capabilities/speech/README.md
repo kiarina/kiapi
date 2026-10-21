@@ -12,6 +12,8 @@ seconds of reference audio and its transcript.
 | `POST /v1/audio/voices` | Register a voice | Register reference audio (and its transcript, transcribed when omitted) as a voice. |
 | `GET /v1/audio/voices` | Voice list | Registered voices, oldest first. |
 | `GET /v1/audio/voices/{id}` | Voice | One registered voice. |
+| `PATCH /v1/audio/voices/{id}` | Update a voice | Change its name or transcript. |
+| `GET /v1/audio/voices/{id}/audio` | Reference audio | The stored reference (24 kHz, 16-bit, mono WAV). |
 | `DELETE /v1/audio/voices/{id}` | Delete a voice | Remove a voice and its reference audio. |
 | `GET /v1/audio/speech/models` | Model list | Returns a list of available models. |
 | `GET /v1/audio/speech/openapi.json` | OpenAPI | Returns detailed input/output specifications, usage, and TIPS. |

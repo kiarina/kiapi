@@ -61,11 +61,12 @@ class VoiceStore:
         (directory / "voice.json").write_text(voice.model_dump_json(indent=2))
         return voice
 
-    def update(
-        self, voice_id: str, *, transcript: str | None, name: str | None
-    ) -> Voice:
+    def update(self, voice_id: str, changes: dict[str, str | None]) -> Voice:
+        """Replace ``name`` and/or ``transcript``; blank values become null."""
         voice = self.get(voice_id).model_copy(
-            update={"transcript": (transcript or "").strip() or None, "name": name}
+            update={
+                key: (value or "").strip() or None for key, value in changes.items()
+            }
         )
         path = self._directory(voice_id) / "voice.json"
         path.write_text(voice.model_dump_json(indent=2))

@@ -193,6 +193,54 @@
           }
         }
       },
+      "patch": {
+        "summary": "Update Voice",
+        "description": "Change a voice's name or transcript; omitted fields stay as they are.",
+        "operationId": "update_voice_v1_audio_voices__voice_id__patch",
+        "parameters": [
+          {
+            "name": "voice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Voice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "summary": "Delete Voice",
         "operationId": "delete_voice_v1_audio_voices__voice_id__delete",
@@ -216,6 +264,50 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Delete Voice V1 Audio Voices  Voice Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/voices/{voice_id}/audio": {
+      "get": {
+        "summary": "Get Voice Audio",
+        "description": "The voice's reference audio as stored: 24 kHz, 16-bit, mono WAV.",
+        "operationId": "get_voice_audio_v1_audio_voices__voice_id__audio_get",
+        "parameters": [
+          {
+            "name": "voice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -926,6 +1018,39 @@
           "data"
         ],
         "title": "VoiceList"
+      },
+      "VoiceUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "New label. Empty or null clears it."
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript",
+            "description": "What the reference says, word for word. Used by the next speech in this voice. Empty or null clones from the speaker embedding only."
+          }
+        },
+        "type": "object",
+        "title": "VoiceUpdateRequest",
+        "description": "Fields to change on a registered voice; omitted fields stay as they are."
       },
       "_Timings": {
         "properties": {

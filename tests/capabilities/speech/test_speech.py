@@ -121,10 +121,12 @@ def test_voice_store_updates(tmp_path: Path) -> None:
         max_seconds=30.0,
     )
 
-    updated = store.update(voice.id, transcript=" こんにちは ", name="こんにちは")
-    assert (updated.transcript, updated.name) == ("こんにちは", "こんにちは")
+    updated = store.update(voice.id, {"transcript": " こんにちは ", "name": "a"})
+    assert (updated.transcript, updated.name) == ("こんにちは", "a")
     assert store.get(voice.id) == updated
-    assert store.update(voice.id, transcript=" ", name=None).transcript is None
+    renamed = store.update(voice.id, {"name": "b"})
+    assert (renamed.transcript, renamed.name) == ("こんにちは", "b")
+    assert store.update(voice.id, {"transcript": " "}).transcript is None
 
 
 def test_voice_store_rejects_short_reference(tmp_path: Path) -> None:

@@ -1103,6 +1103,51 @@ pre.json {
   gap: 8px;
   flex-wrap: wrap;
 }
+.pg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.voice-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 0;
+}
+.voice-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.voice-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.voice-id {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+}
+.voice-transcript {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.voice-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.voice-audio {
+  width: 100%;
+  max-width: 480px;
+}
+.btn.voice-delete:hover:not(:disabled) {
+  border-color: var(--fail);
+  color: var(--fail);
+}
 .tag {
   font-size: 12px;
   padding: 4px 8px;

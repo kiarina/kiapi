@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 
 from kiapi.api import (
     REQUIRE_AUTH,
@@ -29,6 +29,7 @@ from kiapi.capabilities.speech import (
     VoiceCreateRequest,
     VoiceList,
     VoiceNotFoundError,
+    VoiceUpdateRequest,
     default_voice_name,
     get_voice_store,
     handle_speech,
@@ -239,8 +240,10 @@ async def _transcribe_reference(ctx: AppContext, worker: Worker, voice: Voice) -
         raise
     return store.update(
         voice.id,
-        transcript=result["text"],
-        name=voice.name or default_voice_name(None, result["text"]),
+        {
+            "transcript": result["text"],
+            "name": voice.name or default_voice_name(None, result["text"]),
+        },
     )
 
 
@@ -256,6 +259,32 @@ async def get_voice(voice_id: str) -> Voice:
         return get_voice_store().get(voice_id)
     except VoiceNotFoundError:
         raise HTTPException(status_code=404, detail=f"voice {voice_id!r} not found")  # noqa: B904
+
+
+@router.patch("/v1/audio/voices/{voice_id}", response_model=Voice)
+async def update_voice(voice_id: str, req: VoiceUpdateRequest) -> Voice:
+    """Change a voice's name or transcript; omitted fields stay as they are."""
+    try:
+        return get_voice_store().update(voice_id, req.model_dump(exclude_unset=True))
+    except VoiceNotFoundError:
+        raise HTTPException(status_code=404, detail=f"voice {voice_id!r} not found")  # noqa: B904
+
+
+@router.get(
+    "/v1/audio/voices/{voice_id}/audio",
+    responses={
+        200: {
+            "content": {"audio/wav": {"schema": {"type": "string", "format": "binary"}}}
+        }
+    },
+)
+async def get_voice_audio(voice_id: str) -> FileResponse:
+    """The voice's reference audio as stored: 24 kHz, 16-bit, mono WAV."""
+    try:
+        path = get_voice_store().reference_path(voice_id)
+    except VoiceNotFoundError:
+        raise HTTPException(status_code=404, detail=f"voice {voice_id!r} not found")  # noqa: B904
+    return FileResponse(path, media_type="audio/wav", filename=f"{voice_id}.wav")
 
 
 @router.delete("/v1/audio/voices/{voice_id}")

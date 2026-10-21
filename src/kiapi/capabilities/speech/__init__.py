@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from ._services.voice_store import VoiceNotFoundError, VoiceStore
     from ._settings import settings_manager
     from ._views.speech_request import SpeechRequest
-    from ._views.voice import Voice, VoiceCreateRequest, VoiceList
+    from ._views.voice import Voice, VoiceCreateRequest, VoiceList, VoiceUpdateRequest
 
 __all__ = [
     "SpeechRequest",
@@ -29,6 +29,7 @@ __all__ = [
     "VoiceList",
     "VoiceNotFoundError",
     "VoiceStore",
+    "VoiceUpdateRequest",
     "default_voice_name",
     "get_voice_store",
     "handle_speech",
@@ -64,6 +65,7 @@ def __getattr__(name: str) -> object:
         "Voice": "._views.voice",
         "VoiceCreateRequest": "._views.voice",
         "VoiceList": "._views.voice",
+        "VoiceUpdateRequest": "._views.voice",
     }
 
     globals()[name] = getattr(import_module(module_map[name], __name__), name)

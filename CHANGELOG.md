@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - web UI: the voice registration button reads "Register voice".
 - speech: `POST /v1/audio/voices` without a `name` names the voice after the
   uploaded file, or the start of the transcript for a data URL.
+- speech: `PATCH /v1/audio/voices/{id}` changes a voice's name or transcript, and
+  `GET /v1/audio/voices/{id}/audio` returns its reference audio.
+- web UI: the Speech playground lists the registered voices, where they can be
+  listened to, renamed, have their transcript fixed, deleted, or put into the
+  Speech form with "Use in Speech".
 - speech: `POST /v1/audio/voices` without a `transcript` now transcribes the
   reference with the transcriptions family (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`,
   on by default; skipped while that model is not activated).
