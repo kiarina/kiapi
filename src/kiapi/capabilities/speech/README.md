@@ -138,3 +138,18 @@ Files artifact. The existing full-input HTTP endpoint is unchanged.
 
 The engine implementation and extraction boundary are documented in
 [live/README.md](live/README.md).
+
+### Worker ownership
+
+An accepted live job holds the single inference worker while waiting for text as
+well as while generating audio. Other jobs, including chat, queue behind it.
+If the transcript producer waits for a chat/tool request to this same kiapi
+instance before sending more text, the requests can wait on each other until
+the 30-second input idle limit ends speech. This endpoint does not suspend and
+resume the worker between fragments.
+
+Use one connection per assistant response, send `text.done` at response end,
+and cancel immediately on interruption. Do not keep a live speech connection
+open across turns or across a dependency on another same-instance inference
+request. `session.created` means accepted/possibly queued; `ready` means model
+and voice preparation finished and text may still be needed before audio.
