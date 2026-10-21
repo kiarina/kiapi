@@ -3,6 +3,18 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-22 — 通話向けの逐次入力・逐次出力の声クローンを本番へ入れた
+
+- `WS /v1/audio/speech/stream` を追加（実装 `e20025e`、統合 `bd3de2c`）。1 接続 1 返答、start/text.append/text.done/cancel と PCM binary の契約。既存の全文入力 HTTP と声管理は維持した。
+- `speech/live` は HTTP・voice store・job・設定に依存せず、ClonePrompt/prepare_clone/generate_live/TextSource を公開する。上流 PR 用に抽出可能な境界を保ち、PR 自体は未作成。
+- 日本語の末尾 pre-token を保留し、空白を挿入しない。causal ICL・参照 decoder priming・全履歴 repetition penalty 1.05 を維持。元 prompt builder を保存し、HTTP の既存 patch と分離した。
+- 入力はモデル準備前も保持。4 件の prompt LRU は voice・参照音声 hash・transcript・language で区別。出力 queue は 8 chunk 上限。cancel/切断で入力待ちと backpressure を解除し、queued job は実行しない。socket 書込が詰まった場合の解放も CPU 回帰で確認した。
+- 待機中も single worker を所有するため、同じ kiapi の chat/tool 結果を待って続きを送る構成は相互待ちになり得る。1 返答ごとの text.done と割り込み cancel、30 秒 idle 上限を利用条件とした。resumable worker は今回の範囲外。
+- mlx-audio を 0.6.1 へ更新。0.6.0 と patch 対象の Qwen3-TTS 本体・speech_tokenizer は同一で、lock の変更は mlx-audio のみ。Bearer 認証の SecretStr 比較も修正。
+- 開発機で make（format/lint/mypy/API docs）成功、CPU 全 466 件成功。サーバー機（M4 Max）で transcriptions full verify 5/5、HTTP WAV・WS 文字送り・入力待ち cancel・切断・後続発話の GPU verify 成功。責務分割前後の生成関数 AST は helper 名以外同一。
+- Spirits Garden 側の実 gpt-live-1-codex transcript → clone → native speaker の連携検証も成功（113280 samples、request から最初の PCM まで 5694 ms、overflow/clip 0）。この値は GPT と初期準備を含む 1 回の観測。
+- サーバー機へ同期・依存を inexact sync・Web UI build 後に既存 launchd を再開。配備後 WebSocket smoke は 88320 samples、最初の PCM 3.3 秒、health ok・queue 0。GPU 比較音声・検証ログ・配備後音声を `.verify/kiapi/speech-live` に保全した。自然さ・声の似方の最終的な聴感評価は本人の利用で行う。
+
 ## 2026-10-22 — OpenAI 互換の文字起こし（`/v1/audio/transcriptions`）を Qwen3-ASR で足し、本番へ入れた
 
 - 範囲はファイルの文字起こしと、声の登録の書き起こし（kiarina、2026-10-22）。Spirits Garden のリアルタイムの聞き取りは端末の pcm_asr のまま。

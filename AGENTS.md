@@ -198,7 +198,6 @@ mise run verify --kiapi --family embedding --fast
 
 ### タスク（`tasks/`）
 
-- [Qwen3-TTS live input/output](tasks/speech-live-streaming.md)
 
 - [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
 - [mlx-vlm を 0.7.2 以降へ上げて Omni の互換 patch を外す](tasks/mlx-vlm-omni-patch-removal.md)
