@@ -9,7 +9,7 @@ seconds of reference audio and its transcript.
 | Endpoint | Name | Description |
 |---|---|---|
 | `POST /v1/audio/speech` | Speech | Speak `input` in a registered voice. Streams PCM while it is generated, or returns one WAV. |
-| `POST /v1/audio/voices` | Register a voice | Register reference audio (and its transcript) as a voice. |
+| `POST /v1/audio/voices` | Register a voice | Register reference audio (and its transcript, transcribed when omitted) as a voice. |
 | `GET /v1/audio/voices` | Voice list | Registered voices, oldest first. |
 | `GET /v1/audio/voices/{id}` | Voice | One registered voice. |
 | `DELETE /v1/audio/voices/{id}` | Delete a voice | Remove a voice and its reference audio. |
@@ -33,8 +33,13 @@ seconds of reference audio and its transcript.
 - **Voices**: there are no built-in voices. Register one, then pass its `id` as `voice`.
   The reference is converted to 24 kHz mono, cut to 30 seconds, and kept under
   `speech/voices` in the user data directory (`KIAPI_SPEECH_VOICES_DIR`).
-  Without a `transcript` the voice is cloned from the speaker embedding only and
-  sounds less like the reference. Only clone voices you have the right to use.
+  Without a `transcript`, kiapi transcribes the (cut) reference with the
+  [transcription](../transcription/README.md) family and stores that text; the
+  returned voice shows it, so check it. Set `KIAPI_SPEECH_TRANSCRIBE_REFERENCE=false`
+  to turn this off. While the transcription model is not activated the voice is
+  registered without a transcript, and is then cloned from the speaker embedding
+  only and sounds less like the reference. Only clone voices you have the right
+  to use.
 - **Streaming**: `response_format: pcm` (default) returns raw 24 kHz, 16-bit, mono,
   little-endian PCM in 0.5-second chunks while it is generated
   (`X-Kiapi-Sample-Rate: 24000`). Closing the connection stops the generation at the

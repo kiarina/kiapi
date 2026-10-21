@@ -1,0 +1,962 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Speech API",
+    "description": "Text-to-speech in a registered voice (OpenAI `audio/speech` compatible).\n\nRegister a voice once from a few seconds of reference audio and its transcript\n(`POST /v1/audio/voices`), then pass its id as `voice` to `POST /v1/audio/speech`.\nThe speech clones that voice: there are no built-in voices.\n\n`response_format: pcm` (default) streams raw 24 kHz, 16-bit, mono, little-endian\nPCM while it is generated, so playback can start on the first chunk (about half a\nsecond on Apple M1 Max). `wav` returns one file when generation finishes. Closing\nthe connection stops the generation.\n\nRequests share kiapi's single worker with every other capability: while another\njob runs, speech waits for it.\n\n## Upstream docs\n- [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) — the model family\n- [mlx-audio](https://github.com/Blaizzy/mlx-audio) — the MLX implementation\n\n## Models\n- **qwen3-tts-1.7b** (default, alias `qwen3-tts`) —\n  `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16`, Apache-2.0. Speaks Chinese,\n  English, Japanese, Korean, German, French, Russian, Portuguese, Spanish, and\n  Italian.\n\nDiscover models at `GET /v1/audio/speech/models`.\n\n## Voice Tips\n- Use 5 to 15 seconds of one clear speaker, without music or noise.\n- Give the transcript word for word, or omit it to have kiapi transcribe the\n  reference (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`). Without any transcript the\n  voice is cloned from the speaker embedding only and sounds less like the\n  reference.\n- Only clone voices you have the right to use.\n",
+    "version": "0.8.0"
+  },
+  "paths": {
+    "/v1/audio/speech": {
+      "post": {
+        "summary": "Create Speech",
+        "description": "Speak `input` in a registered voice (OpenAI `audio/speech` compatible).\n\n`voice` is the id of a voice registered with POST /v1/audio/voices; there are\nno built-in voices. With `response_format: pcm` (default) the audio streams as\nit is generated, and closing the connection stops the generation. With `wav`\nthe whole file is returned when generation finishes.\n\nThe request waits in kiapi's single worker queue while another job runs.",
+        "operationId": "create_speech_v1_audio_speech_post",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible.",
+              "examples": [
+                "application/json",
+                "image/png",
+                "audio/wav",
+                "video/mp4"
+              ],
+              "title": "Accept"
+            },
+            "description": "Response media type preference. application/json returns the Job JSON; otherwise sync requests with one artifact return raw bytes when possible."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeechRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result. Returns Job JSON with Accept: application/json; single-artifact jobs may return raw bytes otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSpeechResponse"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/pcm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-Kiapi-File-Id": {
+                "description": "Produced artifact file_id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Kiapi-Job-Id": {
+                "description": "Job id when raw bytes are returned.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request for the selected model or file reference."
+          },
+          "422": {
+            "description": "Request schema or validation error."
+          },
+          "503": {
+            "description": "Model setup or memory budget error."
+          },
+          "504": {
+            "description": "Sync request exceeded the configured timeout."
+          }
+        }
+      }
+    },
+    "/v1/audio/voices": {
+      "get": {
+        "summary": "List Voices",
+        "description": "List registered voices, oldest first.",
+        "operationId": "list_voices_v1_audio_voices_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Voice",
+        "description": "Register a voice from reference audio and its transcript.\n\nWithout `transcript`, kiapi transcribes the reference (after cutting it to\nthe maximum length) with the transcription family and stores that text. The\ntranscription waits in kiapi's single worker queue like any other job.",
+        "operationId": "create_voice_v1_audio_voices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Voice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/voices/{voice_id}": {
+      "get": {
+        "summary": "Get Voice",
+        "operationId": "get_voice_v1_audio_voices__voice_id__get",
+        "parameters": [
+          {
+            "name": "voice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Voice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Voice",
+        "operationId": "delete_voice_v1_audio_voices__voice_id__delete",
+        "parameters": [
+          {
+            "name": "voice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Voice V1 Audio Voices  Voice Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/speech/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_audio_speech_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Audio Speech Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "FileDataURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "data_url",
+            "title": "Type",
+            "default": "data_url"
+          },
+          "data_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_url"
+        ],
+        "title": "FileDataURLRef",
+        "examples": [
+          {
+            "data_url": "data:image/png;base64,iVBORw0KGgo...",
+            "type": "data_url"
+          }
+        ]
+      },
+      "FileID": {
+        "type": "string"
+      },
+      "FileIDRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_id",
+            "title": "Type",
+            "default": "file_id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileIDRef",
+        "examples": [
+          {
+            "file_id": "file_0123456789abcdef",
+            "type": "file_id"
+          }
+        ]
+      },
+      "FileRef": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FileIDRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileURLRef"
+          },
+          {
+            "$ref": "#/components/schemas/FileDataURLRef"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "data_url": "#/components/schemas/FileDataURLRef",
+            "file_id": "#/components/schemas/FileIDRef",
+            "url": "#/components/schemas/FileURLRef"
+          }
+        }
+      },
+      "FileURLRef": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "default": "url"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "FileURLRef",
+        "examples": [
+          {
+            "type": "url",
+            "url": "https://example.com/input.png"
+          }
+        ]
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JobID": {
+        "type": "string"
+      },
+      "JobSpeechResponse": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "Job type. Use this to interpret the capability-specific result payload.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Request parameters captured for inspection and reproducibility. Secret or large media payloads may be omitted or redacted by endpoints."
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobID",
+            "description": "In-memory job id. Jobs are cleared when the kiapi process restarts.",
+            "examples": [
+              "job_0123456789abcdef"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "Job lifecycle state: queued, running, succeeded, failed, or canceled.",
+            "default": "queued",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpeechResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/FileID"
+            },
+            "type": "array",
+            "title": "Artifacts",
+            "description": "File ids produced by the job. Use GET /v1/files/{file_id} for metadata or /download for bytes.",
+            "examples": [
+              [
+                "file_0123456789abcdef"
+              ]
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message when status is failed; otherwise null.",
+            "examples": [
+              "model 'turbo' is not activated"
+            ]
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At",
+            "description": "Unix timestamp when the job was created.",
+            "examples": [
+              1766200000.0
+            ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Unix timestamp when the worker started the job, or null while queued.",
+            "examples": [
+              1766200001.0
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "Unix timestamp when the job reached a terminal state, or null while queued/running.",
+            "examples": [
+              1766200030.0
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Best-effort completion fraction in [0.0, 1.0]. Null means the job has not reported progress.",
+            "examples": [
+              0.42
+            ]
+          },
+          "progress_label": {
+            "type": "string",
+            "title": "Progress Label",
+            "description": "Short human-readable phase label such as queued, running, denoising, saving, or done.",
+            "default": "queued",
+            "examples": [
+              "denoising"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "JobSpeechResponse"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobType": {
+        "type": "string"
+      },
+      "SpeechRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Speech model. Omit/null for the family default (`qwen3-tts-1.7b`). Discover models at GET /v1/audio/speech/models."
+          },
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Input",
+            "description": "Text to speak. Capped by `KIAPI_SPEECH_MAX_INPUT_CHARS` (default 4096). It is read as written, so leave out markup, lists, and URLs.",
+            "examples": [
+              "こんにちは。今日はいい天気ですね。"
+            ]
+          },
+          "voice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Voice",
+            "description": "Id of a registered voice (POST /v1/audio/voices). There are no built-in voices: the speech clones the registered reference.",
+            "examples": [
+              "voice_0123456789abcdef"
+            ]
+          },
+          "response_format": {
+            "type": "string",
+            "enum": [
+              "pcm",
+              "wav"
+            ],
+            "title": "Response format",
+            "description": "`pcm` streams raw 24 kHz, 16-bit, mono, little-endian PCM while it is generated (the first chunk arrives before the rest is generated). `wav` returns one WAV file when generation finishes.",
+            "default": "pcm"
+          },
+          "stream_format": {
+            "type": "string",
+            "const": "audio",
+            "title": "Stream format",
+            "description": "Only `audio` (raw bytes) is supported; `sse` is not.",
+            "default": "audio"
+          },
+          "speed": {
+            "type": "number",
+            "title": "Speed",
+            "description": "Only 1.0 is supported (Qwen3-TTS has no speed control).",
+            "default": 1.0
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions",
+            "description": "Not supported by voice cloning; must be empty."
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "kiapi extension. Language of `input` as a BCP 47 tag or name (`ja`, `ja-JP`, `japanese`). Omit to let the model detect it. Qwen3-TTS speaks Chinese, English, Japanese, Korean, German, French, Russian, Portuguese, Spanish, and Italian.",
+            "examples": [
+              "ja"
+            ]
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "kiapi extension. Random seed; null picks one."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "input",
+          "voice"
+        ],
+        "title": "SpeechRequest",
+        "description": "Text to speak in a registered voice (OpenAI `audio/speech` compatible)."
+      },
+      "SpeechResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Files-API id of the produced WAV."
+          },
+          "audio_bytes": {
+            "type": "integer",
+            "title": "Audio Bytes",
+            "description": "Size of the produced WAV in bytes."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Resolved model."
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice",
+            "description": "Voice id that was cloned."
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "description": "Qwen3-TTS language name, or `auto`."
+          },
+          "sample_rate": {
+            "type": "integer",
+            "title": "Sample Rate",
+            "description": "Always 24000."
+          },
+          "duration_s": {
+            "type": "number",
+            "title": "Duration S",
+            "description": "Length of the speech in seconds."
+          },
+          "canceled": {
+            "type": "boolean",
+            "title": "Canceled",
+            "description": "Whether generation stopped early."
+          },
+          "timings": {
+            "$ref": "#/components/schemas/_Timings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "audio_bytes",
+          "model",
+          "voice",
+          "language",
+          "sample_rate",
+          "duration_s",
+          "canceled",
+          "timings"
+        ],
+        "title": "SpeechResponse",
+        "description": "Capability-specific ``result`` for a succeeded speech job (`wav`)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Voice": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Pass as `voice` to /v1/audio/speech."
+          },
+          "object": {
+            "type": "string",
+            "const": "voice",
+            "title": "Object",
+            "default": "voice"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript",
+            "description": "The reference transcript (given, or transcribed by kiapi), or null when cloned from the embedding only."
+          },
+          "duration_s": {
+            "type": "number",
+            "title": "Duration",
+            "description": "Reference length in seconds."
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created at",
+            "description": "Unix seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "duration_s",
+          "created_at"
+        ],
+        "title": "Voice",
+        "description": "A voice registered for `/v1/audio/speech`."
+      },
+      "VoiceCreateRequest": {
+        "properties": {
+          "audio": {
+            "$ref": "#/components/schemas/FileRef",
+            "title": "Audio",
+            "description": "Reference audio as a file reference: `{type: file_id, file_id}`, `{type: url, url}`, or `{type: data_url, data_url}`. WAV, FLAC, MP3, or OGG of one clear speaker; 5 to 15 seconds works well. It is converted to 24 kHz mono and cut to `KIAPI_SPEECH_MAX_REFERENCE_SECONDS` (default 30)."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Optional label shown in the voice list."
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript",
+            "description": "What the reference says, word for word. Omit it to have kiapi transcribe the reference (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`); without a transcript the voice is cloned from the speaker embedding only and sounds less like the reference."
+          }
+        },
+        "type": "object",
+        "required": [
+          "audio"
+        ],
+        "title": "VoiceCreateRequest",
+        "description": "Reference audio (and its transcript) to clone a voice from."
+      },
+      "VoiceList": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "list",
+            "title": "Object",
+            "default": "list"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Voice"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "VoiceList"
+      },
+      "_Timings": {
+        "properties": {
+          "first_chunk_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Chunk S",
+            "description": "Seconds until the first audio chunk."
+          },
+          "total_s": {
+            "type": "number",
+            "title": "Total S",
+            "description": "Wall-clock generation time in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "first_chunk_s",
+          "total_s"
+        ],
+        "title": "_Timings"
+      }
+    }
+  },
+  "x-kiapi-capability": "speech",
+  "x-kiapi-domain": "audio",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

@@ -1,0 +1,477 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kiapi Transcription API",
+    "description": "Speech-to-text (OpenAI `audio/transcriptions` compatible).\n\nSend the audio as `multipart/form-data` with a `file` field, as the OpenAI SDKs\ndo (`client.audio.transcriptions.create(file=..., model=\"qwen3-asr-1.7b\")`).\nThe language is detected unless `language` is given.\n\n`response_format: verbose_json` adds the language, the duration, and sentence\n`segments` timed by Qwen3-ForcedAligner; `timestamp_granularities[]=word` adds\n`words`. Audio in a language the aligner does not cover gets one segment per\ndecoded part instead.\n\nRequests share kiapi's single worker with every other capability: a long file\nmakes other requests wait, so audio is capped at\n`KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600).\n\n## Upstream docs\n- [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) — the model family\n- [mlx-audio](https://github.com/Blaizzy/mlx-audio) — the MLX implementation\n\n## Models\n- **qwen3-asr-1.7b** (default, alias `qwen3-asr`) —\n  `mlx-community/Qwen3-ASR-1.7B-bf16`, Apache-2.0, with\n  `mlx-community/Qwen3-ForcedAligner-0.6B-bf16` (Apache-2.0) for timestamps.\n  Transcribes 30 languages; timestamps cover Chinese, Cantonese, English,\n  German, Spanish, French, Italian, Portuguese, Russian, Korean, and Japanese.\n\nDiscover models at `GET /v1/audio/transcriptions/models`.\n\n## Tips\n- Put names and terms the audio may contain in `prompt`.\n- Give `language` when you know it: detection reads each part on its own.\n",
+    "version": "0.8.0"
+  },
+  "paths": {
+    "/v1/audio/transcriptions": {
+      "post": {
+        "summary": "Create Transcription",
+        "description": "Transcribe audio (OpenAI `audio/transcriptions` compatible).\n\nSend `multipart/form-data` with the audio in `file`. The request waits in\nkiapi's single worker queue while another job runs, and returns when the\nwhole file is transcribed (there is no streaming).",
+        "operationId": "create_transcription_v1_audio_transcriptions_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptionForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Transcription"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TranscriptionVerbose"
+                    }
+                  ],
+                  "title": "Response Create Transcription V1 Audio Transcriptions Post"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/transcriptions/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "List the servable models for this capability.\n\nReturns the public catalog of every variant selectable via the ``model``\nfield on this capability's endpoints.",
+        "operationId": "list_models_v1_audio_transcriptions_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityModelSpec"
+                  },
+                  "type": "array",
+                  "title": "Response List Models V1 Audio Transcriptions Models Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CapabilityModelSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Model variant name to pass in the request model field.",
+            "examples": [
+              "turbo"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Capability family that resolves this model variant.",
+            "examples": [
+              "zimage"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain",
+            "description": "Capability domain used for grouping model lists.",
+            "examples": [
+              "image"
+            ]
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "Alternative names that also resolve to this model.",
+            "examples": [
+              [
+                "omni",
+                "qwen3-omni-30b"
+              ]
+            ]
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default",
+            "description": "Whether this is the default model when the request omits model.",
+            "default": false,
+            "examples": [
+              true
+            ]
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Handler-declared modalities and features supported by this model.",
+            "examples": [
+              [
+                "text",
+                "image"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "family",
+          "domain"
+        ],
+        "title": "CapabilityModelSpec",
+        "description": "Public model discovery entry for capability-specific model lists."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Transcription": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TranscriptionUsage",
+            "title": "Usage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "usage"
+        ],
+        "title": "Transcription",
+        "description": "`json` response."
+      },
+      "TranscriptionForm": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Transcription model. Omit for the family default (`qwen3-asr-1.7b`). OpenAI names such as `whisper-1` are not accepted. Discover models at GET /v1/audio/transcriptions/models."
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "Language of the audio as an ISO 639 code or name (`ja`, `ja-JP`, `japanese`). Omit to detect it.",
+            "examples": [
+              "ja"
+            ]
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Context for the speech: the topic, names, or terms it may contain. Passed to Qwen3-ASR as its context."
+          },
+          "response_format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "text",
+              "verbose_json"
+            ],
+            "title": "Response format",
+            "description": "`json` returns `{text}`, `text` returns plain text, and `verbose_json` adds the language, duration, and timestamps. `srt`, `vtt`, and `diarized_json` are not supported.",
+            "default": "json"
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "description": "Sampling temperature. 0 (default) decodes greedily.",
+            "default": 0.0
+          },
+          "timestamp_granularities[]": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "segment",
+                "word"
+              ]
+            },
+            "type": "array",
+            "title": "Timestamp granularities",
+            "description": "With `verbose_json`, `segment` (default) adds `segments` and `word` adds `words`. Word timestamps need one of Chinese, Cantonese, English, German, Spanish, French, Italian, Portuguese, Russian, Korean, or Japanese.",
+            "default": [
+              "segment"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "Audio to transcribe: WAV, FLAC, MP3, OGG, M4A, or the audio of a video. Capped by `KIAPI_TRANSCRIPTION_MAX_FILE_MB` (default 100) and `KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "TranscriptionForm",
+        "description": "Audio and options to transcribe (OpenAI `audio/transcriptions` compatible)."
+      },
+      "TranscriptionSegment": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Start in seconds."
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "End in seconds."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "start",
+          "end",
+          "text"
+        ],
+        "title": "TranscriptionSegment"
+      },
+      "TranscriptionUsage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "duration",
+            "title": "Type",
+            "default": "duration"
+          },
+          "seconds": {
+            "type": "integer",
+            "title": "Seconds",
+            "description": "Audio length, rounded up."
+          }
+        },
+        "type": "object",
+        "required": [
+          "seconds"
+        ],
+        "title": "TranscriptionUsage"
+      },
+      "TranscriptionVerbose": {
+        "properties": {
+          "task": {
+            "type": "string",
+            "const": "transcribe",
+            "title": "Task",
+            "default": "transcribe"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "Detected or given language in lower case, comma-separated when it changes."
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "description": "Audio length in seconds."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "segments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptionSegment"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segments",
+            "description": "Sentences timed by the forced aligner, or one per decoded part when the language has no aligner. Only with `segment` granularity."
+          },
+          "words": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TranscriptionWord"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Words",
+            "description": "Only with `word` granularity."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TranscriptionUsage",
+            "title": "Usage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "language",
+          "duration",
+          "text",
+          "usage"
+        ],
+        "title": "TranscriptionVerbose",
+        "description": "`verbose_json` response."
+      },
+      "TranscriptionWord": {
+        "properties": {
+          "word": {
+            "type": "string",
+            "title": "Word",
+            "description": "Without punctuation."
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Start in seconds."
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "End in seconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "word",
+          "start",
+          "end"
+        ],
+        "title": "TranscriptionWord"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "x-kiapi-capability": "transcription",
+  "x-kiapi-domain": "audio",
+  "x-kiapi-root-openapi": "/openapi.json"
+}

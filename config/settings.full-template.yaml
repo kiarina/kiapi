@@ -552,6 +552,59 @@ kiapi.capabilities.audiogen:
   # default_duration: 5.0
 
 #--------------------------------------------------------------------------------
+# Settings for text-to-speech limits, streaming, and the voice store.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.speech:
+  # Voices directory: Path | None
+  #   Where registered voices (reference audio and transcript) are kept.
+  #   Unset uses `speech/voices` under the kiapi user data directory.
+  # voices_dir: 
+  #--------------------------------------------------
+  # Maximum input characters: int
+  #   Maximum length of `input` accepted by `/v1/audio/speech`.
+  # max_input_chars: 4096
+  #--------------------------------------------------
+  # Maximum reference seconds: float
+  #   Reference audio longer than this is cut to its first seconds when a voice is registered.
+  # max_reference_seconds: 30.0
+  #--------------------------------------------------
+  # Minimum reference seconds: float
+  #   Reference audio shorter than this is rejected.
+  # min_reference_seconds: 1.0
+  #--------------------------------------------------
+  # Transcribe references: bool
+  #   When a voice is registered without a transcript, transcribe the reference with the transcription family. Skipped (with a warning) while that model is not activated.
+  # transcribe_reference: true
+  #--------------------------------------------------
+  # Streaming chunk seconds: float
+  #   Seconds of audio decoded per chunk when streaming PCM.
+  # streaming_interval: 0.5
+  #--------------------------------------------------
+  # Streaming decoder priming tokens: int
+  #   Reference codes (12 per second) passed through the streaming decoder before the generated codes, so the first chunk is decoded with the reference as left context. 0 primes with the whole reference.
+  # prime_tokens: 12
+
+#--------------------------------------------------------------------------------
+# Settings for speech-to-text limits and chunking.
+#--------------------------------------------------------------------------------
+kiapi.capabilities.transcription:
+  # Maximum file MB: float
+  #   Largest upload accepted by `/v1/audio/transcriptions`, in MB.
+  # max_file_mb: 100.0
+  #--------------------------------------------------
+  # Maximum audio seconds: float
+  #   Longest audio accepted. Requests share kiapi's single worker, so a long file makes every other request wait.
+  # max_audio_seconds: 3600.0
+  #--------------------------------------------------
+  # Chunk seconds: float
+  #   Audio longer than this is cut at a quiet point and transcribed in parts. Qwen3-ASR takes up to 20 minutes at once, but memory and time grow with the length (on Apple M1 Max, 3 minutes need 2.3 GB over the weights, 20 minutes 11.4 GB). `verbose_json` uses at most 5 minutes, the forced aligner's limit.
+  # chunk_seconds: 180.0
+  #--------------------------------------------------
+  # Tokens per second: float
+  #   Generated tokens allowed per second of audio, so a decoding loop cannot run without end.
+  # tokens_per_second: 20.0
+
+#--------------------------------------------------------------------------------
 # Settings for LTX-2 models, video dimensions, frame counts, and progress display.
 #--------------------------------------------------------------------------------
 kiapi.capabilities.ltx2:

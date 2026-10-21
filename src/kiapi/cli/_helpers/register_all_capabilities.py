@@ -9,6 +9,7 @@ from kiapi.capabilities.ltx2 import register as register_ltx2
 from kiapi.capabilities.qwen import register as register_qwen
 from kiapi.capabilities.seedvr2 import register as register_seedvr2
 from kiapi.capabilities.speech import register as register_speech
+from kiapi.capabilities.transcription import register as register_transcription
 from kiapi.capabilities.web import register as register_web
 from kiapi.capabilities.zimage import register as register_zimage
 
@@ -34,6 +35,7 @@ def register_all_capabilities() -> None:
     register_qwen()
     register_seedvr2()
     register_speech()
+    register_transcription()
     register_web()
     register_zimage()
     _registered = True

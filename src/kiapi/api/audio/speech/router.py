@@ -1,6 +1,7 @@
 """Speech API: ``POST /v1/audio/speech`` (OpenAI compatible) and ``/v1/audio/voices``."""
 
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 
@@ -17,6 +18,9 @@ from kiapi.api import (
     register_capability_endpoints,
     submit_and_maybe_wait,
 )
+from kiapi.api.audio.transcriptions._operations.run_transcription import (
+    run_transcription,
+)
 from kiapi.capabilities import CapabilityError, resolve_file_ref
 from kiapi.capabilities.speech import (
     SpeechRequest,
@@ -30,6 +34,7 @@ from kiapi.capabilities.speech import (
     settings_manager,
     validate_speech,
 )
+from kiapi.capabilities.transcription import TranscriptionRequest
 from kiapi.core.app import AppContext
 from kiapi.core.memory import MemoryBudgetError
 from kiapi.core.model import UnknownModelError, model_registry
@@ -37,6 +42,8 @@ from kiapi.core.setup import SetupRequiredError
 from kiapi.core.worker import Worker
 
 from ._views.speech_response import SpeechResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(dependencies=REQUIRE_AUTH)
 
@@ -179,13 +186,20 @@ def _http_error(exc: BaseException) -> HTTPException:
 
 @router.post("/v1/audio/voices", response_model=Voice)
 async def create_voice(
-    req: VoiceCreateRequest, ctx: AppContext = Depends(get_ctx)
+    req: VoiceCreateRequest,
+    ctx: AppContext = Depends(get_ctx),
+    worker: Worker = Depends(get_worker),
 ) -> Voice:
-    """Register a voice from reference audio and (recommended) its transcript."""
+    """Register a voice from reference audio and its transcript.
+
+    Without `transcript`, kiapi transcribes the reference (after cutting it to
+    the maximum length) with the transcription family and stores that text. The
+    transcription waits in kiapi's single worker queue like any other job.
+    """
     settings = settings_manager.get_settings()
     try:
         source = resolve_file_ref(ctx.file_store, req.audio, kind="audio")
-        return await run_in_threadpool(
+        voice = await run_in_threadpool(
             get_voice_store().create,
             Path(source.path),
             name=req.name,
@@ -197,6 +211,26 @@ async def create_voice(
         raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))  # noqa: B904
+    if voice.transcript is not None or not settings.transcribe_reference:
+        return voice
+    return await _transcribe_reference(ctx, worker, voice)
+
+
+async def _transcribe_reference(ctx: AppContext, worker: Worker, voice: Voice) -> Voice:
+    store = get_voice_store()
+    try:
+        ctx.ensure_model_ready(model_registry.resolve("transcription", None))
+    except SetupRequiredError as exc:
+        logger.warning("voice %s registered without a transcript: %s", voice.id, exc)
+        return voice
+    try:
+        result = await run_transcription(
+            ctx, worker, TranscriptionRequest(), store.reference_path(voice.id)
+        )
+    except BaseException:
+        store.delete(voice.id)
+        raise
+    return store.set_transcript(voice.id, result["text"])
 
 
 @router.get("/v1/audio/voices", response_model=VoiceList)

@@ -112,6 +112,28 @@ wheels = [
 ]
 
 [[package]]
+name = "cython"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/d8/4981ef716ad0e3ff0d3ef383aefc6b03c4a88dee33b272bf8e0d833001ca/cython-3.3.0.tar.gz", hash = "sha256:eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8", size = 3727515, upload-time = "2026-08-22T05:16:39.493Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/0f/95bad838a80ac52c9e982dad00bd9a0b2bad57fb4c688e5f53ac3ef65ff0/cython-3.3.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:03bc5333932f5dda3ba9315298ecdd21daa1b58410bb1f8ce04c78ec8337130a", size = 3143472, upload-time = "2026-08-22T05:17:07.956Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/77/67b0b24e45073a699610e50f00c18474ff9b09ea29ecc95083bdf5e60acd/cython-3.3.0-py3-none-any.whl", hash = "sha256:9b24b5c8cd536946b62086fcafee6d5509d3f549f72d553d2336af87ffbe0da1", size = 1349151, upload-time = "2026-08-22T05:16:36.741Z" },
+]
+
+[[package]]
+name = "dynet38"
+version = "2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cython" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/ab/9b90acd5b77c7ea64dcf7c258b9fa20e8229a00cefbe41b855d805c67384/dyNET38-2.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:5e6a644c0ffc68083d85b67aaa639abe82812f384962ec074749bd68bcd3d9e3", size = 2947396, upload-time = "2024-06-14T15:19:39.498Z" },
+]
+
+[[package]]
 name = "einops"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -324,6 +346,7 @@ dependencies = [
     { name = "mlx-embeddings" },
     { name = "mlx-lm" },
     { name = "mlx-vlm" },
+    { name = "nagisa" },
     { name = "numpy" },
     { name = "pillow" },
     { name = "psutil" },
@@ -367,6 +390,7 @@ requires-dist = [
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
     { name = "mlx-vlm", git = "https://github.com/kiarina/mlx-vlm.git?rev=6581ba8c2f2dbc8b994cb0a350532a4bec59abc2" },
+    { name = "nagisa", specifier = ">=0.3.0" },
     { name = "numpy" },
     { name = "pillow", specifier = "<13" },
     { name = "psutil" },
@@ -698,6 +722,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8dac321cda606860fa4548858c0cc45d9d1d4ca2628b/mypy_extensions-1.1.0.tar.gz", hash = "sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558", size = 6343, upload-time = "2025-04-22T14:54:24.164Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
+]
+
+[[package]]
+name = "nagisa"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dynet38" },
+    { name = "numpy" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7c/ae/4a05cf192d1656fae4dbd71367ccd86ba4a75a175131e489a4527ecab125/nagisa-0.3.0.tar.gz", hash = "sha256:7f62f478f40facc2e8b87835a4d8cbe78759dc0598f7f79ded50b0b117b9651a", size = 21058600, upload-time = "2026-07-06T15:37:50.326Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/ef/6d8cfdeb1fc721a19bc2237029b1a51e713ccd99c9e61f4288b4ae4eadf2/nagisa-0.3.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:7f3ab32b355ec0af9cc330ff5ede7aa4148df7190a40836f05f08a352861bc3e", size = 21538997, upload-time = "2026-07-06T15:40:48.491Z" },
 ]
 
 [[package]]

@@ -20,6 +20,7 @@ _SETTINGS_IMPORT_PATHS = [
     "kiapi.capabilities.acestep",
     "kiapi.capabilities.audiogen",
     "kiapi.capabilities.speech",
+    "kiapi.capabilities.transcription",
     "kiapi.capabilities.ltx2",
     "kiapi.capabilities.h3",
     "kiapi.capabilities.web",

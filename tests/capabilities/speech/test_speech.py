@@ -110,6 +110,22 @@ def test_voice_store_cuts_long_reference(tmp_path: Path) -> None:
     assert voice.transcript is None
 
 
+def test_voice_store_sets_transcript(tmp_path: Path) -> None:
+    store = VoiceStore(tmp_path)
+    voice = store.create(
+        _tone(tmp_path / "ref.wav", 2.0),
+        name=None,
+        transcript=None,
+        min_seconds=1.0,
+        max_seconds=30.0,
+    )
+
+    updated = store.set_transcript(voice.id, " こんにちは ")
+    assert updated.transcript == "こんにちは"
+    assert store.get(voice.id) == updated
+    assert store.set_transcript(voice.id, " ").transcript is None
+
+
 def test_voice_store_rejects_short_reference(tmp_path: Path) -> None:
     store = VoiceStore(tmp_path)
     with pytest.raises(ValidationError, match="at least"):

@@ -46,6 +46,16 @@ class SpeechSettings(BaseSettings):
         description="Reference audio shorter than this is rejected.",
     )
 
+    transcribe_reference: bool = Field(
+        default=True,
+        title="Transcribe references",
+        description=(
+            "When a voice is registered without a transcript, transcribe the "
+            "reference with the transcription family. Skipped (with a warning) "
+            "while that model is not activated."
+        ),
+    )
+
     streaming_interval: float = Field(
         default=0.5,
         title="Streaming chunk seconds",

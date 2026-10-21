@@ -32,9 +32,10 @@ class VoiceCreateRequest(BaseModel):
         max_length=2000,
         title="Transcript",
         description=(
-            "What the reference says, word for word. Strongly recommended: "
-            "without it the voice is cloned from the speaker embedding only and "
-            "sounds less like the reference."
+            "What the reference says, word for word. Omit it to have kiapi "
+            "transcribe the reference (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`); "
+            "without a transcript the voice is cloned from the speaker embedding "
+            "only and sounds less like the reference."
         ),
     )
 
@@ -48,7 +49,10 @@ class Voice(BaseModel):
     transcript: str | None = Field(
         default=None,
         title="Transcript",
-        description="The reference transcript, or null when cloned from the embedding only.",
+        description=(
+            "The reference transcript (given, or transcribed by kiapi), or null "
+            "when cloned from the embedding only."
+        ),
     )
     duration_s: float = Field(
         title="Duration", description="Reference length in seconds."

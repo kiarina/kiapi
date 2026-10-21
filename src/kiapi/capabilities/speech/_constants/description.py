@@ -26,7 +26,9 @@ Discover models at `GET /v1/audio/speech/models`.
 
 ## Voice Tips
 - Use 5 to 15 seconds of one clear speaker, without music or noise.
-- Give the transcript word for word. Without it the voice is cloned from the
-  speaker embedding only and sounds less like the reference.
+- Give the transcript word for word, or omit it to have kiapi transcribe the
+  reference (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`). Without any transcript the
+  voice is cloned from the speaker embedding only and sounds less like the
+  reference.
 - Only clone voices you have the right to use.
 """
