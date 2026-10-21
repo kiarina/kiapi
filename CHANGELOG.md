@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - web UI: the Speech playground lists the registered voices, where they can be
   listened to, renamed, have their transcript fixed, deleted, or put into the
   Speech form with "Use in Speech".
+- web UI: replies that are not JSON are shown by their content type, so speech
+  plays in the playground (`pcm` is wrapped as WAV) instead of failing to parse.
 - speech: `POST /v1/audio/voices` without a `transcript` now transcribes the
   reference with the transcriptions family (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`,
   on by default; skipped while that model is not activated).

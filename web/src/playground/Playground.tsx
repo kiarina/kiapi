@@ -3,7 +3,7 @@ import Markdown from "react-markdown";
 
 import { apiFetch, downloadPath, postJson, type AsyncJob, type FileRecord, type Job, type OpenApiDoc, type SetupModel } from "../api";
 import { Icon } from "../components/Icon";
-import { CopyButton, ErrorBox, JobStatusBadge, MediaPreview, ProgressBar, Thumb } from "../components/ui";
+import { CopyButton, ErrorBox, JobStatusBadge, MediaPreview, ProgressBar, Thumb, mediaKind } from "../components/ui";
 import { sortedJobs, useData } from "../data";
 import { duration } from "../format";
 import { useApi, useFileSrc, useNow } from "../hooks";
@@ -118,17 +118,19 @@ export function Playground({
       const payload = buildPayload(op, values);
       if (op.method === "get") {
         const qs = new URLSearchParams(Object.entries(payload).map(([k, v]) => [k, String(v)]));
-        const res = await apiFetch(`${op.path}?${qs}`);
-        const ct = res.headers.get("content-type") ?? "";
-        if (ct.includes("json")) setOutcome({ kind: "json", data: await res.json() });
-        else if (ct.startsWith("text/")) setOutcome({ kind: "text", text: await res.text(), contentType: ct });
-        else setOutcome({ kind: "blob", url: URL.createObjectURL(await res.blob()), contentType: ct });
+        setOutcome(await outcomeOf(await apiFetch(`${op.path}?${qs}`)));
       } else if (op.async) {
         const job = await postJson<AsyncJob>(op.path, payload);
         setOutcome({ kind: "job", jobId: job.job_id });
         jobs.reload();
       } else {
-        setOutcome({ kind: "json", data: await postJson(op.path, payload) });
+        // Speech answers with audio bytes, so the reply is read by its content type.
+        const res = await apiFetch(op.path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        setOutcome(await outcomeOf(res));
         if (op.path === "/v1/audio/voices") setVoicesVersion((v) => v + 1);
       }
     } catch (e) {
@@ -516,6 +518,37 @@ function SearchPreview({ result }: { result: SearchResult }) {
   );
 }
 
+async function outcomeOf(res: Response): Promise<Exclude<Outcome, { kind: "job" }>> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("json")) return { kind: "json", data: await res.json() };
+  if (ct.startsWith("text/")) return { kind: "text", text: await res.text(), contentType: ct };
+  if (ct.startsWith("audio/pcm")) {
+    const rate = Number(res.headers.get("x-kiapi-sample-rate") ?? 24000);
+    const wav = pcmToWav(await res.arrayBuffer(), rate);
+    return { kind: "blob", url: URL.createObjectURL(wav), contentType: "audio/wav" };
+  }
+  return { kind: "blob", url: URL.createObjectURL(await res.blob()), contentType: ct };
+}
+
+// Raw 16-bit mono PCM gets a WAV header so the browser can play it.
+function pcmToWav(pcm: ArrayBuffer, sampleRate: number): Blob {
+  const header = new DataView(new ArrayBuffer(44));
+  const text = (offset: number, s: string) => [...s].forEach((c, i) => header.setUint8(offset + i, c.charCodeAt(0)));
+  text(0, "RIFF");
+  header.setUint32(4, 36 + pcm.byteLength, true);
+  text(8, "WAVEfmt ");
+  header.setUint32(16, 16, true);
+  header.setUint16(20, 1, true);
+  header.setUint16(22, 1, true);
+  header.setUint32(24, sampleRate, true);
+  header.setUint32(28, sampleRate * 2, true);
+  header.setUint16(32, 2, true);
+  header.setUint16(34, 16, true);
+  text(36, "data");
+  header.setUint32(40, pcm.byteLength, true);
+  return new Blob([header, pcm], { type: "audio/wav" });
+}
+
 function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind: "job" }>; onFetchUrl?: (url: string) => void }) {
   if (outcome.kind === "text") {
     return (
@@ -525,9 +558,13 @@ function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind:
     );
   }
   if (outcome.kind === "blob") {
+    const kind = mediaKind(outcome.contentType);
     return (
       <div className="card">
-        <a className="btn" href={outcome.url} download>
+        {kind === "audio" && <audio src={outcome.url} controls autoPlay />}
+        {kind === "image" && <img src={outcome.url} alt="" style={{ maxWidth: "100%" }} />}
+        {kind === "video" && <video src={outcome.url} controls playsInline style={{ maxWidth: "100%" }} />}
+        <a className="btn" href={outcome.url} download style={{ alignSelf: "flex-start" }}>
           <Icon name="download" size={15} />
           Download {outcome.contentType}
         </a>
