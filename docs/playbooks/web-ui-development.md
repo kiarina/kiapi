@@ -56,6 +56,10 @@ shares the settings and the file store with the running server.
   piece makes the page shake and fights the reader.
 - Popovers inside scrolling panels are positioned against their field, not the
   "?" button, so they stay inside the panel.
+- After a rebuild, an open tab can keep running the old bundle (the hashed
+  asset it already loaded). Reload the page before judging a change.
+- A family whose name differs from its URL segment does not open in the UI (it
+  loads `/v1/<domain>/<family>/openapi.json`); see [API](../concepts/api.md).
 - `uv build` builds the wheel from the sdist. Anything gitignored that the
   wheel needs, such as `src/kiapi/api/ui/static`, must be listed in the sdist
   `artifacts` as well.

@@ -51,6 +51,14 @@ family or field needs no UI change.
 - Only values the person sets are sent, so the server keeps filling
   model-dependent defaults.
 - Generation requests are sent with `mode: "async"` and followed as jobs.
+  Other requests run right away, and the reply is shown by its content type:
+  JSON as data, audio, images and video as players, and raw PCM (speech's
+  default) wrapped as WAV once all of it has arrived.
+- Forms are sent as JSON. An operation that takes `multipart/form-data`, such
+  as `POST /v1/audio/transcriptions`, opens but cannot be run from the form.
+- Speech lists its registered voices under the Playground: listen to the
+  reference, fix the name or transcript, delete, or "Use in Speech", which
+  opens the Speech form with the voice filled in.
 - A "?" beside each field shows its full schema description.
 - Chat has its own view: every ChatRequest parameter in the left column, the
   conversation in the right, tool calls with a way to reply with results, and

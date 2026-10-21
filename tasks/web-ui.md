@@ -21,7 +21,7 @@ README での紹介（2026-09-26、`docs/images/web-ui/*.webp`）と 0.8.0 の�
 - ファイルと family の対応: 今はファイル名の接頭辞（`qwen_…`、Z-Image だけ `image_…`）で推測している。生成時に
   `meta.family` を書くと確実になる
 - family ごとの工夫（サイズのプリセット、音声の波形など）: 汎用フォームで一通り使えるので、使って欲しくなったものから足す
-- speech（2026-10-21 に足した）: `pcm` は届いてから WAV に包んで鳴らす（流しながらは鳴らさない。2026-10-22）。声の一覧（聞く・名前と文字起こしの修正・削除・Speech へ入れる）は 2026-10-22 に Playground の下へ足した
+- speech: Playground は `pcm` を全部届いてから WAV に包んで鳴らす。届いた分から鳴らす（Web Audio で流す）かは、使ってから決める
 - transcriptions（2026-10-22 に足した）: `POST /v1/audio/transcriptions` は OpenAI に合わせて multipart/form-data。画面は開くが、汎用フォームは JSON で送るので実行は通らない（ファイルの欄は `string` の binary）。multipart で送る口を足すか、使ってから決める
 - 実行中ジョブの中断: kiapi に中断の API が無い（`DELETE /v1/jobs/{id}` は実行中を止めない）ので UI にも無い
 - ltx2 の `enhance_prompt` と「Write with chat」の使い分けは未検討
