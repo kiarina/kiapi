@@ -15,6 +15,7 @@
 - 開発機（M1 Max）で `mise run ci`（450 passed）・verify 5/5・OpenAI の Python SDK の 3 形式。本番（サーバー機、M4 Max）で verify 5/5、
   Tailscale 越しに 14 秒 0.8 秒、3 分 35 秒（`verbose_json` と単語で 37 秒）。読み込み込みの最初の 1 回は 3.7 秒
 - Web UI の汎用フォームは JSON で送るので、multipart のこの口は試せない（`tasks/web-ui.md`）
+- 同日、family 名を `transcriptions` に改めた（`48b0449`）。Web UI は family の文書を `/v1/<domain>/<family>` から読むので、`transcription` では画面が開けず、サイドバーも生の名前のままだった。設定の接頭辞も `KIAPI_TRANSCRIPTIONS_` になった。あわせて声の登録のボタンを「Register voice」にした
 
 ## 2026-10-21 — OpenAI 互換の音声合成（`/v1/audio/speech`）を Qwen3-TTS の声のクローンで足し、本番へ入れた
 
