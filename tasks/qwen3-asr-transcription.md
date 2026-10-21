@@ -30,6 +30,22 @@ Mac・Windows の GPU で CER 0%・約 100 ms で、kiapi は推論を 1 本の�
    正しく文字になるかを確かめる（悪ければ、そこで初めて本家の PyTorch 版との差を疑う）。verify はサーバー機の稼働中のサービスを止めるので、
    kiarina に時間を確かめてから行う。`CHANGELOG.md` の `Unreleased` と README の Resources の表に追記する
 
-## 未決
+## 進捗（2026-10-22、開発機）
 
-- 書き起こしの列: 長いファイルを 1 件で処理すると chat・speech を長く待たせる。区切って順番に処理するか、上限を置くか
+- family `transcription` を実装した（`POST /v1/audio/transcriptions`、multipart。`json`・`text`・`verbose_json`、`timestamp_granularities[]`）。
+  モデルは `mlx-community/Qwen3-ASR-1.7B-bf16` と aligner の `mlx-community/Qwen3-ForcedAligner-0.6B-bf16` を 1 つの ModelSpec で一緒に読む
+  （実測 5.5 GB）。日本語の単語分けに `nagisa` を足した
+- `verbose_json` の `segments` は aligner の単語を文に束ねたもの（aligner は句読点を落とすので、文の文字数ぶん単語を取る）。
+  aligner の無い言語は decode した部分ごとに 1 つ
+- 区切りは 3 分にした（本家の既定は 20 分、時刻を付けるときは 3 分）。20 分の区切りは M1 Max で重みの上に 11.4 GB・実時間の 0.55 倍、3 分は 2.3 GB・0.37 倍だった。区切った文は、スペースを使わない言語ではスペースなしで繋ぐ（本家どおり。mlx-audio は常にスペースで繋ぐ）
+- 声の登録で `transcript` が無ければ、切った参照を書き起こして保存する（`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`、既定 on。モデルが未 activate なら警告して従来どおり）
+- 長いファイル: 1 時間と 100 MB で上限にした（`KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS`・`MAX_FILE_MB`）
+- 開発機で TestClient から通した: 14 秒の日本語の会話で json・text・verbose_json（文 9・単語）・エラー・声の登録の自動の書き起こし
+- 開発機で `mise run ci`（450 passed）と `mise run verify --kiapi --family transcription`（5/5。`say` の Kyoko で作った日本語を json・text・verbose_json・エラー・声の登録で）を通した。
+  OpenAI の Python SDK（`client.audio.transcriptions.create`）で json・text・verbose_json（words つき）が型どおりに読めた
+- Web UI の汎用フォームは JSON で送るので multipart のこの口は試せない。`tasks/web-ui.md` に残した
+
+## 残り
+
+- 本番（サーバー機）へ入れる。サービスを止めるので kiarina に時間を確かめる。入れたら `kiapi activate --family transcription`（5.9 GB）、
+  M4 Max で README の Measured に数字を足し、このファイルを `HISTORY.md` へ移して消す
