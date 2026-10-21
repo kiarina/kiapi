@@ -10,7 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update mlx-audio to 0.6.1; retain the verified Qwen3-TTS compatibility patch implementations.
+
+### Fixed
+
+- Compare Bearer authorization against the configured secret value.
+
 ### Added
+
+- speech: bidirectional `/v1/audio/speech/stream` WebSocket with incremental Japanese input, registered voice cloning, bounded PCM output, and cancellation.
 
 - transcriptions: new audio family with an OpenAI-compatible
   `POST /v1/audio/transcriptions` (multipart, `json`, `text`, and

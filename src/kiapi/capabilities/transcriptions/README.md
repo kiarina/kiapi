@@ -16,7 +16,7 @@ detects the language; Qwen3-ForcedAligner 0.6B times sentences and words.
 
 | Package | License | Description |
 |---|---|---|
-| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | MIT | Qwen3-ASR and Qwen3-ForcedAligner on MLX. Pinned to 0.6.0 by the speech family. |
+| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | MIT | Qwen3-ASR and Qwen3-ForcedAligner on MLX. Pinned to 0.6.1 by the speech family. |
 | [nagisa](https://github.com/taishi-i/nagisa) | MIT | Splits Japanese into words for the aligner. |
 
 ## Models

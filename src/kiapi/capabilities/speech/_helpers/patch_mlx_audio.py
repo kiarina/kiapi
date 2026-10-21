@@ -1,4 +1,4 @@
-"""Align mlx-audio 0.6.0 Qwen3-TTS voice cloning with the reference implementation.
+"""Align mlx-audio 0.6.1 Qwen3-TTS voice cloning with the reference implementation.
 
 Each MLX module matches qwen-tts 0.1.1 (PyTorch) in float32, but mlx-audio's
 voice-clone generation differs in how it calls them, and listeners heard the
@@ -136,6 +136,7 @@ def patch_mlx_audio() -> None:
                 codes = codes[:, :, -_pending["tokens"] :]
             mx.eval(self.streaming_step(codes))  # keep the decoder state only
 
+    Model._prepare_live_clone = prepare_icl
     Model._prepare_icl_generation_inputs = _prepare_icl
     Model._generate_icl = _generate
     Model._sample_token = _sample

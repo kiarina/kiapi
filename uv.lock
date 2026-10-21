@@ -385,7 +385,7 @@ requires-dist = [
     { name = "kiarina-utils-app", specifier = ">=2.3.0" },
     { name = "kiarina-utils-common", specifier = ">=2.2.0" },
     { name = "mflux", git = "https://github.com/kiarina/mflux.git?rev=144a6becfb587bcaa0139758131faf0a7930ae18" },
-    { name = "mlx-audio", specifier = "==0.6.0" },
+    { name = "mlx-audio", specifier = "==0.6.1" },
     { name = "mlx-audiocraft", specifier = ">=0.1.0" },
     { name = "mlx-embeddings", specifier = ">=0.1.0" },
     { name = "mlx-lm", specifier = ">=0.31.3" },
@@ -584,7 +584,7 @@ wheels = [
 
 [[package]]
 name = "mlx-audio"
-version = "0.6.0"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
@@ -597,9 +597,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/37/9e25593fdb67bff1522105ab00f8b36af5fbbb45470e7180e80aa8fea1c7/mlx_audio-0.6.0.tar.gz", hash = "sha256:9b6a2cbc9b03fe0d4d14459d55744e5ac78e9ff48e339928df5c5785a2cb4ef3", size = 1895086, upload-time = "2026-10-19T15:28:29.96Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/5b/e7be1d322253a56f891dd41773afe21997e3c889a4b68953aa0db67efe68/mlx_audio-0.6.1.tar.gz", hash = "sha256:94259999694c707129c1f6a30cc1e164e525d0471c9311c5af88f37f20682300", size = 1919670, upload-time = "2026-10-20T15:21:25.496Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/93/ab3595aedfbb1e8e870f9962d4cdde27a6fee36467ca7c324fb996d111e1/mlx_audio-0.6.0-py3-none-any.whl", hash = "sha256:8b397405c9d2dfb4e2283dd8a4be7ae6cd5fdef015c379e878f607ced9bd5ad3", size = 2279201, upload-time = "2026-10-19T15:28:28.024Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/35/831928ee30f7509e8298411aed20b124dccbef6030d668e98e644d49564d/mlx_audio-0.6.1-py3-none-any.whl", hash = "sha256:4c5e4ef3f2a453dcc1c84c9aaf1e43701f62f5a32632aff50bfa6be9047d0f10", size = 2305453, upload-time = "2026-10-20T15:21:23.754Z" },
 ]
 
 [[package]]

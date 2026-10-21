@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from ._helpers.resolve_language import resolve_language
     from ._helpers.validate_speech import validate_speech
     from ._operations.get_voice_store import get_voice_store
+    from ._operations.handle_live_speech import handle_live_speech
     from ._operations.handle_speech import handle_speech
     from ._services.voice_store import VoiceNotFoundError, VoiceStore
     from ._settings import settings_manager
@@ -32,6 +33,7 @@ __all__ = [
     "VoiceUpdateRequest",
     "default_voice_name",
     "get_voice_store",
+    "handle_live_speech",
     "handle_speech",
     "register",
     "resolve_language",
@@ -54,6 +56,7 @@ def __getattr__(name: str) -> object:
         "validate_speech": "._helpers.validate_speech",
         # _operations
         "get_voice_store": "._operations.get_voice_store",
+        "handle_live_speech": "._operations.handle_live_speech",
         "handle_speech": "._operations.handle_speech",
         # _services
         "VoiceNotFoundError": "._services.voice_store",

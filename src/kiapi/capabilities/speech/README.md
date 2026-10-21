@@ -22,7 +22,7 @@ seconds of reference audio and its transcript.
 
 | Package | License | Description |
 |---|---|---|
-| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | MIT | Qwen3-TTS on MLX. Pinned to 0.6.0 (see Notes). |
+| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | MIT | Qwen3-TTS on MLX. Pinned to 0.6.1 (see Notes). |
 
 ## Models
 
@@ -56,7 +56,7 @@ seconds of reference audio and its transcript.
   and `stream_format: audio` are supported. `speed` must be 1.0 and `instructions`
   must be empty. kiapi adds `language` (BCP 47 or name; omit to detect) and `seed`.
 - **mlx-audio patches**: each MLX module matches the PyTorch reference (qwen-tts
-  0.1.1), but mlx-audio 0.6.0 generates voice clones with a repetition penalty of at
+  0.1.1), but mlx-audio 0.6.1 generates voice clones with a repetition penalty of at
   least 1.5 over the last 64 tokens and a different prompt layout, and its streaming
   decoder starts without the reference as left context. Listeners heard all three.
   kiapi uses the reference's penalty (1.05 over all tokens) and layout, and primes
@@ -107,3 +107,34 @@ curl -s http://localhost:8500/v1/audio/speech \
   -d '{"input": "Hello.", "voice": "voice_0123456789abcdef", "response_format": "wav"}' \
   -o speech.wav
 ```
+
+## Bidirectional speech stream
+
+Connect a WebSocket to `/v1/audio/speech/stream`, with the same optional
+`Authorization: Bearer <token>` header as HTTP. One connection is one utterance.
+
+1. Send `{"type":"start","voice":"voice_…","language":"ja"}`. Optional
+   `model` and integer `seed` select the model and seed.
+2. Receive `session.created` with `job_id`, `sample_rate: 24000`, `channels: 1`,
+   and `format: "pcm_s16le"`. The job shares the global inference queue.
+3. Append `{"type":"text.append","text":"こんにちは。"}` as text arrives.
+   Input can arrive while queued or loading. No Japanese separator is needed.
+4. `ready` reports `required_prefix_tokens` after clone preparation. Audio may
+   still wait for enough committed text; this is reference-dependent.
+5. Send `{"type":"text.done"}` when the utterance is complete. Receive binary
+   24 kHz mono signed little-endian int16 PCM and finally `{"type":"done",…}`.
+
+`{"type":"cancel"}` requests cancellation and returns `canceled`. Closing the
+socket also cancels queued or running work. Discard buffered playback on
+interruption. After a terminal event the socket closes; audio never resumes on
+that connection. Failures, including failures after audio, return
+`{"type":"error","code":"speech_stream_error","message":"…"}`.
+
+A registered voice must have a reference transcript. The input character limit
+is shared with HTTP speech. Input inactivity and blocked output time out after
+30 seconds. PCM buffering is bounded to eight chunks and applies backpressure
+to the single inference worker. Streamed PCM is transient and is not stored as a
+Files artifact. The existing full-input HTTP endpoint is unchanged.
+
+The engine implementation and extraction boundary are documented in
+[live/README.md](live/README.md).

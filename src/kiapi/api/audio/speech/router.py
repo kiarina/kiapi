@@ -5,7 +5,7 @@ import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, Response, StreamingResponse
 
@@ -297,3 +297,14 @@ async def delete_voice(voice_id: str) -> dict:
 
 
 register_capability_endpoints(router, name="speech", base_path="/v1/audio/speech")
+
+
+@router.websocket("/v1/audio/speech/stream")
+async def live_speech(
+    socket: WebSocket,
+    ctx: AppContext = Depends(get_ctx),
+    worker: Worker = Depends(get_worker),
+) -> None:
+    from ._live import stream_speech
+
+    await stream_speech(socket, ctx, worker)

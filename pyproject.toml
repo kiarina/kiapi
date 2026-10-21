@@ -61,7 +61,7 @@ dependencies = [
     # --- speech capability (mlx-audio / Qwen3-TTS) ---
     # Exact pin: the speech family patches mlx-audio internals (voice-clone
     # prompt, repetition penalty, streaming decoder); re-verify before bumping.
-    "mlx-audio==0.6.0",
+    "mlx-audio==0.6.1",
     # --- transcription capability (mlx-audio / Qwen3-ASR) ---
     # mlx-audio's forced aligner splits Japanese into words with nagisa.
     "nagisa>=0.3.0",
