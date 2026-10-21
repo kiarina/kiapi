@@ -30,3 +30,5 @@
 - live thunkはテキスト待機中もsingle workerを保持し、chat等は後ろへ並ぶ。同じkiapiへのchat/tool委譲結果を待ってから続きを送る構成は相互待ちになり、30秒idle上限まで進まない可能性がある。
 - 今回resumable-workerは実装しない。1接続1返答、返答終了時に必ずtext.done、割り込み時は即cancel、ターンを跨いで接続を保持しない。
 - session.createdはqueuedも含む受理、readyはモデル・声の準備完了（入力prefix待ちは残り得る）。UI側でこの違いを示す。
+
+- 抽出境界をone-file-one-public-elementへ整理。ClonePrompt/prepare_cloneを分離、embedをprivate化、未使用full_promptを削除。generate_liveのASTはhelper名変更以外同一を確認。make/対象CPU11件pass、TextSource/ClonePrompt importでMLX未読込を確認。

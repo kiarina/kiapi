@@ -1,81 +1,12 @@
 import time
 from collections.abc import Generator
-from dataclasses import dataclass
 from typing import Any
 
 import mlx.core as mx
 
+from ._clone_prompt import ClonePrompt
+from ._embed import _embed
 from ._text_source import TextSource
-
-
-def embed(model: Any, ids: list[int]) -> Any:
-    return model.talker.text_projection(
-        model.talker.get_text_embeddings()(mx.array([ids]))
-    )
-
-
-@dataclass
-class ClonePrompt:
-    prefix: Any
-    ref_text_ids: list[int]
-    ref_codes: Any
-    codec_embeds: Any
-    pad: Any
-    eos: Any
-
-    @property
-    def required_prefix_tokens(self) -> int:
-        return max(0, int(self.codec_embeds.shape[1]) - len(self.ref_text_ids))
-
-
-def prepare_clone(
-    model: Any, audio: Any, transcript: str, language: str = "japanese"
-) -> ClonePrompt:
-    original, _, pad, codes = getattr(
-        model, "_prepare_live_clone", model._prepare_icl_generation_inputs
-    )("", audio, transcript, language)
-    ref_ids = model.tokenizer.encode(
-        f"<|im_start|>assistant\n{transcript}<|im_end|>\n"
-    )[3:-2]
-    n = len(ref_ids) + 1 + codes.shape[2] + 1
-    prefix = original[:, : original.shape[1] - n]
-    codec = model.talker.get_input_embeddings()(codes[:, 0, :])
-    for i in range(model.config.talker_config.num_code_groups - 1):
-        codec = codec + model.talker.code_predictor.codec_embedding[i](
-            codes[:, i + 1, :]
-        )
-    bos = model.talker.get_input_embeddings()(
-        mx.array([[model.config.talker_config.codec_bos_id]])
-    )
-    codec = mx.concatenate([bos, codec], axis=1)
-    eos = embed(model, [model.config.tts_eos_token_id])
-    mx.eval(prefix, codec, pad, codes, eos)
-    return ClonePrompt(prefix, ref_ids, codes, codec, pad, eos)
-
-
-def full_prompt(
-    model: Any, prompt: ClonePrompt, target_ids: list[int]
-) -> tuple[Any, Any]:
-    """Reference-compatible full causal prompt, also exported for float32 parity."""
-    text = mx.concatenate(
-        [embed(model, prompt.ref_text_ids + target_ids), prompt.eos], axis=1
-    )
-    length = prompt.codec_embeds.shape[1]
-    if text.shape[1] < length:
-        text = mx.concatenate(
-            [
-                text,
-                mx.broadcast_to(
-                    prompt.pad, (1, length - text.shape[1], text.shape[-1])
-                ),
-            ],
-            axis=1,
-        )
-    inputs = mx.concatenate(
-        [prompt.prefix, text[:, :length] + prompt.codec_embeds], axis=1
-    )
-    trailing = text[:, length:] if text.shape[1] > length else prompt.pad
-    return (inputs, trailing)
 
 
 def generate_live(
@@ -121,7 +52,7 @@ def generate_live(
             raise ValueError("No target text")
         source.wait(version)
     codec_length = prompt.codec_embeds.shape[1]
-    text = embed(model, prompt.ref_text_ids + ids)
+    text = _embed(model, prompt.ref_text_ids + ids)
     if closed:
         text = mx.concatenate([text, prompt.eos], axis=1)
     if text.shape[1] < codec_length:
@@ -194,7 +125,7 @@ def generate_live(
                 ids, closed, version = poll()
                 absolute = prompt.ref_text_ids + ids
                 if cursor < len(absolute):
-                    next_text = embed(model, [absolute[cursor]])
+                    next_text = _embed(model, [absolute[cursor]])
                     break
                 if closed:
                     next_text = prompt.eos if cursor == len(absolute) else prompt.pad
