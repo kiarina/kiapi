@@ -21,6 +21,14 @@ POST /v1/<domain>/<family>/<operation>
   source directory.
 - `operation` is the vocabulary supported by that family.
 
+OpenAI-compatible audio families keep OpenAI's paths instead:
+`POST /v1/audio/speech` (with `/v1/audio/voices`) and
+`POST /v1/audio/transcriptions`. Their family names are the last path segment
+(`speech`, `transcriptions`), so `/v1/<domain>/<family>/models` and
+`/openapi.json` still resolve. Every family name must match its URL this way:
+the Web UI loads a family's documents from `/v1/<domain>/<family>`, and a family
+whose name differs from its path does not open there.
+
 An endpoint represents an operation vocabulary. The `model` parameter selects a
 replaceable variant that supports the whole vocabulary. Cross-cutting concerns
 such as jobs, files, errors, authentication, and memory management remain

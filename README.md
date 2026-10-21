@@ -147,6 +147,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 |  | speech | `POST /v1/audio/speech` | OpenAI-compatible text-to-speech in a registered voice. [Speech API details](src/kiapi/capabilities/speech/README.md) |
 |  |  | `WS /v1/audio/speech/stream` | Bidirectional incremental text and cloned PCM audio. |
 |  |  | `POST /v1/audio/voices` | Register a voice from reference audio and its transcript (transcribed when omitted). |
+|  |  | `/v1/audio/voices/{id}` | Get, rename or fix the transcript (`PATCH`), delete a voice, or fetch its reference audio (`/audio`). |
 |  | transcriptions | `POST /v1/audio/transcriptions` | OpenAI-compatible speech-to-text. [Transcription API details](src/kiapi/capabilities/transcriptions/README.md) |
 | video | ltx2 | `POST /v1/video/ltx2` | [LTX-2 API details](src/kiapi/capabilities/ltx2/README.md) |
 |  | h3 | `POST /v1/video/h3` | [MiniMax H3 API details](src/kiapi/capabilities/h3/README.md) |

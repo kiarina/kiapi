@@ -17,6 +17,16 @@
 - Web UI の汎用フォームは JSON で送るので、multipart のこの口は試せない（`tasks/web-ui.md`）
 - 同日、family 名を `transcriptions` に改めた（`48b0449`）。Web UI は family の文書を `/v1/<domain>/<family>` から読むので、`transcription` では画面が開けず、サイドバーも生の名前のままだった。設定の接頭辞も `KIAPI_TRANSCRIPTIONS_` になった。あわせて声の登録のボタンを「Register voice」にした
 
+## 2026-10-22 — 声の管理を Web UI に足し、Speech の Playground の失敗を直した
+
+- 声の登録で `name` を省くと、上げたファイルの名前（拡張子なし）、data URL なら transcript の頭 20 文字にする（`ff658f0`）。
+  chat に名前を作らせる案は、名前 1 つのために大きいモデルを列に並べて読み込むので採らなかった（kiarina、2026-10-22）
+- `PATCH /v1/audio/voices/{id}`（名前・transcript）と `GET /v1/audio/voices/{id}/audio`（参照の音声）を足し、Speech の Playground の下に声の一覧
+  （聞く・直す・id のコピー・削除・「Use in Speech」で Speech のフォームへ id を入れて移る）を足した（`a438232`）
+- Speech を Playground から実行すると「is not valid JSON」になっていた。既定の `pcm` は音声のバイト列で返るのに、フォームは返事を必ず JSON として読んでいた
+  （生成は成功していた）。返事を Content-Type で読み、PCM は WAV に包んで鳴らすようにした（`3850fb5`）
+- 本番（サーバー機）へ入れ、verify 5/5。本番の声は 9 件（重複を含む。整理は kiarina が UI で行う）
+
 ## 2026-10-21 — OpenAI 互換の音声合成（`/v1/audio/speech`）を Qwen3-TTS の声のクローンで足し、本番へ入れた
 
 - Spirits Garden の試作の body が話す声を差し替えられるようにする方針（オーナー、2026-10-21）の、差し替え先として作った。調べは kiarina/labs の
