@@ -204,6 +204,7 @@ mise run verify --kiapi --family embedding --fast
 - [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
 - [mflux を 0.21.0 へ上げ、Qwen-Image-2.1 の fork pin を外す](tasks/mflux-qwen-image-21-unpin.md)
 - [tool_choice: required で並列の tool call が 1 件しか返らない件を調べる](tasks/chat-required-parallel-tool-calls.md)
+- [Qwen3-ASR で文字起こしの family を足し、声の登録の書き起こしに使う](tasks/qwen3-asr-transcription.md)
 
 ### 待ち（`waiting/`）
 
