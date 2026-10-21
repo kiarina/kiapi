@@ -29,6 +29,7 @@ from kiapi.capabilities.speech import (
     VoiceCreateRequest,
     VoiceList,
     VoiceNotFoundError,
+    default_voice_name,
     get_voice_store,
     handle_speech,
     settings_manager,
@@ -199,10 +200,16 @@ async def create_voice(
     settings = settings_manager.get_settings()
     try:
         source = resolve_file_ref(ctx.file_store, req.audio, kind="audio")
+        # A data URL carries no file name; kiapi names it "audio.<ext>".
+        filename = (
+            None
+            if source.record.meta.get("source") == "data_url"
+            else source.record.filename
+        )
         voice = await run_in_threadpool(
             get_voice_store().create,
             Path(source.path),
-            name=req.name,
+            name=req.name or default_voice_name(filename, req.transcript),
             transcript=req.transcript,
             min_seconds=settings.min_reference_seconds,
             max_seconds=settings.max_reference_seconds,
@@ -230,7 +237,11 @@ async def _transcribe_reference(ctx: AppContext, worker: Worker, voice: Voice) -
     except BaseException:
         store.delete(voice.id)
         raise
-    return store.set_transcript(voice.id, result["text"])
+    return store.update(
+        voice.id,
+        transcript=result["text"],
+        name=voice.name or default_voice_name(None, result["text"]),
+    )
 
 
 @router.get("/v1/audio/voices", response_model=VoiceList)

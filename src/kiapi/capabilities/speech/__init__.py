@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from kiapi.capabilities import ValidationError
 
+    from ._helpers.default_voice_name import default_voice_name
     from ._helpers.register import register
     from ._helpers.resolve_language import resolve_language
     from ._helpers.validate_speech import validate_speech
@@ -28,6 +29,7 @@ __all__ = [
     "VoiceList",
     "VoiceNotFoundError",
     "VoiceStore",
+    "default_voice_name",
     "get_voice_store",
     "handle_speech",
     "register",
@@ -45,6 +47,7 @@ def __getattr__(name: str) -> object:
         # kiapi.capabilities
         "ValidationError": "kiapi.capabilities",
         # _helpers
+        "default_voice_name": "._helpers.default_voice_name",
         "register": "._helpers.register",
         "resolve_language": "._helpers.resolve_language",
         "validate_speech": "._helpers.validate_speech",

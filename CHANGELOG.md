@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segments and, with `timestamp_granularities[]=word`, word timestamps from
   Qwen3-ForcedAligner 0.6B. Adds the `nagisa` dependency for Japanese words.
 - web UI: the voice registration button reads "Register voice".
+- speech: `POST /v1/audio/voices` without a `name` names the voice after the
+  uploaded file, or the start of the transcript for a data URL.
 - speech: `POST /v1/audio/voices` without a `transcript` now transcribes the
   reference with the transcriptions family (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`,
   on by default; skipped while that model is not activated).

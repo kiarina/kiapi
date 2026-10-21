@@ -126,21 +126,41 @@ def test_4(client: httpx.Client, verify_dir: Path, results: list) -> None:
     _report("4", ok, t0, "error paths -> 422/400/422/422", detail, results)
 
 
-def test_5(client: httpx.Client, verify_dir: Path, results: list) -> None:
-    t0 = time.time()
-    data = base64.b64encode(_speech(verify_dir).read_bytes()).decode()
-    r = client.post(
-        f"{BASE_URL}/v1/audio/voices",
-        json={
-            "audio": {"type": "data_url", "data_url": f"data:audio/aiff;base64,{data}"},
-            "name": "kiapi verify transcription",
-        },
-    )
-    voice = r.json() if r.status_code == 200 else {}
+def _register(client: httpx.Client, audio: dict) -> dict:
+    r = client.post(f"{BASE_URL}/v1/audio/voices", json={"audio": audio})
+    voice = r.json() if r.status_code == 200 else {"status": r.status_code}
     if voice.get("id"):
         client.delete(f"{BASE_URL}/v1/audio/voices/{voice['id']}")
-    ok = r.status_code == 200 and _contains(voice.get("transcript") or "")
-    _report("5", ok, t0, "voice without transcript -> transcribed", r.text, results)
+    return voice
+
+
+def test_5(client: httpx.Client, verify_dir: Path, results: list) -> None:
+    t0 = time.time()
+    speech = _speech(verify_dir)
+    data = base64.b64encode(speech.read_bytes()).decode()
+    by_data_url = _register(
+        client, {"type": "data_url", "data_url": f"data:audio/aiff;base64,{data}"}
+    )
+    with speech.open("rb") as f:
+        upload = client.post(
+            f"{BASE_URL}/v1/files",
+            files={"file": ("kiapi-verify-voice.aiff", f, "audio/aiff")},
+        ).json()
+    by_file = _register(client, {"type": "file_id", "file_id": upload["file_id"]})
+    ok = (
+        _contains(by_data_url.get("transcript") or "")
+        and (by_data_url.get("name") or "").startswith("もしもし")
+        and by_file.get("name") == "kiapi-verify-voice"
+    )
+    detail = f"data_url: {by_data_url} | file: name={by_file.get('name')}"
+    _report(
+        "5",
+        ok,
+        t0,
+        "voice without transcript/name -> transcribed and named",
+        detail,
+        results,
+    )
 
 
 def main() -> None:

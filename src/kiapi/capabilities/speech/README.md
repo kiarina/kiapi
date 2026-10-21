@@ -33,6 +33,9 @@ seconds of reference audio and its transcript.
 - **Voices**: there are no built-in voices. Register one, then pass its `id` as `voice`.
   The reference is converted to 24 kHz mono, cut to 30 seconds, and kept under
   `speech/voices` in the user data directory (`KIAPI_SPEECH_VOICES_DIR`).
+  Without a `name`, the voice is named after the uploaded file (without its
+  extension), or after the first 20 characters of its transcript when the audio
+  came as a data URL.
   Without a `transcript`, kiapi transcribes the (cut) reference with the
   [transcriptions](../transcriptions/README.md) family and stores that text; the
   returned voice shows it, so check it. Set `KIAPI_SPEECH_TRANSCRIBE_REFERENCE=false`

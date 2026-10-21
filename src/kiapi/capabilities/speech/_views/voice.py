@@ -25,7 +25,11 @@ class VoiceCreateRequest(BaseModel):
         default=None,
         max_length=200,
         title="Name",
-        description="Optional label shown in the voice list.",
+        description=(
+            "Label shown in the voice list. Omit it to use the uploaded file's "
+            "name without its extension, or the start of the transcript when "
+            "there is no file name (a data URL)."
+        ),
     )
     transcript: str | None = Field(
         default=None,

@@ -61,9 +61,11 @@ class VoiceStore:
         (directory / "voice.json").write_text(voice.model_dump_json(indent=2))
         return voice
 
-    def set_transcript(self, voice_id: str, transcript: str) -> Voice:
+    def update(
+        self, voice_id: str, *, transcript: str | None, name: str | None
+    ) -> Voice:
         voice = self.get(voice_id).model_copy(
-            update={"transcript": transcript.strip() or None}
+            update={"transcript": (transcript or "").strip() or None, "name": name}
         )
         path = self._directory(voice_id) / "voice.json"
         path.write_text(voice.model_dump_json(indent=2))

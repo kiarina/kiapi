@@ -10,6 +10,7 @@ from kiapi.capabilities.speech import (
     SpeechRequest,
     VoiceNotFoundError,
     VoiceStore,
+    default_voice_name,
     resolve_language,
     validate_speech,
 )
@@ -110,7 +111,7 @@ def test_voice_store_cuts_long_reference(tmp_path: Path) -> None:
     assert voice.transcript is None
 
 
-def test_voice_store_sets_transcript(tmp_path: Path) -> None:
+def test_voice_store_updates(tmp_path: Path) -> None:
     store = VoiceStore(tmp_path)
     voice = store.create(
         _tone(tmp_path / "ref.wav", 2.0),
@@ -120,10 +121,10 @@ def test_voice_store_sets_transcript(tmp_path: Path) -> None:
         max_seconds=30.0,
     )
 
-    updated = store.set_transcript(voice.id, " こんにちは ")
-    assert updated.transcript == "こんにちは"
+    updated = store.update(voice.id, transcript=" こんにちは ", name="こんにちは")
+    assert (updated.transcript, updated.name) == ("こんにちは", "こんにちは")
     assert store.get(voice.id) == updated
-    assert store.set_transcript(voice.id, " ").transcript is None
+    assert store.update(voice.id, transcript=" ", name=None).transcript is None
 
 
 def test_voice_store_rejects_short_reference(tmp_path: Path) -> None:
@@ -142,3 +143,19 @@ def test_voice_store_rejects_short_reference(tmp_path: Path) -> None:
 def test_voice_store_rejects_foreign_ids(tmp_path: Path, voice_id: str) -> None:
     with pytest.raises(VoiceNotFoundError):
         VoiceStore(tmp_path).get(voice_id)
+
+
+@pytest.mark.parametrize(
+    ("filename", "transcript", "expected"),
+    [
+        ("tyc-samplevoice-4.wav", "こんにちは", "tyc-samplevoice-4"),
+        (None, " こんにちは。\n元気？ ", "こんにちは。 元気？"),  # noqa: RUF001
+        (None, "あ" * 25, "あ" * 20 + "…"),
+        (None, None, None),
+        ("", " ", None),
+    ],
+)
+def test_default_voice_name(
+    filename: str | None, transcript: str | None, expected: str | None
+) -> None:
+    assert default_voice_name(filename, transcript) == expected
