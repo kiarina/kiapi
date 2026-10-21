@@ -11,7 +11,7 @@ decoded part instead.
 
 Requests share kiapi's single worker with every other capability: a long file
 makes other requests wait, so audio is capped at
-`KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600).
+`KIAPI_TRANSCRIPTIONS_MAX_AUDIO_SECONDS` (default 3600).
 
 ## Upstream docs
 - [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) — the model family

@@ -12,13 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- transcription: new audio family with an OpenAI-compatible
+- transcriptions: new audio family with an OpenAI-compatible
   `POST /v1/audio/transcriptions` (multipart, `json`, `text`, and
   `verbose_json`) on Qwen3-ASR 1.7B (mlx-audio). `verbose_json` returns sentence
   segments and, with `timestamp_granularities[]=word`, word timestamps from
   Qwen3-ForcedAligner 0.6B. Adds the `nagisa` dependency for Japanese words.
+- web UI: the voice registration button reads "Register voice".
 - speech: `POST /v1/audio/voices` without a `transcript` now transcribes the
-  reference with the transcription family (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`,
+  reference with the transcriptions family (`KIAPI_SPEECH_TRANSCRIBE_REFERENCE`,
   on by default; skipped while that model is not activated).
 - speech: new audio family with an OpenAI-compatible `POST /v1/audio/speech`
   that speaks in a registered voice (Qwen3-TTS 1.7B Base on mlx-audio, voice

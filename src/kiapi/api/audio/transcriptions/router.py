@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from fastapi.responses import PlainTextResponse, Response
 
 from kiapi.api import REQUIRE_AUTH, get_ctx, get_worker, register_capability_endpoints
-from kiapi.capabilities.transcription import (
+from kiapi.capabilities.transcriptions import (
     ValidationError,
     settings_manager,
     validate_transcription,
@@ -52,7 +52,7 @@ async def create_transcription(
     """
     req = form.to_request()
     try:
-        model_registry.resolve("transcription", req.model)
+        model_registry.resolve("transcriptions", req.model)
     except UnknownModelError as exc:
         raise HTTPException(status_code=400, detail=str(exc))  # noqa: B904
     try:
@@ -60,7 +60,7 @@ async def create_transcription(
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))  # noqa: B904
 
-    work_dir = create_work_dir("transcription")
+    work_dir = create_work_dir("transcriptions")
     try:
         audio_path = await _save_upload(form.file, work_dir)
     except BaseException:
@@ -110,5 +110,5 @@ async def _save_upload(file: UploadFile, work_dir: Path) -> Path:
 
 
 register_capability_endpoints(
-    router, name="transcription", base_path="/v1/audio/transcriptions"
+    router, name="transcriptions", base_path="/v1/audio/transcriptions"
 )

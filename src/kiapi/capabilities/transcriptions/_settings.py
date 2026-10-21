@@ -1,4 +1,4 @@
-"""Transcription capability settings, read from the environment (``KIAPI_TRANSCRIPTION_``)."""
+"""Transcription capability settings, read from the environment (``KIAPI_TRANSCRIPTIONS_``)."""
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,7 +9,7 @@ class TranscriptionSettings(BaseSettings):
     """Settings for speech-to-text limits and chunking."""
 
     model_config = SettingsConfigDict(
-        env_prefix="KIAPI_TRANSCRIPTION_",
+        env_prefix="KIAPI_TRANSCRIPTIONS_",
         extra="ignore",
         protected_namespaces=(),
     )

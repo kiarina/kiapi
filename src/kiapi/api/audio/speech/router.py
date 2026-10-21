@@ -34,7 +34,7 @@ from kiapi.capabilities.speech import (
     settings_manager,
     validate_speech,
 )
-from kiapi.capabilities.transcription import TranscriptionRequest
+from kiapi.capabilities.transcriptions import TranscriptionRequest
 from kiapi.core.app import AppContext
 from kiapi.core.memory import MemoryBudgetError
 from kiapi.core.model import UnknownModelError, model_registry
@@ -193,7 +193,7 @@ async def create_voice(
     """Register a voice from reference audio and its transcript.
 
     Without `transcript`, kiapi transcribes the reference (after cutting it to
-    the maximum length) with the transcription family and stores that text. The
+    the maximum length) with the transcriptions family and stores that text. The
     transcription waits in kiapi's single worker queue like any other job.
     """
     settings = settings_manager.get_settings()
@@ -219,7 +219,7 @@ async def create_voice(
 async def _transcribe_reference(ctx: AppContext, worker: Worker, voice: Voice) -> Voice:
     store = get_voice_store()
     try:
-        ctx.ensure_model_ready(model_registry.resolve("transcription", None))
+        ctx.ensure_model_ready(model_registry.resolve("transcriptions", None))
     except SetupRequiredError as exc:
         logger.warning("voice %s registered without a transcript: %s", voice.id, exc)
         return voice

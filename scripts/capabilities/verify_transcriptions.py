@@ -7,7 +7,7 @@ paths, and registers a speech voice without a transcript (kiapi fills it in).
 Usage:
     # start the server first, e.g.:
     #   KIAPI_PORT=8000 uv run kiapi
-    uv run python scripts/capabilities/verify_transcription.py [--fast] [--id N]
+    uv run python scripts/capabilities/verify_transcriptions.py [--fast] [--id N]
 
 Env:
     KIAPI_BASE_URL   server base URL (default http://127.0.0.1:8000)
@@ -151,7 +151,7 @@ def main() -> None:
         elif arg.startswith("--id="):
             target_id = arg.split("=", 1)[1]
 
-    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "transcription"
+    verify_dir = Path(os.environ.get("KIAPI_VERIFY_DIR", ".verify")) / "transcriptions"
     if verify_dir.exists() and not target_id:
         shutil.rmtree(verify_dir)
     verify_dir.mkdir(parents=True, exist_ok=True)

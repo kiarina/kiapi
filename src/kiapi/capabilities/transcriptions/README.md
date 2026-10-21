@@ -1,4 +1,4 @@
-# transcription
+# transcriptions
 
 Speech-to-text, compatible with OpenAI's `audio/transcriptions`.
 [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) 1.7B transcribes 30 languages and
@@ -40,14 +40,14 @@ detects the language; Qwen3-ForcedAligner 0.6B times sentences and words.
   French, Italian, Portuguese, Russian, Korean, and Japanese; other languages get
   one segment per decoded part, and asking them for `word` is an error.
 - **Long audio**: audio is cut at a quiet point every 3 minutes
-  (`KIAPI_TRANSCRIPTION_CHUNK_SECONDS`; `verbose_json` uses at most 5, the
+  (`KIAPI_TRANSCRIPTIONS_CHUNK_SECONDS`; `verbose_json` uses at most 5, the
   aligner's limit), and each part is transcribed and its language detected on
   its own. Qwen3-ASR takes up to 20 minutes at once, but memory and time grow
   with the length (see Measured).
 - **Queue**: transcription shares kiapi's single worker and has no streaming,
   so a long file holds up every other request until it is done. Uploads are
-  capped at 100 MB (`KIAPI_TRANSCRIPTION_MAX_FILE_MB`) and one hour of audio
-  (`KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS`). A file that takes longer than
+  capped at 100 MB (`KIAPI_TRANSCRIPTIONS_MAX_FILE_MB`) and one hour of audio
+  (`KIAPI_TRANSCRIPTIONS_MAX_AUDIO_SECONDS`). A file that takes longer than
   `KIAPI_SYNC_TIMEOUT_S` (default 600 seconds) returns 504 while the job keeps
   running; its result (`text`, `segments`, `words`) is then in `GET /v1/jobs/{id}`.
 - **Voices**: the speech family uses this family to transcribe a voice

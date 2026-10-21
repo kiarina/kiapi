@@ -119,7 +119,7 @@
       },
       "post": {
         "summary": "Create Voice",
-        "description": "Register a voice from reference audio and its transcript.\n\nWithout `transcript`, kiapi transcribes the reference (after cutting it to\nthe maximum length) with the transcription family and stores that text. The\ntranscription waits in kiapi's single worker queue like any other job.",
+        "description": "Register a voice from reference audio and its transcript.\n\nWithout `transcript`, kiapi transcribes the reference (after cutting it to\nthe maximum length) with the transcriptions family and stores that text. The\ntranscription waits in kiapi's single worker queue like any other job.",
         "operationId": "create_voice_v1_audio_voices_post",
         "requestBody": {
           "content": {

@@ -1,4 +1,4 @@
-"""transcription family — OpenAI-compatible speech-to-text (Qwen3-ASR on mlx-audio).
+"""transcriptions family — OpenAI-compatible speech-to-text (Qwen3-ASR on mlx-audio).
 
 Endpoint: ``POST /v1/audio/transcriptions`` (multipart/form-data, like OpenAI).
 """

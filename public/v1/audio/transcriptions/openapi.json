@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "kiapi Transcription API",
-    "description": "Speech-to-text (OpenAI `audio/transcriptions` compatible).\n\nSend the audio as `multipart/form-data` with a `file` field, as the OpenAI SDKs\ndo (`client.audio.transcriptions.create(file=..., model=\"qwen3-asr-1.7b\")`).\nThe language is detected unless `language` is given.\n\n`response_format: verbose_json` adds the language, the duration, and sentence\n`segments` timed by Qwen3-ForcedAligner; `timestamp_granularities[]=word` adds\n`words`. Audio in a language the aligner does not cover gets one segment per\ndecoded part instead.\n\nRequests share kiapi's single worker with every other capability: a long file\nmakes other requests wait, so audio is capped at\n`KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600).\n\n## Upstream docs\n- [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) — the model family\n- [mlx-audio](https://github.com/Blaizzy/mlx-audio) — the MLX implementation\n\n## Models\n- **qwen3-asr-1.7b** (default, alias `qwen3-asr`) —\n  `mlx-community/Qwen3-ASR-1.7B-bf16`, Apache-2.0, with\n  `mlx-community/Qwen3-ForcedAligner-0.6B-bf16` (Apache-2.0) for timestamps.\n  Transcribes 30 languages; timestamps cover Chinese, Cantonese, English,\n  German, Spanish, French, Italian, Portuguese, Russian, Korean, and Japanese.\n\nDiscover models at `GET /v1/audio/transcriptions/models`.\n\n## Tips\n- Put names and terms the audio may contain in `prompt`.\n- Give `language` when you know it: detection reads each part on its own.\n",
+    "description": "Speech-to-text (OpenAI `audio/transcriptions` compatible).\n\nSend the audio as `multipart/form-data` with a `file` field, as the OpenAI SDKs\ndo (`client.audio.transcriptions.create(file=..., model=\"qwen3-asr-1.7b\")`).\nThe language is detected unless `language` is given.\n\n`response_format: verbose_json` adds the language, the duration, and sentence\n`segments` timed by Qwen3-ForcedAligner; `timestamp_granularities[]=word` adds\n`words`. Audio in a language the aligner does not cover gets one segment per\ndecoded part instead.\n\nRequests share kiapi's single worker with every other capability: a long file\nmakes other requests wait, so audio is capped at\n`KIAPI_TRANSCRIPTIONS_MAX_AUDIO_SECONDS` (default 3600).\n\n## Upstream docs\n- [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) — the model family\n- [mlx-audio](https://github.com/Blaizzy/mlx-audio) — the MLX implementation\n\n## Models\n- **qwen3-asr-1.7b** (default, alias `qwen3-asr`) —\n  `mlx-community/Qwen3-ASR-1.7B-bf16`, Apache-2.0, with\n  `mlx-community/Qwen3-ForcedAligner-0.6B-bf16` (Apache-2.0) for timestamps.\n  Transcribes 30 languages; timestamps cover Chinese, Cantonese, English,\n  German, Spanish, French, Italian, Portuguese, Russian, Korean, and Japanese.\n\nDiscover models at `GET /v1/audio/transcriptions/models`.\n\n## Tips\n- Put names and terms the audio may contain in `prompt`.\n- Give `language` when you know it: detection reads each part on its own.\n",
     "version": "0.8.0"
   },
   "paths": {
@@ -269,7 +269,7 @@
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "File",
-            "description": "Audio to transcribe: WAV, FLAC, MP3, OGG, M4A, or the audio of a video. Capped by `KIAPI_TRANSCRIPTION_MAX_FILE_MB` (default 100) and `KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600)."
+            "description": "Audio to transcribe: WAV, FLAC, MP3, OGG, M4A, or the audio of a video. Capped by `KIAPI_TRANSCRIPTIONS_MAX_FILE_MB` (default 100) and `KIAPI_TRANSCRIPTIONS_MAX_AUDIO_SECONDS` (default 3600)."
           }
         },
         "type": "object",
@@ -471,7 +471,7 @@
       }
     }
   },
-  "x-kiapi-capability": "transcription",
+  "x-kiapi-capability": "transcriptions",
   "x-kiapi-domain": "audio",
   "x-kiapi-root-openapi": "/openapi.json"
 }

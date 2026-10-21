@@ -51,7 +51,7 @@ class SpeechSettings(BaseSettings):
         title="Transcribe references",
         description=(
             "When a voice is registered without a transcript, transcribe the "
-            "reference with the transcription family. Skipped (with a warning) "
+            "reference with the transcriptions family. Skipped (with a warning) "
             "while that model is not activated."
         ),
     )

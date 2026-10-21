@@ -11,7 +11,7 @@ from .._models import qwen3_asr
 def register() -> None:
     capability_spec_registry.register(
         CapabilitySpec(
-            name="transcription",
+            name="transcriptions",
             domain="audio",
             title="kiapi Transcription API",
             summary="Transcribe audio to text (OpenAI-compatible audio/transcriptions).",
@@ -26,7 +26,7 @@ def register() -> None:
     model_registry.register(
         ModelSpec(
             name="qwen3-asr-1.7b",
-            family="transcription",
+            family="transcriptions",
             domain="audio",
             repo="mlx-community/Qwen3-ASR-1.7B-bf16",
             module=qwen3_asr,

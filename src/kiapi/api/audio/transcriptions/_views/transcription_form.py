@@ -3,7 +3,7 @@
 from fastapi import UploadFile
 from pydantic import Field
 
-from kiapi.capabilities.transcription import TranscriptionRequest
+from kiapi.capabilities.transcriptions import TranscriptionRequest
 
 
 class TranscriptionForm(TranscriptionRequest):
@@ -13,8 +13,8 @@ class TranscriptionForm(TranscriptionRequest):
         title="File",
         description=(
             "Audio to transcribe: WAV, FLAC, MP3, OGG, M4A, or the audio of a "
-            "video. Capped by `KIAPI_TRANSCRIPTION_MAX_FILE_MB` (default 100) "
-            "and `KIAPI_TRANSCRIPTION_MAX_AUDIO_SECONDS` (default 3600)."
+            "video. Capped by `KIAPI_TRANSCRIPTIONS_MAX_FILE_MB` (default 100) "
+            "and `KIAPI_TRANSCRIPTIONS_MAX_AUDIO_SECONDS` (default 3600)."
         ),
     )
 

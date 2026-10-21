@@ -34,7 +34,7 @@ seconds of reference audio and its transcript.
   The reference is converted to 24 kHz mono, cut to 30 seconds, and kept under
   `speech/voices` in the user data directory (`KIAPI_SPEECH_VOICES_DIR`).
   Without a `transcript`, kiapi transcribes the (cut) reference with the
-  [transcription](../transcription/README.md) family and stores that text; the
+  [transcriptions](../transcriptions/README.md) family and stores that text; the
   returned voice shows it, so check it. Set `KIAPI_SPEECH_TRANSCRIBE_REFERENCE=false`
   to turn this off. While the transcription model is not activated the voice is
   registered without a transcript, and is then cloned from the speaker embedding

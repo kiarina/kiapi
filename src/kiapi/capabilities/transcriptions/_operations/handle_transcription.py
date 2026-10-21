@@ -45,7 +45,7 @@ def resolve_transcription_params(
 def handle_transcription(
     ctx: AppContext, req: TranscriptionRequest, audio_path: Path
 ) -> tuple[JobResult, list[FileID]]:
-    spec = model_registry.resolve("transcription", req.model)
+    spec = model_registry.resolve("transcriptions", req.model)
     ctx.ensure_model_ready(spec)
     params = resolve_transcription_params(req, audio_path, variant=spec.name)
     payload = ctx.memory_manager.acquire(spec)

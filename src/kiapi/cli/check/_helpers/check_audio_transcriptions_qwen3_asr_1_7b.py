@@ -12,7 +12,7 @@ def check(ctx: AppContext, spec: ModelSpec) -> CheckResult:
     import numpy as np
     import soundfile as sf  # type: ignore
 
-    from kiapi.capabilities.transcription import (
+    from kiapi.capabilities.transcriptions import (
         TranscriptionRequest,
         handle_transcription,
     )

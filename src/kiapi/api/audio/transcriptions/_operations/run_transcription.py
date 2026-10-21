@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 from kiapi.api import settings_manager
 from kiapi.capabilities import CapabilityError
-from kiapi.capabilities.transcription import (
+from kiapi.capabilities.transcriptions import (
     TranscriptionRequest,
     ValidationError,
     handle_transcription,
@@ -41,7 +41,7 @@ async def run_transcription(
 
     timeout = settings_manager.get_settings().sync_timeout_s
     job = ctx.job_store.create(
-        type="transcription",
+        type="transcriptions",
         params=req.model_dump(mode="json", exclude={"prompt"}),
     )
     fut = await worker.submit(job, thunk)

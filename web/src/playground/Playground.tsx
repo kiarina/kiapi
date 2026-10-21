@@ -29,6 +29,14 @@ const TERMINAL = new Set(["succeeded", "failed", "canceled"]);
 // Fields a chat model can write from the family guide.
 const WRITABLE = new Set(["prompt", "negative_prompt", "lyrics"]);
 
+// Operations named by a noun get a verb on their submit button.
+const SUBMIT_LABELS: Record<string, string> = { voices: "Register voice" };
+
+function submitLabel(op: string, family: string): string {
+  if (op === family) return "Run";
+  return SUBMIT_LABELS[op] ?? op.charAt(0).toUpperCase() + op.slice(1);
+}
+
 function takesImage(f: Field): boolean {
   return (f.kind === "file" || f.kind === "files") && acceptFor(f.name) === "image";
 }
@@ -237,7 +245,7 @@ export function Playground({
 
         <div className="pg-submit">
           <button type="submit" className="btn primary big" disabled={submitting || missingRequired.length > 0}>
-            {submitting ? "Sending…" : op.name === family ? "Run" : op.name.charAt(0).toUpperCase() + op.name.slice(1)}
+            {submitting ? "Sending…" : submitLabel(op.name, family)}
             <span className="kbd">⌘↵</span>
           </button>
           <div className="small muted" style={{ textAlign: "center" }}>

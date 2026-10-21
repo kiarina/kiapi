@@ -573,7 +573,7 @@ kiapi.capabilities.speech:
   # min_reference_seconds: 1.0
   #--------------------------------------------------
   # Transcribe references: bool
-  #   When a voice is registered without a transcript, transcribe the reference with the transcription family. Skipped (with a warning) while that model is not activated.
+  #   When a voice is registered without a transcript, transcribe the reference with the transcriptions family. Skipped (with a warning) while that model is not activated.
   # transcribe_reference: true
   #--------------------------------------------------
   # Streaming chunk seconds: float
@@ -587,7 +587,7 @@ kiapi.capabilities.speech:
 #--------------------------------------------------------------------------------
 # Settings for speech-to-text limits and chunking.
 #--------------------------------------------------------------------------------
-kiapi.capabilities.transcription:
+kiapi.capabilities.transcriptions:
   # Maximum file MB: float
   #   Largest upload accepted by `/v1/audio/transcriptions`, in MB.
   # max_file_mb: 100.0

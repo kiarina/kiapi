@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 
 from kiapi.capabilities import ValidationError
-from kiapi.capabilities.transcription import (
+from kiapi.capabilities.transcriptions import (
     TranscriptionRequest,
     join_texts,
     resolve_language,
