@@ -31,6 +31,8 @@ async def stream_call(
     prep_job = None
     receiver = None
     ready = False
+    message: asyncio.Task | None = None
+    chunk: asyncio.Task | None = None
     pending: set[asyncio.Future] = set()
 
     def cancel_turn() -> None:
@@ -296,6 +298,9 @@ async def stream_call(
         except (WebSocketDisconnect, RuntimeError, TimeoutError):
             pass
     finally:
+        for waiter in (message, chunk):
+            if waiter is not None:
+                waiter.cancel()
         cancel_turn()
         if prep_job is not None:
             prep_job.request_cancel()
