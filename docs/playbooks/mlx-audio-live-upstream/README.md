@@ -2,6 +2,10 @@
 
 This directory owns a reviewable upstream patch proposal, not runtime code used by kiapi. The adopted application remains on its current implementation while this proposal is reviewed. No upstream PR has been submitted.
 
+## Review recommendation
+
+The [value assessment](assessment.md) recommends narrowing the proposal to reusable preparation and generation of committed spans, and comparing against warmed existing generation before submission. The current patch and draft are retained for review; this recommendation has not yet changed their scope.
+
 ## Scope
 
 | Belongs in the model library | Remains in the application |
