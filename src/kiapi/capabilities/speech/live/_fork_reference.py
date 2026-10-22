@@ -8,7 +8,7 @@ def fork_reference(model: Any, prepared: PreparedReference) -> PreparedReference
     decoder = model.speech_tokenizer.decoder
     decoder.reset_streaming_state()
     modules = dict(decoder.named_modules())
-    modules[""] = decoder
+    # mlx-audio wraps decoder in mx.compile; named_modules returns its real root.
     for name, values in prepared.decoder_state.items():
         for key, value in values.items():
             setattr(modules[name], key, _copy_state(value))
