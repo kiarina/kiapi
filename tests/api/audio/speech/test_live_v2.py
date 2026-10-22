@@ -133,3 +133,59 @@ def test_cancel_during_preparation(
         gate.set()
         assert ws.receive_json()["type"] == "ready"
         utterance(ws, 2)
+
+
+@pytest.mark.asyncio
+async def test_network_backpressure_cannot_hide_cancel_behind_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from kiapi.core.job import JobStore
+    from kiapi.core.worker import Worker
+    from kiapi.core.worker._settings import WorkerSettings
+
+    inputs: asyncio.Queue[dict] = asyncio.Queue()
+    blocked = asyncio.Event()
+    finished = threading.Event()
+
+    class Socket:
+        async def send_json(self, event: dict) -> None:
+            pass
+
+        async def receive_json(self) -> dict:
+            return await inputs.get()
+
+        async def send_bytes(self, data: bytes) -> None:
+            blocked.set()
+            await asyncio.Event().wait()
+
+    def flood(ctx: Any, state: Any, source: Any, job: Any, emit: Any) -> Any:
+        try:
+            while True:
+                emit(b"\0\0")
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(_live_v2, "run_call_utterance", flood)
+    ctx = SimpleNamespace(job_store=JobStore())
+    worker = Worker(WorkerSettings(ttl_sweep_interval_s=0), ctx)  # type: ignore[arg-type]
+    worker.start()
+    task = asyncio.create_task(
+        _live_v2.stream_call(Socket(), ctx, worker, {"voice": "voice_test"})  # type: ignore[arg-type]
+    )
+    try:
+        await inputs.put({"type": "utterance.start", "utterance_id": 1})
+        await inputs.put({"type": "text.append", "utterance_id": 1, "text": "あ"})
+        await asyncio.wait_for(blocked.wait(), 1)
+        for _ in range(64):
+            await inputs.put({"type": "text.append", "utterance_id": 1, "text": "い"})
+        await inputs.put({"type": "cancel", "utterance_id": 1})
+        assert await asyncio.to_thread(finished.wait, 1)
+    finally:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        worker._task.cancel()  # type: ignore[union-attr]
+        worker.executor.shutdown(wait=True)
