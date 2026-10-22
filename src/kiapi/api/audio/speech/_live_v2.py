@@ -71,6 +71,8 @@ async def stream_call(
                             turn["source"].push(text)
                         continue
                     if item.get("type") == "text.done":
+                        if turn.get("canceling"):
+                            continue
                         if turn["source"].closed:
                             raise ValueError("text.done already received")
                         if not turn.get("canceling"):
@@ -205,6 +207,15 @@ async def stream_call(
                     source = turn["source"]
                     if kind == "cancel":
                         cancel_turn()
+                        stopped = turn.get("future")
+                        if stopped is not None:
+                            if turn["job"].started_at is None:
+                                stopped.cancel()
+                            else:
+                                try:
+                                    await asyncio.shield(stopped)
+                                except (asyncio.CancelledError, Exception):
+                                    pass
                         turn = None
                         await socket.send_json(
                             {"type": "utterance.canceled", "utterance_id": identifier}

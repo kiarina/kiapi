@@ -50,8 +50,8 @@ def prepare_reference(model: Any, prompt: ClonePrompt) -> PreparedReference:
             }
             for name, module in decoder.named_modules()
         }
-        # named_modules may exclude the root decoder.
-        state[""] = {"_transformer_cache": _copy_state(decoder._transformer_cache)}
+        if "_transformer_cache" not in state.get("", {}):
+            raise RuntimeError("Decoder transformer state was not captured")
         bridge = model.talker.get_input_embeddings()(mx.array([[cfg.codec_bos_id]]))
         mx.eval(bridge)
         return PreparedReference(
