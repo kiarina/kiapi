@@ -37,3 +37,16 @@ reference transcript and language. Model eviction releases that cache.
 Long references increase the amount of target text required before first audio.
 Cancellation is cooperative between model steps; a currently running model
 prefill/load cannot be interrupted inside MLX.
+
+## Prepared explicit reference boundary
+
+`prepare_reference(model, prompt)` prefills reference text plus text EOS over
+all reference codes, appends codec EOS and a fresh copy of the
+role/language/speaker prefix, then primes the decoder. It returns a
+`PreparedReference` snapshot. `fork_reference` copies talker KV arrays and the
+decoder's transformer/conv/overlap state for one independent generation.
+`generate_prepared` streams target text, delaying codec EOS until input is
+closed and the target text EOS row has been consumed. No target text or sampled
+audio is invented during preparation. All preparation/fork/generation and
+snapshot release belong on the model worker; snapshots must never pin an
+evicted model from a transport thread.

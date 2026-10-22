@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from ._operations.get_voice_store import get_voice_store
     from ._operations.handle_live_speech import handle_live_speech
     from ._operations.handle_speech import handle_speech
+    from ._operations.prepare_call import prepare_call
+    from ._operations.run_call_utterance import run_call_utterance
     from ._services.voice_store import VoiceNotFoundError, VoiceStore
     from ._settings import settings_manager
     from ._views.speech_request import SpeechRequest
@@ -35,8 +37,10 @@ __all__ = [
     "get_voice_store",
     "handle_live_speech",
     "handle_speech",
+    "prepare_call",
     "register",
     "resolve_language",
+    "run_call_utterance",
     "settings_manager",
     "validate_speech",
 ]
@@ -55,6 +59,8 @@ def __getattr__(name: str) -> object:
         "resolve_language": "._helpers.resolve_language",
         "validate_speech": "._helpers.validate_speech",
         # _operations
+        "prepare_call": "._operations.prepare_call",
+        "run_call_utterance": "._operations.run_call_utterance",
         "get_voice_store": "._operations.get_voice_store",
         "handle_live_speech": "._operations.handle_live_speech",
         "handle_speech": "._operations.handle_speech",

@@ -198,6 +198,8 @@ mise run verify --kiapi --family embedding --fast
 
 ### タスク（`tasks/`）
 
+- [通話全体の speech protocol 2](tasks/speech-call-session.md)
+
 
 - [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
 - [mlx-vlm を 0.7.2 以降へ上げて Omni の互換 patch を外す](tasks/mlx-vlm-omni-patch-removal.md)

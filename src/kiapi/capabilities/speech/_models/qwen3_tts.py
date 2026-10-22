@@ -86,3 +86,7 @@ def run(
             "total_s": round(time.time() - t0, 3),
         },
     }
+
+
+def resident_extra_bytes(payload: SimpleNamespace) -> int:
+    return int(getattr(payload, "prepared_reference_bytes", 0))

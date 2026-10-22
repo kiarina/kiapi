@@ -153,3 +153,37 @@ and cancel immediately on interruption. Do not keep a live speech connection
 open across turns or across a dependency on another same-instance inference
 request. `session.created` means accepted/possibly queued; `ready` means model
 and voice preparation finished and text may still be needed before audio.
+
+## Persistent call protocol (version 2)
+
+Set `protocol: 2` in the initial `start` message to prepare the registered full
+reference once at call start. `session.created` includes `protocol: 2`; `ready`
+arrives after reference text EOS, reference codec EOS and a fresh
+role/language/speaker prefix have been prefilled, and the streaming decoder has
+been primed with the full reference. `required_prefix_tokens` is 1. The existing
+protocol remains available when `protocol` is omitted.
+
+For each response send `utterance.start` with a unique positive uint32
+`utterance_id`, followed by `text.append` and `text.done` carrying that same ID.
+Every binary message starts with the four-byte little-endian uint32 ID,
+followed by 24 kHz mono PCM16LE. `utterance.done` or `utterance.canceled` carries
+that ID and leaves the socket open. Send `cancel` with the ID and wait for its
+acknowledgment before starting the next response. Old canceled/completed text
+is ignored; IDs cannot be reused. Discard playback for canceled IDs. An `error`
+is fatal to the session. `session.close` ends the call; disconnect also cancels
+outstanding work. There is no input idle timeout between responses; transport
+WebSocket ping/pong handles keepalive.
+
+The reference is an immutable snapshot of the voice at session start. Changes
+or deletion of that registered voice affect later sessions. GPU snapshots live
+in a two-entry model-owned LRU and are independently forked for each utterance;
+preceding output never becomes the next reference. Model eviction releases the
+cache; later use rebuilds it from the same CPU reference snapshot. Retained GPU
+snapshot bytes participate in resident memory accounting.
+
+Preparation and active generation share the single worker. Between utterances,
+and after `utterance.start` before the first nonempty `text.append`, the worker
+is free for other capabilities. Once generation begins, input waits retain it
+with a 30-second timeout. Finish each response with `text.done`, and cancel on
+interruption. The full reference is never shortened for low latency. The fresh
+boundary is an experimentally verified layout, not an upstream model API.

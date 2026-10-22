@@ -44,6 +44,14 @@ async def stream_speech(socket: WebSocket, ctx: AppContext, worker: Worker) -> N
         first = await asyncio.wait_for(socket.receive_json(), timeout=30)
         if not isinstance(first, dict) or first.pop("type", None) != "start":
             raise ValueError("First message must be start")
+        protocol = first.pop("protocol", 1)
+        if protocol == 2:
+            from ._live_v2 import stream_call
+
+            await stream_call(socket, ctx, worker, first)
+            return
+        if protocol != 1:
+            raise ValueError("Unsupported speech protocol")
         if set(first) - {"model", "voice", "language", "seed"}:
             raise ValueError("Unknown start fields")
         req = SpeechRequest(input=" ", **first)
