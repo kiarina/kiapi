@@ -3,6 +3,13 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-22 — mlx-audio の prepared live clone 提案を独立パッチに整理
+
+- 採用済みの短区間方式からモデル層だけを上流 `7cc680b2` へ移植し、[提案bundle](docs/playbooks/mlx-audio-live-upstream/README.md) に完全patch・英語PR本文・再現用verifier・sanitized実測を保存。実行時依存やサービスは変更せず、PR/forkは未提出。
+- 新APIは full-reference preparation / snapshot reuse / producer-safe TextSource / span-local streaming GenerationResult / cancel。WebSocket、声ID、worker運用、初回1秒bufferはアプリ側。連続したtarget contextを持つ方式ではないことを明記。
+- M1 Max 64GBで focused CPU60 + subtests9、追加既存Qwen3TTS36が成功。追加GenerateICL集合のnative crashはclean baseでも再現し未解決として記載。変更Python6ファイルのBlack/isort、cleanbaseへのpatch適用check成功。
+- 実Base1.7B bf16で参照prefix/code一致、cancel/close後の再利用波形一致、既存generateのcleanbase対patched波形一致。逐次日英PCMはtext.doneより先。ASRでは逐次日英一致、別の短い日本語例CER0.087（読み違いとASR誤りは分離していない）。自然さの試聴評価や広いモデル/話者検証は未実施。
+
 ## 2026-10-22 — 通話へ cached short spans を追加し、Spirits Garden の初回 1 秒 buffer と組み合わせて配備した
 
 - protocol 2 の `start` に任意の `generation: "segments"`、`ready` に同じ selector の echo を追加。省略時の token mode、HTTP、v1 は維持（実装 `29bf8d1`、配備 `4d9a92d`）。1 socket・同じ outer utterance ID の PCM として複数 span を連結し、outer done と全 span 完了後だけ utterance.done を返す。

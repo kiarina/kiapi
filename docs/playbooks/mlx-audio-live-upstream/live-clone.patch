@@ -1,0 +1,1236 @@
+diff --git a/examples/qwen3_tts_live_clone.py b/examples/qwen3_tts_live_clone.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a28e53e2e811ea86b51443be02be9a18006b8ef
+--- /dev/null
++++ b/examples/qwen3_tts_live_clone.py
+@@ -0,0 +1,75 @@
++"""Experimental Base-only incremental input, writing streamed float PCM to WAV.
++
++No automatic playback. Model load/preparation/generation stay on this thread;
++only Unicode producer calls run in the background. Use your own reference and
++its exact transcript; no reference length is silently discarded.
++"""
++
++import argparse
++import threading
++
++import numpy as np
++import soundfile as sf
++
++from mlx_audio.tts.models.qwen3_tts import TextSource
++from mlx_audio.tts.utils import load_model
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument(
++        "--model", default="mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
++    )
++    parser.add_argument("--reference", required=True)
++    parser.add_argument("--reference-text", required=True)
++    parser.add_argument("--language", default="auto")
++    parser.add_argument("--output", default="live-clone.wav")
++    args = parser.parse_args()
++    model = load_model(args.model)
++    prepared = model.prepare_live_clone(
++        args.reference, args.reference_text, args.language
++    )
++    source = TextSource(max_chars=4096, idle_timeout=60)
++
++    def producer():
++        try:
++            print("Enter text fragments; an empty line closes this utterance.")
++            while True:
++                try:
++                    text = input()
++                except EOFError:
++                    break
++                if not text:
++                    break
++                source.push(text + "\n")
++            source.close()
++        except Exception:
++            source.cancel()
++
++    thread = threading.Thread(target=producer, daemon=True)
++    thread.start()
++    results = model.generate_live(source, prepared)
++    try:
++        with sf.SoundFile(
++            args.output,
++            mode="w",
++            samplerate=prepared.sample_rate,
++            channels=1,
++            subtype="FLOAT",
++        ) as output:
++            for result in results:
++                # The sole final marker has zero samples and zero token_count.
++                if result.samples:
++                    output.write(np.array(result.audio, dtype=np.float32))
++                if result.is_final_chunk:
++                    print("Complete:", result.audio_samples)
++    except KeyboardInterrupt:
++        source.cancel()
++    finally:
++        results.close()
++        source.cancel()
++        prepared.release()
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/mlx_audio/tts/models/qwen3_tts/README.md b/mlx_audio/tts/models/qwen3_tts/README.md
+index afab07c0c6f0392eb528707c69533c5233d6e048..b1c4b4706d5c30f03cdac5d042dcaebbf4f8e1e4 100644
+--- a/mlx_audio/tts/models/qwen3_tts/README.md
++++ b/mlx_audio/tts/models/qwen3_tts/README.md
+@@ -145,3 +145,84 @@ for result in model.batch_generate(
+ **Chinese:** `Vivian`, `Serena`, `Uncle_Fu`, `Dylan` (Beijing Dialect), `Eric` (Sichuan Dialect)
+ 
+ **English:** `Ryan`, `Aiden`
++
++## Experimental live input for Base voice cloning
++
++This opt-in API completes short received text spans independently. It uses an
++experimental explicit reference-text EOS, reference-codec EOS and fresh
++role/language/speaker prefix. This is **not an official Qwen live-input
++protocol** and does **not maintain continuous model/prosody context across
++spans**: each span forks the same prepared reference, rather than conditioning
++on preceding generated speech. `generate`, CustomVoice and VoiceDesign keep
++their existing behavior.
++
++```python
++from mlx_audio.tts.models.qwen3_tts import TextSource
++from mlx_audio.tts.utils import load_model
++
++model = load_model("mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16")
++prepared = model.prepare_live_clone("reference.wav", "Its exact transcript.", "english")
++source = TextSource(max_chars=4096, idle_timeout=30)
++# A producer thread can push fragments while this model worker iterates results.
++source.push("The received text can arrive in several fragments. ")
++source.feed("The final short tail is not discarded.")
++source.close()
++results = model.generate_live(source, prepared)
++try:
++    for result in results:
++        if result.samples:
++            consume_pcm(result.audio, result.sample_rate)  # application-owned
++        if result.is_final_chunk:
++            print(result.audio_samples)  # cumulative samples/tokens
++finally:
++    results.close()
++    prepared.release()
++```
++
++`prepare_live_clone` uses the **full** reference, with no truncation, and requires
++its transcript. Paths are loaded/resampled to the model sample rate; array input
++must already be mono floating-point audio at that rate. Preparation and all
++model iteration, snapshot release and MLX operations must run on the same
++worker thread. `TextSource.push`/`feed`/`close`/`cancel` are producer-safe and do
++not perform MLX operations. A snapshot belongs to that exact model and becomes
++invalid if its weights/tokenizers are replaced. Reuse it with new sources for
++later utterances; `release()` explicitly drops its GPU snapshot on the worker.
++
++Live API preparation and active generators reject reentry on the same model,
++including interleaving two generators' `next()` calls. Do not interleave ordinary
++`generate`, model mutation, or other inference with a live generator either;
++this API does not synchronize existing generation entry points. A generator
++holds its worker/model while waiting for text. Cancel it with `source.cancel()`
++to wake an input wait, or call `results.close()` when abandoning a suspended
++consumer. Cancellation raises `InterruptedError`. Timeouts, errors and cancel
++never produce a successful final result. Decoder state is restored from a fresh
++copy for every span and reset on exit, including consumer close.
++
++Span boundaries prefer received punctuation after 8 Unicode characters for CJK
++or 14 for Latin text. Otherwise they use 24 characters for CJK or six complete
++whitespace-delimited Latin words. Received script takes precedence over session
++language, so English text uses word boundaries with Japanese model conditioning
++too. Decimal separators between digits are not punctuation boundaries; a final
++separator after a digit waits for lookahead/close. Final tiny tails flush at
++close, and whitespace-only tails produce no audio. The mixed-CJK character cap
++can split Latin words/numbers; this is a bounded heuristic, not a linguistic
++sentence parser. Arrival batching can affect boundaries and span-local prosody.
++
++Each ordinary result carries new audio and that chunk's codec-frame
++`token_count`; `segment_idx` identifies its span. Ordinary chunks are delivered
++immediately with `is_streaming_chunk=True` and `is_final_chunk=False`. Successful
++input close and completion of all spans produce **one empty final result**
++(`samples=0`, `token_count=0`, `is_final_chunk=True`), even for empty input.
++Summing chunk samples/token counts equals final `audio_samples.samples/tokens`.
++`processing_time_seconds` and `real_time_factor` report cumulative wall time
++(including producer/consumer waits) and cumulative audio/wall-time speed.
++Applications own PCM encoding, playback buffering, networking and interruption.
++
++Live-only defaults are `temperature=0.9`, `top_k=50`, `top_p=1.0`, repetition
++penalty `1.05` over the whole current span, and four codec frames per output
++chunk. The default 1,000-frame utterance budget allows at most 500 steps per
++span; reaching it before EOS raises an error. Exposed controls affect only this
++API. No generated or dummy audio is sampled before a real span arrives.
++
++A terminal example without playback is
++[`examples/qwen3_tts_live_clone.py`](../../../../examples/qwen3_tts_live_clone.py).
+diff --git a/mlx_audio/tts/models/qwen3_tts/__init__.py b/mlx_audio/tts/models/qwen3_tts/__init__.py
+index 6c020a744c3e274094e77609dcd050e6b68a981b..2d836373a9ba9c45c16d0b50410d4e97ec3138af 100644
+--- a/mlx_audio/tts/models/qwen3_tts/__init__.py
++++ b/mlx_audio/tts/models/qwen3_tts/__init__.py
+@@ -1,3 +1,5 @@
++from .live import PreparedLiveClone
++from .live_text import TextSource
+ from .qwen3_tts import Model, ModelConfig
+ 
+-__all__ = ["Model", "ModelConfig"]
++__all__ = ["Model", "ModelConfig", "PreparedLiveClone", "TextSource"]
+diff --git a/mlx_audio/tts/models/qwen3_tts/live.py b/mlx_audio/tts/models/qwen3_tts/live.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..d9d848dea299eef7bb70ebdc3a3c2bb7e448db18
+--- /dev/null
++++ b/mlx_audio/tts/models/qwen3_tts/live.py
+@@ -0,0 +1,445 @@
++"""Experimental Base-only, span-local live voice cloning.
++
++This explicit reference-end/target-start layout is opt-in, not an official
++Qwen input protocol. Spans restart from the reference, not preceding output.
++All model operations must run serially on the thread that prepared the clone.
++"""
++
++import copy
++import math
++import threading
++import time
++import weakref
++from dataclasses import dataclass, field
++from pathlib import Path
++
++import mlx.core as mx
++
++from mlx_audio.tts.models.base import GenerationResult
++from mlx_audio.utils import load_audio
++
++from .live_text import TextSource
++
++_LOCK_INIT = threading.Lock()
++
++
++def _clone(value):
++    if isinstance(value, mx.array):
++        return mx.array(value)
++    if isinstance(value, list):
++        return [_clone(item) for item in value]
++    if isinstance(value, tuple):
++        return tuple(_clone(item) for item in value)
++    if isinstance(value, dict):
++        return {key: _clone(item) for key, item in value.items()}
++    if hasattr(value, "state"):
++        cloned = copy.copy(value)
++        cloned.state = _clone(value.state)
++        return cloned
++    return copy.copy(value)
++
++
++def _lock(model):
++    with _LOCK_INIT:
++        lock = getattr(model, "_live_clone_lock", None)
++        if lock is None:
++            lock = threading.Lock()
++            model._live_clone_lock = lock
++            model._live_clone_thread = threading.get_ident()
++        if model._live_clone_thread != threading.get_ident():
++            raise RuntimeError("Live model operations must stay on one worker thread")
++    if not lock.acquire(blocking=False):
++        raise RuntimeError("Another live preparation/generator owns this model")
++    return lock
++
++
++def _base_only(model):
++    if model.config.tts_model_type != "base":
++        raise ValueError("Live cloning supports Qwen3-TTS Base only")
++    if model.tokenizer is None or model.speech_tokenizer is None:
++        raise ValueError("Tokenizer and speech tokenizer must be loaded")
++    if not model.speech_tokenizer.has_encoder or model.speaker_encoder is None:
++        raise ValueError("Live cloning requires reference and speaker encoders")
++
++
++def _embed(model, ids):
++    return model.talker.text_projection(
++        model.talker.get_text_embeddings()(mx.array([ids]))
++    )
++
++
++def _decoder_state(decoder):
++    # decoder can be an mx.compile wrapper: named_modules exposes the real root.
++    return {
++        name: {
++            key: _clone(getattr(module, key))
++            for key in ("_buffer", "_overflow", "_transformer_cache")
++            if hasattr(module, key)
++        }
++        for name, module in decoder.named_modules()
++    }
++
++
++@dataclass(frozen=True)
++class PreparedLiveClone:
++    """Opaque reusable snapshot belonging to one model instance and worker thread.
++
++    Do not modify its private arrays/cache or use it after replacing model
++    weights/tokenizers. Call release() on its worker when it is no longer needed.
++    """
++
++    language: str
++    sample_rate: int
++    reference_samples: int
++    _owner: object = field(repr=False)
++    _thread: int = field(repr=False)
++    _snapshot: dict = field(repr=False)
++
++    @property
++    def required_prefix_tokens(self):
++        return 1
++
++    def _check(self, model):
++        if self._owner() is not model:
++            raise ValueError("Prepared clone belongs to a different model")
++        if self._thread != threading.get_ident():
++            raise RuntimeError("Use the same worker thread that prepared the clone")
++        if not self._snapshot:
++            raise RuntimeError("Prepared clone has been released")
++
++    def release(self):
++        if self._thread != threading.get_ident():
++            raise RuntimeError("Release the snapshot on its model worker thread")
++        model = self._owner()
++        if model is None:
++            self._snapshot.clear()
++            return
++        lock = _lock(model)
++        try:
++            self._snapshot.clear()
++        finally:
++            lock.release()
++
++
++def prepare_live_clone(model, ref_audio, ref_text, lang_code="auto"):
++    _base_only(model)
++    if not isinstance(ref_text, str) or not ref_text.strip():
++        raise ValueError("A nonempty reference transcript is required")
++    if not isinstance(lang_code, str) or not lang_code.strip():
++        raise ValueError("lang_code must be a language name or auto")
++    language = lang_code.lower()
++    languages = model.config.talker_config.codec_language_id or {}
++    if language != "auto" and language not in languages:
++        raise ValueError(f"Unsupported language: {lang_code}")
++    lock = _lock(model)
++    decoder = model.speech_tokenizer.decoder
++    try:
++        if isinstance(ref_audio, Path):
++            ref_audio = str(ref_audio)
++        audio = load_audio(ref_audio, sample_rate=model.sample_rate)
++        if audio.ndim != 1 or audio.size == 0:
++            raise ValueError("Reference audio must be a nonempty mono waveform")
++        if not mx.issubdtype(audio.dtype, mx.floating):
++            raise TypeError("Reference waveform must be floating-point audio")
++        if not bool(mx.all(mx.isfinite(audio))):
++            raise ValueError("Reference audio must be finite")
++        # Base's existing serial builder supplies role/language/full-ref speaker.
++        # Remove only its empty-text EOS/codec-PAD and text-PAD/codec-BOS rows.
++        serial, _, pad = model._prepare_generation_inputs(
++            "", language=language, ref_audio=audio
++        )
++        prefix = serial[:, :-2]
++        codes = model.speech_tokenizer.encode(audio[None, None, :])
++        ref_ids = model.tokenizer.encode(
++            f"<|im_start|>assistant\n{ref_text}<|im_end|>\n"
++        )[3:-2]
++        codec = model.talker.get_input_embeddings()(codes[:, 0])
++        for index in range(model.config.talker_config.num_code_groups - 1):
++            codec = codec + model.talker.code_predictor.codec_embedding[index](
++                codes[:, index + 1]
++            )
++        config = model.config.talker_config
++        bridge = model.talker.get_input_embeddings()(mx.array([[config.codec_bos_id]]))
++        codec = mx.concatenate([bridge, codec], axis=1)
++        eos = _embed(model, [model.config.tts_eos_token_id])
++        text = mx.concatenate([_embed(model, ref_ids), eos], axis=1)
++        if text.shape[1] > codec.shape[1]:
++            raise ValueError("Reference transcript exceeds reference codec region")
++        text = mx.concatenate(
++            [
++                text,
++                mx.broadcast_to(
++                    pad, (1, codec.shape[1] - text.shape[1], text.shape[-1])
++                ),
++            ],
++            axis=1,
++        )
++        codec_eos = model.talker.get_input_embeddings()(
++            mx.array([[config.codec_eos_token_id]])
++        )
++        inputs = mx.concatenate([prefix, text + codec, pad + codec_eos, prefix], axis=1)
++        cache = model.talker.make_cache()
++        logits, hidden = model.talker(inputs, cache=cache)
++        mx.eval(logits, hidden)
++        decoder.reset_streaming_state()
++        mx.eval(decoder.streaming_step(codes))
++        saved = {
++            "cache": _clone(cache),
++            "decoder": _decoder_state(decoder),
++            "bridge": bridge,
++            "eos": eos,
++            "pad": pad,
++            "rows": inputs.shape[1],
++            "prefix": prefix,
++            "reference_codes": codes,
++        }
++        mx.eval(bridge, eos, pad)
++        return PreparedLiveClone(
++            language,
++            model.sample_rate,
++            int(audio.size),
++            weakref.ref(model),
++            threading.get_ident(),
++            saved,
++        )
++    finally:
++        try:
++            decoder.reset_streaming_state()
++        finally:
++            lock.release()
++
++
++def _fork(model, prepared):
++    saved = prepared._snapshot
++    decoder = model.speech_tokenizer.decoder
++    decoder.reset_streaming_state()
++    modules = dict(decoder.named_modules())
++    for name, values in saved["decoder"].items():
++        for key, value in values.items():
++            setattr(modules[name], key, _clone(value))
++    return _clone(saved["cache"])
++
++
++def _span(
++    model,
++    prepared,
++    text,
++    source,
++    emit_frames,
++    max_frames,
++    temperature,
++    top_k,
++    top_p,
++    repetition_penalty,
++):
++    source._check_cancel()
++    ids = model.tokenizer.encode(text, add_special_tokens=False)
++    if not ids:
++        return
++    cache = _fork(model, prepared)
++    saved = prepared._snapshot
++    inputs = _embed(model, ids[:1]) + saved["bridge"]
++    cursor = 1
++    generated = []
++    first_ids = []
++    emitted = 0
++    code_cache = model.talker.code_predictor.make_cache()
++    decoder = model.speech_tokenizer.decoder
++    eos = model.config.talker_config.codec_eos_token_id
++    suppress = model._suppress_codec_tokens(eos)
++    try:
++        for _ in range(max_frames):
++            source._check_cancel()
++            logits, hidden = model.talker(inputs, cache=cache)
++            source._check_cancel()
++            token = model._sample_token(
++                logits,
++                temperature=temperature,
++                top_k=top_k,
++                top_p=top_p,
++                repetition_penalty=repetition_penalty,
++                repetition_context_size=max(1, len(first_ids)),
++                generated_tokens=first_ids or None,
++                suppress_tokens=suppress + ([] if cursor > len(ids) else [eos]),
++            )
++            mx.eval(token)
++            if int(token[0, 0]) == eos:
++                break
++            source._check_cancel()
++            parts, codes = model._predict_code_tokens(
++                token,
++                hidden,
++                temperature=temperature,
++                top_k=top_k,
++                top_p=top_p,
++                code_cache=code_cache,
++                cancel_requested=lambda: source._cancelled,
++            )
++            mx.eval(codes)
++            first_ids.append(int(token[0, 0]))
++            generated.append(codes)
++            if len(generated) - emitted >= emit_frames:
++                source._check_cancel()
++                block = mx.transpose(mx.stack(generated[emitted:], axis=1), (0, 2, 1))
++                audio = decoder.streaming_step(block).squeeze(1)[0]
++                mx.eval(audio)
++                source._check_cancel()
++                count = len(generated) - emitted
++                emitted = len(generated)
++                yield audio, count
++            source._check_cancel()
++            next_text = (
++                _embed(model, [ids[cursor]])
++                if cursor < len(ids)
++                else (saved["eos"] if cursor == len(ids) else saved["pad"])
++            )
++            inputs = next_text + model._codec_embeds_for_tokens(parts)
++            mx.eval(inputs)
++            cursor += 1
++        else:
++            raise RuntimeError("max_frames reached before span EOS")
++        if len(generated) > emitted:
++            source._check_cancel()
++            block = mx.transpose(mx.stack(generated[emitted:], axis=1), (0, 2, 1))
++            audio = decoder.streaming_step(block).squeeze(1)[0]
++            mx.eval(audio)
++            source._check_cancel()
++            yield audio, len(generated) - emitted
++    finally:
++        decoder.reset_streaming_state()
++
++
++def generate_live(
++    model,
++    source,
++    prepared,
++    *,
++    temperature=0.9,
++    top_k=50,
++    top_p=1.0,
++    repetition_penalty=1.05,
++    emit_frames=4,
++    max_frames=1000,
++    seed=None,
++):
++    """Yield streaming PCM chunks and one empty terminal result on successful close.
++
++    Cancellation raises InterruptedError; errors/cancel/generator.close() never
++    emit a successful terminal marker. Call close() when abandoning a generator.
++    """
++    _base_only(model)
++    if not isinstance(source, TextSource) or not isinstance(
++        prepared, PreparedLiveClone
++    ):
++        raise TypeError("Expected TextSource and PreparedLiveClone")
++    prepared._check(model)
++    for name, value in (("emit_frames", emit_frames), ("max_frames", max_frames)):
++        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
++            raise ValueError(f"{name} must be a positive integer")
++    if (
++        not math.isfinite(temperature)
++        or temperature < 0
++        or not 0 < top_p <= 1
++        or not math.isfinite(repetition_penalty)
++        or repetition_penalty <= 0
++    ):
++        raise ValueError("Invalid sampling controls")
++    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 0:
++        raise ValueError("top_k must be a nonnegative integer")
++    if seed is not None and (
++        isinstance(seed, bool)
++        or not isinstance(seed, int)
++        or not 0 <= seed <= 0xFFFFFFFFFFFFFFFF
++    ):
++        raise ValueError("seed must be an unsigned 64-bit integer or None")
++    lock = _lock(model)
++    claimed = False
++    decoder = model.speech_tokenizer.decoder
++    started = time.perf_counter()
++    total_samples = total_frames = cursor = span_index = 0
++    try:
++        source._claim()
++        claimed = True
++        if seed is not None:
++            mx.random.seed(seed)
++        while True:
++            text, cursor = source._next_span(cursor, prepared.language)
++            if text is None:
++                break
++            if not text.strip():
++                continue
++            chunks = _span(
++                model,
++                prepared,
++                text,
++                source,
++                emit_frames,
++                min(500, max_frames - total_frames),
++                temperature,
++                top_k,
++                top_p,
++                repetition_penalty,
++            )
++            try:
++                for audio, frames in chunks:
++                    source._check_cancel()
++                    total_samples += audio.shape[0]
++                    total_frames += frames
++                    yield _result(
++                        audio,
++                        model.sample_rate,
++                        span_index,
++                        frames,
++                        started,
++                        total_samples,
++                        total_frames,
++                        False,
++                    )
++            finally:
++                chunks.close()
++            span_index += 1
++        source._check_cancel()
++        terminal = _result(
++            mx.zeros((0,), mx.float32),
++            model.sample_rate,
++            max(0, span_index - 1),
++            0,
++            started,
++            total_samples,
++            total_frames,
++            True,
++        )
++    except BaseException:
++        if claimed:
++            source.cancel()
++        raise
++    finally:
++        try:
++            decoder.reset_streaming_state()
++        finally:
++            if claimed:
++                source._release()
++            lock.release()
++    # The final marker does not retain the model lock if a consumer stops here.
++    yield terminal
++
++
++def _result(audio, rate, segment, frames, started, samples, total_frames, final):
++    from .qwen3_tts import format_duration
++
++    elapsed = time.perf_counter() - started
++    return GenerationResult(
++        audio=audio,
++        samples=int(audio.shape[0]),
++        sample_rate=rate,
++        segment_idx=segment,
++        token_count=frames,
++        audio_duration=format_duration(audio.shape[0] / rate),
++        real_time_factor=samples / rate / elapsed if elapsed else 0.0,
++        prompt={"tokens": 0},
++        audio_samples={"samples": samples, "tokens": total_frames},
++        processing_time_seconds=elapsed,
++        peak_memory_usage=mx.get_peak_memory() / 1e9,
++        is_streaming_chunk=True,
++        is_final_chunk=final,
++    )
+diff --git a/mlx_audio/tts/models/qwen3_tts/live_text.py b/mlx_audio/tts/models/qwen3_tts/live_text.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..e108667fa900d8110341954700e05901f59c7663
+--- /dev/null
++++ b/mlx_audio/tts/models/qwen3_tts/live_text.py
+@@ -0,0 +1,115 @@
++"""Bounded producer input and received-text span boundaries (no MLX operations)."""
++
++import math
++import re
++import threading
++import time
++
++_CJK = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
++_LATIN = re.compile(r"[A-Za-z]")
++_PUNCTUATION = re.compile(r"[、。\uff01\uff1f!?.,;:]\s*")
++
++
++def _boundary(text, language, closed):
++    cjk = bool(_CJK.search(text)) or (
++        not _LATIN.search(text) and language in {"auto", "ja", "japanese"}
++    )
++    for match in _PUNCTUATION.finditer(text):
++        index = match.start()
++        if text[index] in ".,:" and index and text[index - 1].isdigit():
++            if index + 1 < len(text) and text[index + 1].isdigit():
++                continue
++            if index + 1 == len(text) and not closed:
++                continue
++        if match.end() >= (8 if cjk else 14):
++            return match.end()
++    if cjk and len(text) >= 24:
++        return 24
++    if not cjk:
++        words = list(re.finditer(r"\S+\s+", text))
++        if len(words) >= 6:
++            return words[5].end()
++    return len(text) if closed else 0
++
++
++class TextSource:
++    """Append-only, single-utterance input. Only producers may call push/close/cancel.
++
++    Feeding never imports or executes MLX. max_chars bounds the complete input,
++    including consumed text, rather than just the currently pending fragment.
++    """
++
++    def __init__(self, max_chars=4096, idle_timeout=30.0):
++        if (
++            isinstance(max_chars, bool)
++            or not isinstance(max_chars, int)
++            or max_chars <= 0
++        ):
++            raise ValueError("max_chars must be a positive integer")
++        if not math.isfinite(idle_timeout) or idle_timeout <= 0:
++            raise ValueError("idle_timeout must be positive")
++        self.max_chars = max_chars
++        self.idle_timeout = idle_timeout
++        self._condition = threading.Condition()
++        self._text = ""
++        self._closed = False
++        self._cancelled = False
++        self._consumer = False
++
++    def push(self, text):
++        if not isinstance(text, str):
++            raise TypeError("text must be a string")
++        with self._condition:
++            if self._closed or self._cancelled:
++                raise ValueError("TextSource is no longer writable")
++            if len(self._text) + len(text) > self.max_chars:
++                raise ValueError("TextSource character budget exceeded")
++            self._text += text
++            self._condition.notify_all()
++
++    feed = push
++
++    def close(self):
++        with self._condition:
++            self._closed = True
++            self._condition.notify_all()
++
++    def cancel(self):
++        with self._condition:
++            self._cancelled = True
++            self._condition.notify_all()
++
++    def _check_cancel(self):
++        if self._cancelled:
++            raise InterruptedError("Live generation canceled")
++
++    def _claim(self):
++        with self._condition:
++            self._check_cancel()
++            if self._consumer:
++                raise RuntimeError("TextSource already has an active consumer")
++            self._consumer = True
++
++    def _release(self):
++        with self._condition:
++            self._consumer = False
++
++    def _next_span(self, cursor, language):
++        with self._condition:
++            deadline = time.monotonic() + self.idle_timeout
++            observed = len(self._text)
++            while True:
++                self._check_cancel()
++                text = self._text[cursor:]
++                length = _boundary(text, language, self._closed)
++                if length:
++                    return text[:length], cursor + length
++                if self._closed:
++                    return None, cursor
++                remaining = deadline - time.monotonic()
++                if remaining <= 0:
++                    raise TimeoutError("No complete text span; call TextSource.close()")
++                self._condition.wait(remaining)
++                if len(self._text) != observed:
++                    observed = len(self._text)
++                    deadline = time.monotonic() + self.idle_timeout
+diff --git a/mlx_audio/tts/models/qwen3_tts/qwen3_tts.py b/mlx_audio/tts/models/qwen3_tts/qwen3_tts.py
+index 6cd244c522460e0a5b1b00a4a5d3b54affbf6ba7..bb7d5058fd3086b37756a35c2db611528b6e0f7d 100644
+--- a/mlx_audio/tts/models/qwen3_tts/qwen3_tts.py
++++ b/mlx_audio/tts/models/qwen3_tts/qwen3_tts.py
+@@ -4,7 +4,7 @@ import json
+ import time
+ from dataclasses import dataclass
+ from pathlib import Path
+-from typing import Dict, Generator, List, Optional, Tuple, Union
++from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
+ 
+ import mlx.core as mx
+ import mlx.nn as nn
+@@ -27,6 +27,8 @@ from .config import (
+     Qwen3TTSTokenizerDecoderConfig,
+     Qwen3TTSTokenizerEncoderConfig,
+ )
++from .live import PreparedLiveClone
++from .live_text import TextSource
+ from .speaker_encoder import Qwen3TTSSpeakerEncoder
+ from .speech_tokenizer import Qwen3TTSSpeechTokenizer
+ from .talker import Qwen3TTSTalkerForConditionalGeneration
+@@ -350,6 +352,50 @@ class Model(nn.Module):
+ 
+         return speaker_embedding
+ 
++    def prepare_live_clone(
++        self,
++        ref_audio: Union[str, Path, mx.array],
++        ref_text: str,
++        lang_code: str = "auto",
++    ) -> PreparedLiveClone:
++        """Prepare an experimental segmented Base clone on the model worker."""
++        from .live import prepare_live_clone
++
++        return prepare_live_clone(self, ref_audio, ref_text, lang_code)
++
++    def generate_live(
++        self,
++        source: TextSource,
++        prepared: PreparedLiveClone,
++        *,
++        temperature: float = 0.9,
++        top_k: int = 50,
++        top_p: float = 1.0,
++        repetition_penalty: float = 1.05,
++        emit_frames: int = 4,
++        max_frames: int = 1000,
++        seed: Optional[int] = None,
++    ) -> Generator[GenerationResult, None, None]:
++        """Stream opt-in, span-local Base cloning, ending with one empty final result.
++
++        See qwen3_tts/README.md for experimental layout, threading, input,
++        cancellation and chunk-accounting contracts. Existing generate is unchanged.
++        """
++        from .live import generate_live
++
++        yield from generate_live(
++            self,
++            source,
++            prepared,
++            temperature=temperature,
++            top_k=top_k,
++            top_p=top_p,
++            repetition_penalty=repetition_penalty,
++            emit_frames=emit_frames,
++            max_frames=max_frames,
++            seed=seed,
++        )
++
+     def _prepare_generation_inputs(
+         self,
+         text: str,
+@@ -976,6 +1022,7 @@ class Model(nn.Module):
+         top_k: int,
+         top_p: float,
+         code_cache=None,
++        cancel_requested: Optional[Callable[[], bool]] = None,
+     ) -> Tuple[List[mx.array], mx.array]:
+         if code_cache is None:
+             code_cache = self.talker.code_predictor.make_cache()
+@@ -987,6 +1034,8 @@ class Model(nn.Module):
+         config = self.config.talker_config
+ 
+         for code_idx in range(config.num_code_groups - 1):
++            if cancel_requested is not None and cancel_requested():
++                raise InterruptedError("Live generation canceled")
+             if code_idx == 0:
+                 code_0_embed = self.talker.get_input_embeddings()(first_token)
+                 code_input = mx.concatenate([code_hidden, code_0_embed], axis=1)
+diff --git a/mlx_audio/tts/tests/test_qwen3_tts_live.py b/mlx_audio/tts/tests/test_qwen3_tts_live.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a53d0a62c754a27ab40d70b52f2b533f6f3949d3
+--- /dev/null
++++ b/mlx_audio/tts/tests/test_qwen3_tts_live.py
+@@ -0,0 +1,387 @@
++"""CPU-only live protocol tests; no weights, downloads, playback or GPU inference."""
++
++import threading
++import time
++from types import SimpleNamespace
++from unittest.mock import MagicMock
++
++import mlx.core as mx
++import numpy as np
++import pytest
++
++from mlx_audio.tts.models.qwen3_tts import TextSource
++from mlx_audio.tts.models.qwen3_tts.live import generate_live, prepare_live_clone
++from mlx_audio.tts.models.qwen3_tts.live_text import _boundary
++from mlx_audio.tts.models.qwen3_tts.qwen3_tts import Model
++
++
++@pytest.fixture(autouse=True)
++def cpu():
++    previous = mx.default_device()
++    mx.set_default_device(mx.cpu)
++    yield
++    mx.set_default_device(previous)
++
++
++class Cache:
++    def __init__(self):
++        self.state = [0]
++
++
++class Embedding:
++    def __call__(self, ids):
++        return mx.repeat(ids[..., None].astype(mx.float32), 2, axis=-1)
++
++
++class Decoder:
++    def __init__(self):
++        self._buffer = None
++        self._overflow = None
++        self._transformer_cache = None
++
++    def reset_streaming_state(self):
++        self._buffer = self._overflow = self._transformer_cache = None
++
++    def named_modules(self):
++        return [("", self)]
++
++    def streaming_step(self, codes):
++        self._buffer = mx.array([codes.shape[-1]])
++        self._overflow = mx.array([0.0])
++        self._transformer_cache = [Cache()]
++        return mx.ones((1, 1, codes.shape[-1] * 2))
++
++
++class CompiledDecoder:
++    __slots__ = ("inner",)
++
++    def __init__(self):
++        self.inner = Decoder()
++
++    def named_modules(self):
++        return self.inner.named_modules()
++
++    def reset_streaming_state(self):
++        return self.inner.reset_streaming_state()
++
++    def streaming_step(self, codes):
++        return self.inner.streaming_step(codes)
++
++
++class Tokenizer:
++    def encode(self, text, **kwargs):
++        if text.startswith("<|im_start|>"):
++            content = text.split("\n", 1)[1].split("<|im_end|>")[0]
++            return [0, 0, 0] + [1] * len(content) + [0, 0]
++        return [1] * len(text)
++
++
++class Talker:
++    def __init__(self):
++        self.code_predictor = SimpleNamespace(
++            codec_embedding=[Embedding()], make_cache=lambda: [Cache()]
++        )
++        self.text_projection = lambda value: value
++
++    def get_text_embeddings(self):
++        return Embedding()
++
++    def get_input_embeddings(self):
++        return Embedding()
++
++    def make_cache(self):
++        return [Cache()]
++
++    def __call__(self, inputs, cache):
++        cache[0].state[0] += inputs.shape[1]
++        return mx.zeros((1, 1, 10)), mx.zeros((1, 1, 2))
++
++
++class FakeModel:
++    def __init__(self):
++        self.config = SimpleNamespace(
++            tts_model_type="base",
++            tts_eos_token_id=7,
++            talker_config=SimpleNamespace(
++                num_code_groups=2,
++                codec_bos_id=5,
++                codec_eos_token_id=9,
++                codec_language_id={"japanese": 1, "english": 2},
++            ),
++        )
++        self.tokenizer = Tokenizer()
++        self.talker = Talker()
++        self.speaker_encoder = object()
++        self.sample_rate = 24000
++        self.prepare_count = 0
++        self.controls = []
++        self.speech_tokenizer = SimpleNamespace(
++            has_encoder=True,
++            decoder=CompiledDecoder(),
++            encode=lambda audio: mx.ones((1, 2, 16), mx.int32),
++        )
++
++    def _prepare_generation_inputs(self, text, **kwargs):
++        self.prepare_count += 1
++        return mx.zeros((1, 7, 2)), None, mx.zeros((1, 1, 2))
++
++    def _suppress_codec_tokens(self, eos):
++        return []
++
++    def _sample_token(self, logits, **kwargs):
++        self.controls.append(kwargs)
++        return mx.array([[1 if 9 in kwargs["suppress_tokens"] else 9]])
++
++    def _predict_code_tokens(self, token, hidden, **kwargs):
++        if kwargs["cancel_requested"]():
++            raise InterruptedError("cancel")
++        return [token, token], mx.concatenate([token, token], axis=1)
++
++    def _codec_embeds_for_tokens(self, parts):
++        return mx.zeros((1, 1, 2))
++
++
++def setup():
++    model = FakeModel()
++    prepared = prepare_live_clone(model, mx.ones((32,)), "ref", "japanese")
++    return model, prepared
++
++
++def closed(text):
++    source = TextSource()
++    source.push(text)
++    source.close()
++    return source
++
++
++def test_prepared_independent_spans_and_accounting():
++    model, prepared = setup()
++    text = "今日はとても良い天気ですね。明日も楽しみです。"
++    first = list(generate_live(model, closed(text), prepared, emit_frames=4))
++    second = list(generate_live(model, closed(text), prepared, emit_frames=4))
++    assert model.prepare_count == 1
++    assert len({part.segment_idx for part in first if part.samples}) == 2
++    assert sum(part.is_final_chunk for part in first) == 1
++    assert first[-1].is_final_chunk and first[-1].samples == first[-1].token_count == 0
++    assert sum(part.samples for part in first) == first[-1].audio_samples["samples"]
++    assert sum(part.token_count for part in first) == first[-1].audio_samples["tokens"]
++    assert all(part.samples == part.audio.shape[0] for part in first)
++    np.testing.assert_array_equal(
++        np.concatenate([np.array(p.audio) for p in first]),
++        np.concatenate([np.array(p.audio) for p in second]),
++    )
++    assert prepared._snapshot["cache"][0].state[0] == prepared._snapshot["rows"]
++
++
++def test_empty_tiny_and_terminal_releases_lock():
++    model, prepared = setup()
++    empty = generate_live(model, closed("  "), prepared)
++    assert next(empty).is_final_chunk
++    # Stopping at final does not hold a model lock.
++    assert list(generate_live(model, closed("はい"), prepared))[-1].is_final_chunk
++    empty.close()
++
++
++def test_live_controls_do_not_override_other_paths():
++    model, prepared = setup()
++    list(
++        generate_live(
++            model,
++            closed("はい"),
++            prepared,
++            temperature=0.3,
++            top_k=4,
++            top_p=0.8,
++            repetition_penalty=1.1,
++        )
++    )
++    assert all(
++        x["temperature"] == 0.3
++        and x["top_k"] == 4
++        and x["top_p"] == 0.8
++        and x["repetition_penalty"] == 1.1
++        for x in model.controls
++    )
++    assert model.controls[0]["repetition_context_size"] == 1
++
++
++def test_cancel_during_closed_inner_span_and_consumer_close():
++    model, prepared = setup()
++    source = closed("今日はとても良い天気ですね。")
++    stream = generate_live(model, source, prepared, emit_frames=1)
++    assert next(stream).samples
++    source.cancel()
++    with pytest.raises(InterruptedError):
++        next(stream)
++    assert list(generate_live(model, closed("次"), prepared))[-1].is_final_chunk
++    source = closed("今日はとても良い天気ですね。")
++    stream = generate_live(model, source, prepared, emit_frames=1)
++    next(stream)
++    stream.close()
++    assert source._cancelled
++    assert model.speech_tokenizer.decoder.inner._transformer_cache is None
++
++
++def test_reentry_model_ownership_and_release():
++    model, prepared = setup()
++    first = generate_live(
++        model, closed("今日はとても良い天気ですね。"), prepared, emit_frames=1
++    )
++    next(first)
++    with pytest.raises(RuntimeError):
++        next(generate_live(model, closed("次"), prepared))
++    with pytest.raises(RuntimeError):
++        prepare_live_clone(model, mx.ones((32,)), "ref", "japanese")
++    with pytest.raises(RuntimeError):
++        prepared.release()
++    with pytest.raises(ValueError):
++        next(generate_live(FakeModel(), closed("次"), prepared))
++    first.close()
++    errors = []
++
++    def other_thread():
++        try:
++            next(generate_live(model, closed("次"), prepared))
++        except Exception as exc:
++            errors.append(exc)
++
++    thread = threading.Thread(target=other_thread)
++    thread.start()
++    thread.join()
++    assert isinstance(errors[0], RuntimeError)
++    prepared.release()
++    prepared.release()
++    with pytest.raises(RuntimeError):
++        next(generate_live(model, closed("次"), prepared))
++
++
++def test_source_limits_cancel_wait_timeout_and_late_input():
++    source = TextSource(max_chars=3, idle_timeout=0.01)
++    source.feed("あ")
++    with pytest.raises(ValueError):
++        source.push("あいう")
++    with pytest.raises(TimeoutError):
++        source._next_span(0, "japanese")
++    source.close()
++    assert source._next_span(0, "japanese") == ("あ", 1)
++    with pytest.raises(ValueError):
++        source.push("い")
++    source = TextSource()
++    stopped = threading.Event()
++
++    def wait():
++        with pytest.raises(InterruptedError):
++            source._next_span(0, "japanese")
++        stopped.set()
++
++    thread = threading.Thread(target=wait)
++    thread.start()
++    source.cancel()
++    assert stopped.wait(0.5)
++    thread.join()
++
++
++def test_boundaries_mixed_script_decimal_and_space():
++    assert _boundary("Tokyo is a busy city with quiet", "japanese", False) == len(
++        "Tokyo is a busy city with "
++    )
++    assert _boundary("あ" * 25, "english", False) == 24
++    assert _boundary("The value is 3.14", "english", False) == 0
++    assert _boundary("The value is 3.", "english", False) == 0
++    assert _boundary("はい", "japanese", True) == 2
++    assert _boundary("  one two three four five six ", "english", False) == len(
++        "  one two three four five six "
++    )
++
++
++def test_base_only_frame_cap_and_pre_input_cancel():
++    model, prepared = setup()
++    model.config.tts_model_type = "custom_voice"
++    with pytest.raises(ValueError):
++        prepare_live_clone(model, mx.ones((32,)), "ref")
++    model.config.tts_model_type = "base"
++    source = TextSource()
++    source.cancel()
++    with pytest.raises(InterruptedError):
++        list(generate_live(model, source, prepared))
++    with pytest.raises(RuntimeError):
++        list(generate_live(model, closed("too long"), prepared, max_frames=1))
++    assert list(generate_live(model, closed("次"), prepared))[-1].is_final_chunk
++
++
++def test_code_predictor_optional_cancel_is_noop_by_default():
++    predictor = MagicMock(return_value=(mx.zeros((1, 1, 10)), [], None))
++    predictor.codec_embedding = [Embedding()]
++    model = SimpleNamespace(
++        _reset_code_cache=lambda cache: None,
++        _sample_token_batch=lambda scores, **kwargs: mx.array([[2]]),
++        talker=SimpleNamespace(
++            code_predictor=predictor, get_input_embeddings=lambda: Embedding()
++        ),
++        config=SimpleNamespace(talker_config=SimpleNamespace(num_code_groups=2)),
++    )
++    first = mx.array([[1]])
++    hidden = mx.zeros((1, 1, 2))
++    args = dict(temperature=0.9, top_k=50, top_p=1.0, code_cache=[])
++    a = Model._predict_code_tokens(model, first, hidden, **args)
++    b = Model._predict_code_tokens(
++        model, first, hidden, cancel_requested=lambda: False, **args
++    )
++    np.testing.assert_array_equal(np.array(a[1]), np.array(b[1]))
++    assert predictor.call_count == 2
++    with pytest.raises(InterruptedError):
++        Model._predict_code_tokens(
++            model, first, hidden, cancel_requested=lambda: True, **args
++        )
++    assert predictor.call_count == 2
++
++
++def test_generate_during_prepare_is_rejected(monkeypatch):
++    model, prepared = setup()
++    original = Talker.__call__
++    attempted = []
++
++    def nested(self, inputs, cache):
++        with pytest.raises(RuntimeError):
++            next(generate_live(model, closed("next"), prepared))
++        attempted.append(True)
++        return original(self, inputs, cache)
++
++    monkeypatch.setattr(Talker, "__call__", nested)
++    second = prepare_live_clone(model, mx.ones((32,)), "ref", "japanese")
++    assert attempted
++    second.release()
++
++
++def test_idle_timeout_resets_only_for_new_text():
++    source = TextSource(idle_timeout=0.5)
++
++    def producer():
++        for _ in range(6):
++            time.sleep(0.1)
++            source.push("a")
++        source.close()
++
++    thread = threading.Thread(target=producer)
++    thread.start()
++    assert source._next_span(0, "english") == ("aaaaaa", 6)
++    thread.join()
++
++
++@pytest.mark.parametrize(
++    "kwargs",
++    [
++        {"temperature": -1},
++        {"top_p": 0},
++        {"repetition_penalty": float("nan")},
++        {"emit_frames": 0},
++        {"max_frames": True},
++        {"top_k": -1},
++        {"seed": -1},
++    ],
++)
++def test_invalid_live_controls_leave_snapshot_usable(kwargs):
++    model, prepared = setup()
++    with pytest.raises(ValueError):
++        list(generate_live(model, closed("next"), prepared, **kwargs))
++    assert list(generate_live(model, closed("次"), prepared))[-1].is_final_chunk

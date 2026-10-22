@@ -1,0 +1,8 @@
+{
+  "repository": "Blaizzy/mlx-audio",
+  "base_commit": "7cc680b2bea1e8ef34b1a78ee4ff389953aebe40",
+  "checked_on": "2026-10-22",
+  "proposal_status": "prepared; not submitted",
+  "upstream_issue": "https://github.com/Blaizzy/mlx-audio/issues/961",
+  "patch_sha256": "8f73b2bc76441a7668ab76b912036597f2dbad982ea3eceab9bab9c290346a16"
+}

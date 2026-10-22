@@ -1,0 +1,176 @@
+{
+  "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+  "revision": "a6eb4f68e4b056f1215157bb696209bc82a6db48",
+  "reference_samples": 256283,
+  "versions": {
+    "mlx": "0.32.4",
+    "transformers": "5.20.2",
+    "numpy": "2.5.4"
+  },
+  "cases": [
+    {
+      "name": "legacy-before",
+      "samples": 96000,
+      "frames": 50,
+      "first_pcm_s": 0.34284104199832655,
+      "total_s": 2.193409832998441,
+      "float_pcm_sha256": "18e54d05f76e54cb5253c720cf6ca8da78cf2084f760c2408a696f9525174352",
+      "pcm16_sha256": "6e469f9f9602bacddc56d21396e336e71b331cac211f0bed283cb590157fa8a3",
+      "final_count": 1
+    },
+    {
+      "name": "live-full",
+      "samples": 97920,
+      "frames": 51,
+      "first_pcm_s": 0.16411254099875805,
+      "total_s": 2.1951044159977755,
+      "float_pcm_sha256": "5f71c8cd61eef8d19c9691d73142eca8e6633da81177936dbd277e46f701afe5",
+      "pcm16_sha256": "361a1c959c06cd149ed81c6acdab22db6dcf6943e21c9bfb1b36c8d53c1bf8f3",
+      "final_count": 1
+    },
+    {
+      "name": "live-after-cancel",
+      "samples": 97920,
+      "frames": 51,
+      "first_pcm_s": 0.16703166699880967,
+      "total_s": 2.1613648749989807,
+      "float_pcm_sha256": "5f71c8cd61eef8d19c9691d73142eca8e6633da81177936dbd277e46f701afe5",
+      "pcm16_sha256": "361a1c959c06cd149ed81c6acdab22db6dcf6943e21c9bfb1b36c8d53c1bf8f3",
+      "final_count": 1
+    },
+    {
+      "name": "live-after-generator-close",
+      "samples": 97920,
+      "frames": 51,
+      "first_pcm_s": 0.17133454099894152,
+      "total_s": 2.156921207999403,
+      "float_pcm_sha256": "5f71c8cd61eef8d19c9691d73142eca8e6633da81177936dbd277e46f701afe5",
+      "pcm16_sha256": "361a1c959c06cd149ed81c6acdab22db6dcf6943e21c9bfb1b36c8d53c1bf8f3",
+      "final_count": 1
+    },
+    {
+      "name": "live-stream-ja",
+      "samples": 163200,
+      "frames": 85,
+      "first_pcm_s": 2.0908926660013094,
+      "total_s": 7.261805541002104,
+      "float_pcm_sha256": "357dcb86385aeb0ac25ff46032734decb210e9a0d7fa703faa9c803bad2b6f2e",
+      "pcm16_sha256": "0a06a64013248abf96fbdf63973a9dedd86f741aa77be8aa8ce497704227b914",
+      "final_count": 1,
+      "text_done_s": 5.780831374999252
+    },
+    {
+      "name": "live-stream-en",
+      "samples": 172800,
+      "frames": 90,
+      "first_pcm_s": 1.99152595799751,
+      "total_s": 8.240396499997587,
+      "float_pcm_sha256": "4bd0a0e37229f14ff8955445d30ccbe70c60ff76ea53964ff94d4e2d69200f5e",
+      "pcm16_sha256": "16e060c3793983a3dfd3e13ad78a7cf9a68858ab99384fd7e8417ba5d0e4de09",
+      "final_count": 1,
+      "text_done_s": 7.455286999997043
+    },
+    {
+      "name": "legacy-after",
+      "samples": 96000,
+      "frames": 50,
+      "first_pcm_s": 0.25884825000321143,
+      "total_s": 2.2805686660030915,
+      "float_pcm_sha256": "18e54d05f76e54cb5253c720cf6ca8da78cf2084f760c2408a696f9525174352",
+      "pcm16_sha256": "6e469f9f9602bacddc56d21396e336e71b331cac211f0bed283cb590157fa8a3",
+      "final_count": 1
+    }
+  ],
+  "preparation_s": 0.5658367079995514,
+  "prefix_max_abs_difference": 0.0,
+  "reference_codes_equal": true,
+  "cancel_after_pcm": true,
+  "cancel_wait_s": 0.054752125000959495,
+  "prepared_reuse_equal": true,
+  "legacy_unchanged_within_checkout": true,
+  "hardware": "MacBook Pro M1 Max 64GB",
+  "python": "3.12.10",
+  "base_commit": "7cc680b2bea1e8ef34b1a78ee4ff389953aebe40",
+  "patch_sha256": "8f73b2bc76441a7668ab76b912036597f2dbad982ea3eceab9bab9c290346a16",
+  "clean_base_legacy_pcm_equal": true,
+  "clean_base_patch_apply_check": true,
+  "quality_diagnostics": {
+    "python": "3.12.10",
+    "onnxruntime": "1.27.0",
+    "numpy": "2.5.4",
+    "ecapa_sha256": "245eb5995cfffd74494862dee33da2b00c1c2579eb0c6703847784e9901ed458",
+    "reference_self_cos": 0.9999998807907104,
+    "asr": "mlx-community/whisper-large-v3-turbo",
+    "asr_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+    "scores": [
+      {
+        "file": "live-full-fixture-42.wav",
+        "ecapa_cos": 0.7305341958999634,
+        "pcm_16k_sha256": "a5c845d98baa434bc38dca7fdcddcc999be40115294590a419450a4126f3402b",
+        "active_s": 2.8000000000000003,
+        "speaker_score_eligible": true,
+        "cer": 0.08695652173913043,
+        "target_chars": 23,
+        "chars_before_target": 0,
+        "reference_overlap_before_target": 0
+      },
+      {
+        "file": "live-stream-ja-fixture-42.wav",
+        "ecapa_cos": 0.7697818279266357,
+        "pcm_16k_sha256": "3a8d46af7b0364e6a2574c594a79ecf44d6791213a9eff5b024dba77bf877bb8",
+        "active_s": 4.95,
+        "speaker_score_eligible": true,
+        "cer": 0.0,
+        "target_chars": 38,
+        "chars_before_target": 0,
+        "reference_overlap_before_target": 0
+      },
+      {
+        "file": "live-stream-en-fixture-42.wav",
+        "ecapa_cos": 0.7433484196662903,
+        "pcm_16k_sha256": "b91fccf70ea437db863bcf75fef7a873609d579cd965b41988e4ac59f5626fff",
+        "active_s": 5.43,
+        "speaker_score_eligible": true,
+        "cer": 0.0,
+        "target_chars": 87,
+        "wer": 0.0,
+        "chars_before_target": 0,
+        "reference_overlap_before_target": 0
+      }
+    ]
+  },
+  "limitations": [
+    "One private full reference, one seed, one Base bf16 model; no listening test or broad quality evaluation.",
+    "Independent reference-fork spans do not preserve evolving target context or continuous prosody.",
+    "ASR CER for the short full-input Japanese example was 0.087; ASR error and synthesis error are not separated.",
+    "Arrival schedules and first-PCM timings are controlled harness observations, not end-to-end call latency.",
+    "English stream used the same Japanese-conditioned snapshot.",
+    "Full upstream test suite and hosted CI have not been run."
+  ],
+  "cpu_checks": {
+    "focused_live_and_existing_qwen3_tts": {
+      "passed": 60,
+      "subtests_passed": 9
+    },
+    "test_models_qwen3tts_excluding_generateicl": {
+      "passed": 36,
+      "deselected": 457
+    },
+    "test_models_qwen3tts_full": {
+      "status": "native crash, exit 139",
+      "baseline_reproduced": true,
+      "location": "existing TestQwen3TTSGenerateICL, mx.eval",
+      "note": "Single EOS test passes alone on both; aggregate run fails on clean base too. Cause not established; no unrelated fixture changes."
+    }
+  },
+  "style_checks": {
+    "black": "26.3.1: six changed Python files passed",
+    "isort": "5.13.2 --profile black: six changed Python files passed",
+    "git_diff_check": "passed",
+    "whole_repo_pre_commit": "not run"
+  },
+  "bundle_checks": {
+    "kiapi_make": "passed (format, lint, type checks, generated docs)",
+    "verifier_compile": "passed"
+  }
+}
