@@ -3,6 +3,18 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-22 — 通話開始時に参照を準備し、1 WebSocket で独立した複数返答を生成する protocol 2 を配備した
+
+- `start` の `protocol: 2` で opt-in。準備後 `ready`、返答ごとに `utterance.start`・`text.append`・`text.done`・`cancel`、結果は `utterance.done/canceled`。binary PCM は先頭 4 byte に little-endian uint32 の utterance ID を持つ。既存 HTTP と省略時の v1 は維持（実装 `5d03dbb`、配備 `6ec42d0`）。
+- labs の fresh-prefix を採用。全参照 text EOS + codec EOS + fresh role/language/speaker prefix を先に prefill し、decoder を全参照で prime。target は 1 確定 token から開始し、実際の text.done と target EOS の消費まで codec EOS を抑制する。参照は短縮しない。
+- 準備は専用 job として終え、idle と `utterance.start` 後の入力前は worker を解放。GPU snapshot はモデル所有 2 件 LRU に置き、talker KV と decoder conv/overflow/transformer state を返答ごとに独立 fork。socket は不変 CPU 参照 snapshot だけを保ち、モデル eviction 後も同じ参照で再準備する。保持 byte 数を memory accounting に含めた。
+- running cancel の ack は worker 退出後、queued cancel は未実行を確定して返す。旧 ID の text/PCM を fence し、blocked socket と多数の入力 fragment の後でも受信 cancel が worker を解放する。切断・close では pending queue waiter も解放。
+- 踏んだ問題: mlx-audio の decoder は mx.compile wrapper。snapshot の root state を wrapper 自身へ読み書きせず、named_modules が返す実 module へ戻す。CPU の fake compiled-wrapper 回帰と、GPU の cancel 後を含む 3 返答の PCM 完全一致で確認した。
+- make 成功、CPU 全 473 件 pass。サーバー機（M4 Max）の isolated GPU で、labs と同じ 10.678458 秒・256283 samples・参照 WAV SHA256 c03e2da1cf1877fc829168840d894fb846716c69d80d4f00ae4cdaafea96a5c0 を全量使用。1 socket の turn 1/3（cancel 後）/4 は各 113280 samples、PCM SHA256 d428bd8a…b38a で完全一致、最初 PCM は各約 0.204 秒。HTTP WAV・legacy v1・cancel・切断・次返答の回帰も成功。
+- 生成 1 本を既存 Qwen3-ASR で診断し、target「こんにちは。今日は日本語の声で通話を試しています。」に完全一致、参照末尾の混入なし。これはこの原稿 1 本の診断であり、自然さ・声の似方の主観評価は行っていない。
+- Spirits Garden 側の device-free 統合検証は 3 turn/1 socket。80 ms/文字の入力で最初 PCM 2322 ms < text.done 3678 ms、2 発話目 196 ms。160 ms 相当の mic batch 注入から中断状態・queue 0 まで 28 ms、cancel ack 14 ms、次返答 104 ms（入力音声の収集・実時間の検出時間は含まない）。物理再生は行っていない。
+- 既存 launchd へ配備後、cold 接続から ready 4.331 秒、全文一括の 2 返答は最初 PCM 0.096/0.092 秒・各 76800 samples で完全一致。比較 WAV・ASR・検証 report・配備後 WAV を `.verify/kiapi/speech-call` に保全。一時 runner を終了し既存 service を復旧した。上流 PR は作っていない。
+
 ## 2026-10-22 — 通話向けの逐次入力・逐次出力の声クローンを本番へ入れた
 
 - `WS /v1/audio/speech/stream` を追加（実装 `e20025e`、統合 `bd3de2c`）。1 接続 1 返答、start/text.append/text.done/cancel と PCM binary の契約。既存の全文入力 HTTP と声管理は維持した。

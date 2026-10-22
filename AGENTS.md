@@ -198,7 +198,6 @@ mise run verify --kiapi --family embedding --fast
 
 ### タスク（`tasks/`）
 
-- [通話全体の speech protocol 2](tasks/speech-call-session.md)
 
 
 - [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)

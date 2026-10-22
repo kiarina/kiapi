@@ -108,7 +108,7 @@ curl -s http://localhost:8500/v1/audio/speech \
   -o speech.wav
 ```
 
-## Bidirectional speech stream
+## Bidirectional speech stream (legacy protocol)
 
 Connect a WebSocket to `/v1/audio/speech/stream`, with the same optional
 `Authorization: Bearer <token>` header as HTTP. One connection is one utterance.
@@ -139,9 +139,9 @@ Files artifact. The existing full-input HTTP endpoint is unchanged.
 The engine implementation and extraction boundary are documented in
 [live/README.md](live/README.md).
 
-### Worker ownership
+### Worker ownership (legacy protocol)
 
-An accepted live job holds the single inference worker while waiting for text as
+An accepted legacy live job holds the single inference worker while waiting for text as
 well as while generating audio. Other jobs, including chat, queue behind it.
 If the transcript producer waits for a chat/tool request to this same kiapi
 instance before sending more text, the requests can wait on each other until
