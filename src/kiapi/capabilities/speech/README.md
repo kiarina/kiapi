@@ -199,7 +199,9 @@ text, or 14 for Latin text. Without such punctuation, it uses 24 characters for
 CJK or six complete whitespace-delimited words for Latin. These thresholds
 count received Unicode characters, including spaces. CJK script in the pending
 span takes precedence; Latin captions use word boundaries even when the session
-language is Japanese. Session language still controls model conditioning.
+language is Japanese. Session language still controls model conditioning. The 24-character fallback
+for mixed CJK/Latin spans can split a Latin word; this is the same bounded
+character policy, not a linguistic sentence parser.
 Periods/commas/colons between digits are not boundaries; a trailing separator
 after a digit waits for lookahead or `text.done`. Final nonempty tails flush at
 `text.done`; whitespace-only tails produce no audio. Ordinary Japanese/English
