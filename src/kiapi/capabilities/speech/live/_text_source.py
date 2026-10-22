@@ -1,4 +1,6 @@
 import threading
+import time
+from collections.abc import Callable
 from typing import Any
 
 
@@ -59,8 +61,22 @@ class TextSource:
         self.ids = ids
         return ids, closed, version
 
-    def wait(self, version: int) -> None:
+    def wait(
+        self, version: int, cancel_requested: Callable[[], bool] | None = None
+    ) -> None:
         with self.condition:
+            if cancel_requested is not None:
+                deadline = time.monotonic() + self.idle_timeout
+                while self.version == version and not self.cancelled:
+                    if cancel_requested():
+                        raise InterruptedError("Generation canceled")
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError("No new text; text.done is required")
+                    self.condition.wait(min(0.1, remaining))
+                if cancel_requested():
+                    raise InterruptedError("Generation canceled")
+                return
             if not self.condition.wait_for(
                 lambda: self.version != version or self.cancelled, self.idle_timeout
             ):

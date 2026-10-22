@@ -126,6 +126,10 @@ async def stream_call(
         observe(current["future"])
 
     try:
+        generation = start.pop("generation", "tokens")
+        if generation not in {"tokens", "segments"}:
+            raise ValueError("Unknown speech generation mode")
+        state["generation"] = generation
         if set(start) - {"model", "voice", "language", "seed"}:
             raise ValueError("Unknown start fields")
         req = SpeechRequest(input=" ", **start)
@@ -169,7 +173,10 @@ async def stream_call(
             if preparation in completed and not ready:
                 await preparation
                 ready = True
-                await socket.send_json({"type": "ready", "required_prefix_tokens": 1})
+                event = {"type": "ready", "required_prefix_tokens": 1}
+                if generation == "segments":
+                    event["generation"] = generation
+                await socket.send_json(event)
                 if turn is not None and turn["source"].text:
                     await submit_turn()
             if message in completed:

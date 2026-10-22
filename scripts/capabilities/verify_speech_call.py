@@ -19,6 +19,11 @@ async def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:8500")
     parser.add_argument("--voice", required=True)
     parser.add_argument(
+        "--generation", choices=["tokens", "segments"], default="tokens"
+    )
+    parser.add_argument("--language", default="ja")
+    parser.add_argument("--text-case", choices=["ja", "en"], default="ja")
+    parser.add_argument(
         "--output", type=Path, default=Path(".verify/kiapi/speech-call")
     )
     args = parser.parse_args()
@@ -38,28 +43,47 @@ async def main() -> None:
                     "type": "start",
                     "protocol": 2,
                     "voice": args.voice,
-                    "language": "ja",
+                    "language": args.language,
+                    "generation": args.generation,
                     "seed": 42,
                 }
             )
         )
         assert json.loads(await ws.recv())["protocol"] == 2
         ready = json.loads(await ws.recv())
-        assert ready["type"] == "ready"
+        assert ready["type"] == "ready", ready
+        if args.generation == "segments":
+            assert ready.get("generation") == "segments", ready
         report["ready_s"] = time.perf_counter() - start
         async with httpx.AsyncClient() as client:
             response = await client.get(args.base_url + "/health", headers=headers)
             response.raise_for_status()
             report["idle_health"] = response.json()
 
-        async def turn(identifier: int) -> bytes:
+        cases = {
+            "ja": [
+                "うん、今日はいい天気ですね。",
+                "少し散歩してから、駅前のカフェでコーヒーを飲みませんか\uff1f",
+            ],
+            "en": [
+                "Tokyo is a busy city with quiet gardens and many small cafes. ",
+                "We can take a short walk and have some tea later.",
+            ],
+        }
+
+        async def turn(identifier: int, text_case: str | None = None) -> bytes:
             begin = time.perf_counter()
             first = None
             pcm = bytearray()
             await ws.send(
                 json.dumps({"type": "utterance.start", "utterance_id": identifier})
             )
-            for text in ["こんにちは。", "今日は日本語の声で通話を試しています。"]:
+            pieces = (
+                cases[text_case or args.text_case]
+                if args.generation == "segments"
+                else ["こんにちは。", "今日は日本語の声で通話を試しています。"]
+            )
+            for text in pieces:
                 await ws.send(
                     json.dumps(
                         {
@@ -89,7 +113,11 @@ async def main() -> None:
                 "first_pcm_s": first,
                 "samples": len(pcm) // 2,
                 "sha256": hashlib.sha256(pcm).hexdigest(),
+                "segments": event.get("segments"),
+                "text": "".join(pieces),
             }
+            if args.generation == "segments":
+                assert event.get("segments", 0) >= 2, event
             report["turns"].append(row)
             with wave.open(str(args.output / f"turn-{identifier}.wav"), "wb") as output:
                 output.setnchannels(1)
@@ -139,6 +167,8 @@ async def main() -> None:
             "type": "utterance.canceled",
             "utterance_id": 5,
         }
+        if args.generation == "segments":
+            await turn(6, "en")
         await ws.send(json.dumps({"type": "session.close"}))
     report["independent_pcm_equal"] = True
     (args.output / "report.json").write_text(

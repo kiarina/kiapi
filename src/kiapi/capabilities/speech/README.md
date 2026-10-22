@@ -187,3 +187,30 @@ is free for other capabilities. Once generation begins, input waits retain it
 with a 30-second timeout. Finish each response with `text.done`, and cancel on
 interruption. The full reference is never shortened for low latency. The fresh
 boundary is an experimentally verified layout, not an upstream model API.
+
+### Cached short spans
+
+Set `generation: "segments"` in protocol-2 `start`. Require the matching
+`generation: "segments"` in `ready` before streaming transcript text. Omitting
+this selector retains the existing token-by-token generation mode.
+
+The server commits received punctuation after at least 8 characters for CJK
+text, or 14 for Latin text. Without such punctuation, it uses 24 characters for
+CJK or six complete whitespace-delimited words for Latin. These thresholds
+count received Unicode characters, including spaces. CJK script in the pending
+span takes precedence; Latin captions use word boundaries even when the session
+language is Japanese. Session language still controls model conditioning.
+Periods/commas/colons between digits are not boundaries; a trailing separator
+after a digit waits for lookahead or `text.done`. Final nonempty tails flush at
+`text.done`; whitespace-only tails produce no audio. Ordinary Japanese/English
+inputs preserve the lab's received-punctuation-first policy, so batching and
+arrival timing can affect span boundaries.
+
+Every span forks the same prepared full reference and has its own target EOS,
+code history and decoder state. It never reuses preceding generated audio as a
+reference or repeats speaker extraction/reference prefill. All PCM stays under
+the same utterance ID; only completion of the outer input and all spans emits
+`utterance.done`. Cancellation interrupts the current span as well as boundary
+waits. Span completion is internal: clients buffer/play continuous outer audio
+and do not interpret individual spans as turn completion. No initial playback
+buffer is added on the server; clients own playout timing.

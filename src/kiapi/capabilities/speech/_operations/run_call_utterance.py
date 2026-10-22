@@ -21,19 +21,40 @@ def run_call_utterance(
     import mlx.core as mx
     import numpy as np
 
-    from kiapi.capabilities.speech.live import fork_reference, generate_prepared
+    from kiapi.capabilities.speech.live import (
+        fork_reference,
+        generate_prepared,
+        generate_segments,
+    )
 
     if job.cancel_requested():
         raise JobCanceledError()
     payload, prepared = _acquire_prepared(ctx, state)
     source.bind(payload.model.tokenizer)
-    session = fork_reference(payload.model, prepared)
     mx.random.seed(
         state["seed"] if state["seed"] is not None else random.randint(0, 2**31 - 1)
     )
     started = time.perf_counter()
     samples = 0
-    chunks = generate_prepared(payload.model, prepared.prompt, source, session)
+    trace: dict[str, Any] = {}
+    if state.get("generation") == "segments":
+        chunks = generate_segments(
+            payload.model,
+            prepared,
+            source,
+            language=state["language"],
+            cancel_requested=job.cancel_requested,
+            trace=trace,
+        )
+    else:
+        session = fork_reference(payload.model, prepared)
+        chunks = generate_prepared(
+            payload.model,
+            prepared.prompt,
+            source,
+            session,
+            cancel_requested=job.cancel_requested,
+        )
     try:
         for audio in chunks:
             if job.cancel_requested():
@@ -48,6 +69,8 @@ def run_call_utterance(
         payload.model.speech_tokenizer.decoder.reset_streaming_state()
         clear_pending_prime()
     return {
+        "generation": state.get("generation", "tokens"),
+        "segments": len(trace.get("segments", [])),
         "sample_rate": 24000,
         "duration_s": samples / 24000,
         "total_s": time.perf_counter() - started,

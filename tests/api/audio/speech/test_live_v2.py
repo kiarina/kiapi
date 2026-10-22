@@ -189,3 +189,35 @@ async def test_network_backpressure_cannot_hide_cancel_behind_text(
             await task
         worker._task.cancel()  # type: ignore[union-attr]
         worker.executor.shutdown(wait=True)
+
+
+def test_segment_mode_ready_echo(client: Any) -> None:
+    with client[0].websocket_connect("/v1/audio/speech/stream") as ws:
+        ws.send_json(
+            {
+                "type": "start",
+                "protocol": 2,
+                "generation": "segments",
+                "voice": "voice_test",
+            }
+        )
+        assert ws.receive_json()["protocol"] == 2
+        assert ws.receive_json() == {
+            "type": "ready",
+            "required_prefix_tokens": 1,
+            "generation": "segments",
+        }
+        utterance(ws, 1)
+
+
+def test_unknown_generation_fails_before_ready(client: Any) -> None:
+    with client[0].websocket_connect("/v1/audio/speech/stream") as ws:
+        ws.send_json(
+            {
+                "type": "start",
+                "protocol": 2,
+                "generation": "unknown",
+                "voice": "voice_test",
+            }
+        )
+        assert ws.receive_json()["type"] == "error"

@@ -50,3 +50,11 @@ closed and the target text EOS row has been consumed. No target text or sampled
 audio is invented during preparation. All preparation/fork/generation and
 snapshot release belong on the model worker; snapshots must never pin an
 evicted model from a transport thread.
+
+`generate_segments` uses `segment_boundary` to finish small received text spans,
+independently forking the same `PreparedReference` for each. The outer source
+owns cancellation even though each inner span source is closed. The callback
+propagates through token polling, frame/model steps, decoder emission, and timed
+input waits. Span generation shares the utterance's RNG stream; it does not
+reseed or prepare a new reference between spans. The default outer limit is
+1,000 codec frames, with at most 500 per span.

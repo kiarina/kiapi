@@ -7,10 +7,12 @@ if TYPE_CHECKING:
     from ._clone_prompt import ClonePrompt
     from ._fork_reference import fork_reference
     from ._generate_prepared import generate_prepared
+    from ._generate_segments import generate_segments
     from ._generation import generate_live
     from ._prepare_clone import prepare_clone
     from ._prepare_reference import prepare_reference
     from ._prepared_reference import PreparedReference
+    from ._segment_boundary import segment_boundary
 
 __all__ = [  # noqa: RUF022
     # Text buffering
@@ -24,6 +26,8 @@ __all__ = [  # noqa: RUF022
     "prepare_reference",
     "fork_reference",
     "generate_prepared",
+    "generate_segments",
+    "segment_boundary",
 ]
 
 
@@ -31,6 +35,9 @@ def __getattr__(name: str) -> object:
     if name not in __all__:
         raise AttributeError(name)
     module_map = {
+        # Segment generation
+        "generate_segments": "._generate_segments",
+        "segment_boundary": "._segment_boundary",
         # Prepared reference sessions
         "PreparedReference": "._prepared_reference",
         "prepare_reference": "._prepare_reference",

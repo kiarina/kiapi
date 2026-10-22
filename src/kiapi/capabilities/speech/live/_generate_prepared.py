@@ -1,5 +1,5 @@
 import time
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import Any
 
 import mlx.core as mx
@@ -21,6 +21,7 @@ def generate_prepared(
     temperature: float = 0.9,
     trace: dict[str, Any] | None = None,
     require_text_consumed: bool = True,
+    cancel_requested: Callable[[], bool] = lambda: False,
 ) -> Generator[Any, None, None]:
     trace = trace if trace is not None else {}
     trace.update(codes=[], waits=[], commits=[], prepared_rows=session.prepared_rows)
@@ -33,6 +34,8 @@ def generate_prepared(
 
     def poll() -> tuple[list[int], bool, int]:
         nonlocal observed
+        if cancel_requested():
+            raise InterruptedError("Generation canceled")
         ids, closed, version = source.poll()
         if len(ids) != observed:
             trace["commits"].append(
@@ -47,7 +50,7 @@ def generate_prepared(
             break
         if closed:
             raise ValueError("No target text")
-        source.wait(version)
+        source.wait(version, cancel_requested=cancel_requested)
     needed = session.required_tokens
     text = _embed(model, ids[:needed])
     if len(ids) < needed:
@@ -85,6 +88,8 @@ def generate_prepared(
     suppress = model._suppress_codec_tokens(eos)
     try:
         for _step in range(max_frames):
+            if cancel_requested():
+                raise InterruptedError("Generation canceled")
             logits, hidden = model.talker(inputs, cache=cache)
             ids, closed, _ = poll()
             token = model._sample_token(
@@ -109,6 +114,8 @@ def generate_prepared(
                 trace["consumed_target_tokens"] = min(cursor, len(ids))
                 trace["eos_row_fed"] = cursor > len(ids)
                 break
+            if cancel_requested():
+                raise InterruptedError("Generation canceled")
             parts, codes = model._predict_code_tokens(
                 token,
                 hidden,
@@ -123,6 +130,8 @@ def generate_prepared(
             trace["codes"].append(codes[0].tolist())
             if len(generated) - emitted >= emit_frames:
                 block = mx.transpose(mx.stack(generated[emitted:], axis=1), (0, 2, 1))
+                if cancel_requested():
+                    raise InterruptedError("Generation canceled")
                 pcm = decoder.streaming_step(block).squeeze(1)[0]
                 mx.eval(pcm)
                 emitted = len(generated)
@@ -136,7 +145,7 @@ def generate_prepared(
                     next_text = prompt.eos if cursor == len(ids) else prompt.pad
                     break
                 before = stamp()
-                source.wait(version)
+                source.wait(version, cancel_requested=cancel_requested)
                 trace["waits"].append({"start": before, "end": stamp()})
             inputs = next_text + model._codec_embeds_for_tokens(parts)
             mx.eval(inputs)
@@ -145,6 +154,8 @@ def generate_prepared(
             trace["stop"] = "frame_cap"
             raise RuntimeError("max_frames reached before EOS")
         if len(generated) > emitted:
+            if cancel_requested():
+                raise InterruptedError("Generation canceled")
             block = mx.transpose(mx.stack(generated[emitted:], axis=1), (0, 2, 1))
             pcm = decoder.streaming_step(block).squeeze(1)[0]
             mx.eval(pcm)

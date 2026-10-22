@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- speech: optional protocol-2 `generation: "segments"` completes small text spans independently from the same cached full reference, with parent cancellation propagated into every span.
+
 - speech: opt-in protocol 2 keeps a WebSocket for an entire call, warms a full-reference explicit boundary before text, and isolates successive utterances with IDs and cancellation acknowledgments.
 
 - speech: bidirectional `/v1/audio/speech/stream` WebSocket with incremental Japanese input, registered voice cloning, bounded PCM output, and cancellation.

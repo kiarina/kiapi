@@ -198,6 +198,8 @@ mise run verify --kiapi --family embedding --fast
 
 ### タスク（`tasks/`）
 
+- [Cached short spans for calls](tasks/speech-segments.md)
+
 
 
 - [mlx-vlm の長いprefillをclient切断時にキャンセルする](tasks/chat-prefill-cancellation.md)
