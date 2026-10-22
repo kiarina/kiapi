@@ -3,6 +3,17 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-22 — 通話へ cached short spans を追加し、Spirits Garden の初回 1 秒 buffer と組み合わせて配備した
+
+- protocol 2 の `start` に任意の `generation: "segments"`、`ready` に同じ selector の echo を追加。省略時の token mode、HTTP、v1 は維持（実装 `29bf8d1`、配備 `4d9a92d`）。1 socket・同じ outer utterance ID の PCM として複数 span を連結し、outer done と全 span 完了後だけ utterance.done を返す。
+- labs の cached segmentation を独立 live package へ実装。受信句読点が CJK 8 字 / Latin 14 字以上なら確定、なければ CJK 24 字 / Latin 6 完了語、最終 tail は text.done で flush。受信 script を見て、日本語設定の英語 caption も語境界を使う。小数点など数字内の句読点は境界にせず、曖昧な末尾を保留。mixed CJK の 24 字 fallback が Latin 語中を切る制限は文書化。
+- 各 span は同じ全参照 prepared snapshot を fork。span 間で speaker 抽出・参照 prefill を再実行せず、outer RNG を継続する。inner source は closed でも親 cancel を model frame / code predictor / decoder 前、poll と待機で検査し、旧 span を止める。初期の音声 buffer は server に加えず、Spirits Garden が初回 1 秒だけ保持する。
+- make 成功、CPU 全 479 件 pass。M4 Max isolated GPU では lab と同じ全参照 WAV c03e2da1…a5c0 / 256283 samples と transcript f8ee31ee…54d6 を使用。日本語 canonical は 3 spans・167040 samples、cancel 後を含む 3 返答の PCM SHA256 4c1317e7…a999 が完全一致。warm の最初 PCM 約 0.202 秒。日本語設定の英語 canonical は 2 spans・184320 samples。
+- 既存 Qwen3-ASR で 2 本を診断。英語は全文一致。日本語は先頭「うん、」が省略され、残りは一致。実音声の読み落としか ASR の省略かは分離せず、試聴による自然さの主観評価もしていない。M1 lab と M4 server の波形が同一とは主張しない。
+- token mode の PCM は従来 d428bd8a…b38a と完全一致。既存 HTTP WAV / v1 / cancel / 切断 / 次返答も回帰成功。
+- Spirits Garden device-free E2E は 1 WS / 6 turns。日本語 80 ms/文字で最初 PCM 2.083 秒 < done 3.671 秒、初回 1 秒 hold 後も done 前の再生開始を確認。日本語設定の英語も 1.752 秒 < done 6.935 秒。再生中 mic 割込 18 ms（160 ms 相当信号 batch 後、実時間の収集・検出時間は含まない）/ cancel ack 7 ms、buffer 中 cancel ack 8 ms・再生へ旧音声 0 samples、各次返答も成功。物理再生はしていない。
+- 既存 launchd へ同期・inexact sync・Web UI build 後に復旧。配備後 1 WS / 2 turns / 各 3 spans は同じ 167040 samples・hash 4c1317e7…a999、最初 PCM 0.203 / 0.202 秒。cold 接続から ready 3.523 秒。成果物・ASR・回帰ログは `.verify/kiapi/speech-segments` に保全。一時 runner 終了後、既存 service を復旧した。上流 PR は未作成。
+
 ## 2026-10-22 — 通話開始時に参照を準備し、1 WebSocket で独立した複数返答を生成する protocol 2 を配備した
 
 - `start` の `protocol: 2` で opt-in。準備後 `ready`、返答ごとに `utterance.start`・`text.append`・`text.done`・`cancel`、結果は `utterance.done/canceled`。binary PCM は先頭 4 byte に little-endian uint32 の utterance ID を持つ。既存 HTTP と省略時の v1 は維持（実装 `5d03dbb`、配備 `6ec42d0`）。

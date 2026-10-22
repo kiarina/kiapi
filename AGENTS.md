@@ -198,7 +198,6 @@ mise run verify --kiapi --family embedding --fast
 
 ### タスク（`tasks/`）
 
-- [Cached short spans for calls](tasks/speech-segments.md)
 
 
 
