@@ -1,9 +1,15 @@
 # Live Qwen3-TTS voice cloning
 
-This package is the extraction boundary for an upstream mlx-audio proposal. It
+This package isolates the experimental live-cloning model implementation. It
 imports no kiapi API, voice store, jobs, model registry, or settings. Importing
 `TextSource` does not import MLX. Import and execute generation on the model's
 worker thread.
+
+For the current short-span path, see **Prepared explicit reference boundary** below.
+The following example describes the legacy causal token-input path, whose
+reference-dependent startup requirement does not describe prepared generation.
+
+## Legacy causal token-input path
 
 ```python
 source = TextSource(max_chars=4096, idle_timeout=30)
@@ -58,3 +64,16 @@ propagates through token polling, frame/model steps, decoder emission, and timed
 input waits. Span generation shares the utterance's RNG stream; it does not
 reseed or prepare a new reference between spans. The default outer limit is
 1,000 codec frames, with at most 500 per span.
+
+## Evaluation status
+
+The prepared boundary is experimental conditioning. Each segment forks the same
+reference state; it does not retain one evolving target context across segments
+or across the entire WebSocket session. Transport lifetime and model context
+lifetime are independent.
+
+Short-span generation plus client playback buffering improved downstream calls,
+but superiority over ordinary `generate()` calls with the same spans and buffer
+has not been established. Upstream already caches some reference preprocessing.
+The [proposal assessment](../../../../../docs/playbooks/mlx-audio-live-upstream/assessment.md)
+sets out the standard-API comparison required before deciding what to upstream.

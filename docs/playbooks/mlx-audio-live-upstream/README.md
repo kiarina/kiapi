@@ -2,13 +2,13 @@
 
 This directory owns a reviewable upstream patch proposal, not runtime code used by kiapi. The adopted application remains on its current implementation while this proposal is reviewed. No upstream PR has been submitted.
 
-## Review recommendation
+## Current decision
 
-The [value assessment](assessment.md) recommends narrowing the proposal to reusable preparation and generation of committed spans, and comparing against warmed existing generation before submission. The current patch and draft are retained for review; this recommendation has not yet changed their scope.
+Submission is on hold pending a controlled comparison with existing APIs. The first question is whether ordinary short-text generation plus playback buffering can provide the same call experience. Only after identifying a meaningful gap should we choose an upstream change, if any. The [value assessment](assessment.md) describes the evidence and comparison criteria. The current patch is retained as a candidate; no narrower API has been approved or implemented.
 
-## Scope
+## Retained draft scope
 
-| Belongs in the model library | Remains in the application |
+| Included in the retained draft, subject to evaluation | Application responsibilities |
 | --- | --- |
 | Base-only reference preparation before target text | Voice registration, IDs, storage, authorization |
 | Independent forks of prepared talker/decoder state | Model-worker scheduling, eviction, bounded LRU |
@@ -65,7 +65,7 @@ Focused tests passed (60 + 9 subtests), as did 36 additional Qwen3TTS tests excl
 
 ### Submission boundary
 
-This bundle is ready for review, not submitted. Before submission: agree the experimental segmented scope, recheck upstream changes, create/update the approved fork, make signed commits and confirm GitHub marks them Verified, then run hosted CI and attach its result. Keep the existing application deployment independent of upstream review. Patch preparation does not authorize posting a PR or comments.
+This bundle is an experimental comparison candidate, not a submission-ready decision. First compare against warmed existing APIs and decide whether any upstream change is justified. If proceeding, agree the resulting scope, recheck upstream changes, create/update the approved fork, make signed commits and confirm GitHub marks them Verified, then run hosted CI and attach its result. Keep the existing application deployment independent of upstream review. Patch preparation does not authorize posting a PR or comments.
 
 ## Evidence boundary
 

@@ -1,3 +1,5 @@
+<!-- Retained draft only. Submission is on hold pending the standard-API comparison described in assessment.md. Scope may change or this proposal may be dropped. -->
+
 ## Context
 
 Incremental text can arrive more slowly than a voice-cloning model consumes it. Pausing an ongoing autoregressive generation for each missing token can leave gaps in streaming audio. Applications also need to prepare the full voice reference before the first target text arrives and reuse that work after an interruption.

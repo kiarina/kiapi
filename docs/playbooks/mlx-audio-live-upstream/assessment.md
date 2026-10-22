@@ -1,10 +1,10 @@
 # Upstream value assessment
 
-Assessment date: 2026-10-22. This is a recommendation, not an approved scope change. The current patch remains unchanged and unsubmitted.
+Assessment date: 2026-10-22. The current patch remains unchanged and unsubmitted. The active decision is to compare against existing APIs before deciding whether to submit any model changes.
 
 ## Conclusion
 
-The reusable model preparation has upstream value. The current combined live-input API is not yet a strong merge proposal. Prefer a smaller prepared-clone generation primitive, with text segmentation and producer scheduling kept in the application or an example. Confirm the experimental conditioning benefit before committing to a public library API.
+Reusable model preparation has potential upstream value, but its necessity for the target call experience is not established. First compare ordinary short-text API calls with the current method. If the existing API is sufficient, no new generation API is needed. Narrowing to a prepared-clone primitive is an option only if the comparison demonstrates a meaningful gap.
 
 ## What is valuable
 
@@ -29,7 +29,7 @@ The implementation snapshots private decoder fields (`_buffer`, `_overflow`, `_t
 
 Hard-coded CJK/Latin boundaries, timeouts and character limits represent one application's latency/quality tradeoff. Different applications and languages need different policies. Exposing them through a generic `generate_live` name can suggest continuous target context, which this implementation does not provide. A worker is also occupied while waiting for input.
 
-## Recommended next proposal
+## Conditional upstream options
 
 1. Retain the adopted downstream implementation while assessing upstream changes independently.
 2. First propose explicit reference preparation and generation of an already committed short text span using that prepared state, with cancellation and cleanup. Let applications choose boundaries and queue work. API names here are conceptual, not a final contract.
@@ -44,3 +44,13 @@ Hard-coded CJK/Latin boundaries, timeouts and character limits represent one app
 [#1036](https://github.com/Blaizzy/mlx-audio/pull/1036) documents full-text conditioning for CustomVoice/VoiceDesign. It does not establish the correct Base-cloning layout, but is a reminder that conditioning changes can alter speaking behavior and need model-specific evidence.
 
 See [validation](validation.json) for completed checks and [the current draft](pull-request.md) for the unchanged proposal. A prepared patch is not evidence that its full scope should be merged.
+
+## Fair comparison criteria
+
+Fix the transcript arrival schedule, committed spans, full reference, model, sampling controls, warm state and playback policy before comparing implementations. Compare ordinary generation with the prepared experimental path. The decoupling lab's cached/uncached span comparison uses experimental conditioning on both sides; it is not this standard-API control.
+
+Waiting one second for text before synthesis and holding playback after the first PCM are separate controls. A persistent WebSocket can wrap ordinary short-text generation; HTTP can also reuse model preparation. Transport, model changes and concurrency must not be treated as one intervention.
+
+Do not make the baseline lose solely because kiapi accepts only one active inference job. Use an isolated harness with equal hardware/resource budgets, testing serial and small bounded parallel configurations. Concurrent request acceptance is not necessarily concurrent GPU execution. Include worker/model duplication, contention, ordering and discarded work on cancellation in the measurements.
+
+Measure onset, early/whole-response queue starvation, production speed, retained/peak memory and interrupt-to-next-response delay. Supplement fixed-condition comparisons with separately tuned practical configurations. Existing API sufficiency, rather than a predetermined PR design, is the first decision.
