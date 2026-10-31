@@ -74,6 +74,12 @@
   The paths are different even within the same dependent library, so please verify both when updating `mlx-embeddings`.
 - **Items run one at a time**:
   A padded batch would cost the longest item's length for every item.
+- **Speed**:
+  On a Mac Studio M4 Max, `qwen3-embedding-8b` takes about
+  `0.00135 * tokens + 0.000000094 * tokens^2` seconds per input, so long inputs slow down
+  faster than their length: about 1.4 s per 1k tokens up to 2k tokens, 2.0 s at 8k, and 4.3 s at 32k.
+  Splitting 31.6k tokens into 8 items takes 49 s instead of 136 s.
+  Requests share one worker, so a long input also delays other generation.
 - **VL processor correction**:
   MLX converted Qwen3-VL processors may lack `chat_template` and image/video token-id attributes.
   `_patch_processor` in `_models/qwen3_vl.py` compensates with best-effort.
