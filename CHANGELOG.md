@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- embedding: **Breaking:** replace `POST /v1/embedding` with OpenAI-compatible `POST /v1/embeddings`
+  (`input`, `dimensions`, `encoding_format`, and token counts in `usage`). Multimodal items go in `input`
+  as `{text, image}` objects. `/v1/embedding/models` and the capability documents stay in place.
+- embedding: reject text over the token limit with HTTP 400. `KIAPI_EMBEDDING_MAX_LENGTH` now defaults to 32768.
 - Update mlx-audio to 0.6.1; retain the verified Qwen3-TTS compatibility patch implementations.
 
 ### Fixed

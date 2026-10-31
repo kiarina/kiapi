@@ -1,8 +1,9 @@
 DESCRIPTION = """Text and multimodal embeddings for retrieval and similarity search.
 
-POST one item to `/v1/embedding` with one field per modality (`text` and/or
-`image`). Returns a single L2-normalized, last-token-pooled vector. This is **not**
-OpenAI's array `input` shape — one item per request. Sync only (no async mode).
+`POST /v1/embeddings` follows OpenAI's embeddings API: `input` is a string or an
+array, and each input returns one L2-normalized, last-token-pooled vector in
+`data`. Multimodal models also accept `{text, image}` objects in `input`, a kiapi
+extension. Sync only (no async mode).
 
 ## Upstream docs
 - [mlx-embeddings](https://github.com/Blaizzy/mlx-embeddings) — the MLX embedding engine kiapi runs
@@ -21,27 +22,31 @@ Vectors from different models live in different spaces and may differ in
 dimensionality — embed both your queries and your corpus with the **same** model.
 
 ## Notes
-- One input item per request. To embed N items, make N requests.
-- Provide at least one modality input; an empty request returns 400.
+- `input` accepts up to 2048 items. Items run one at a time.
+- Inputs longer than the token limit return 400; they are never truncated.
+- Empty inputs return 400. Token arrays are not accepted.
+- `dimensions` truncates the vector and L2-normalizes it again.
+- `usage` counts text tokens; images are not counted.
 - Vectors are already L2-normalized, so cosine similarity reduces to a dot
   product.
+- `GET /v1/models` lists chat models only. Use `GET /v1/embedding/models` here.
 
 ## Examples
 
 ### Text (default model)
 ```sh
-curl -sS http://HOST:PORT/v1/embedding \\
+curl -sS http://HOST:PORT/v1/embeddings \\
   -H 'Content-Type: application/json' \\
-  -d '{"text": "今日の天気は晴れです"}'
+  -d '{"input": "今日の天気は晴れです"}'
 ```
 
 ### Image (multimodal model)
 ```sh
-curl -sS http://HOST:PORT/v1/embedding \\
+curl -sS http://HOST:PORT/v1/embeddings \\
   -H 'Content-Type: application/json' \\
   -d '{
     "model": "qwen3-vl-embedding-2b",
-    "image": "data:image/png;base64,iVBORw0..."
+    "input": [{"image": "data:image/png;base64,iVBORw0..."}]
   }'
 ```
 """

@@ -46,6 +46,7 @@ const BASIC = new Set([
   "negative_prompt",
   "lyrics",
   "query",
+  "input",
   "text",
   "url",
   "image",
@@ -88,6 +89,8 @@ function nonNull(s: SchemaRef): SchemaRef[] {
 
 function classify(doc: OpenApiDoc, name: string, prop: SchemaRef): Pick<Field, "kind" | "options"> {
   if (name === "model") return { kind: "model" };
+  // Embedding input: plain text, or JSON for arrays and {text, image} items.
+  if (name === "input") return { kind: "json" };
   const variants = nonNull(prop);
   const v = variants[0] ?? {};
   const resolved = resolveRef(doc, v);

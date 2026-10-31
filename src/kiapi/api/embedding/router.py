@@ -1,4 +1,4 @@
-"""Embedding API: ``POST /v1/embedding`` (sync only).
+"""Embedding API: OpenAI-compatible ``POST /v1/embeddings`` (sync only).
 
 Like chat, still a job internally (shows up in /v1/jobs, shares the single-flight
 worker), but no async mode: the caller always gets the vector back. A sync wait
@@ -29,29 +29,34 @@ router = APIRouter(dependencies=REQUIRE_AUTH)
 
 
 @router.post(
-    "/v1/embedding",
+    "/v1/embeddings",
     response_model=EmbeddingResponse,
     responses={
-        400: {"description": "Unknown model, empty input, or unsupported modality."},
+        400: {
+            "description": (
+                "Unknown model, empty or oversized input, unsupported modality, "
+                "or unsupported dimensions."
+            )
+        },
         503: {"description": "Model not set up, or memory budget exceeded."},
         504: {"description": "Sync timeout exceeded; the job keeps running."},
     },
 )
-async def embedding(
+async def embeddings(
     req: EmbedRequest,
     ctx: AppContext = Depends(get_ctx),
     worker: Worker = Depends(get_worker),
 ) -> dict:
-    """Embed a single item (one field per modality).
+    """Create embeddings, following OpenAI's embeddings API.
 
-    Send `text` and/or `image` in one request (one item, not OpenAI's array
-    `input`). The resolved `model` (see GET /v1/embedding/models) determines which
-    modalities are accepted; provide at least one input it supports. Returns one
-    L2-normalized, last-token-pooled vector with its `dimension`.
+    `input` takes a string or an array, and `data` returns one L2-normalized,
+    last-token-pooled vector per input. Multimodal models also accept
+    `{text, image}` objects. The resolved `model` (see GET /v1/embedding/models)
+    determines which modalities are accepted.
 
     Embedding runs as a single-flight job, so it appears in /v1/jobs and is
     serialized with all other generation, but there is no async mode: the caller
-    always waits for the vector. A wait that exceeds the sync timeout returns 504
+    always waits for the vectors. A wait that exceeds the sync timeout returns 504
     while the job keeps running and can be polled at /v1/jobs/{id}.
     """
     settings = settings_manager.get_settings()

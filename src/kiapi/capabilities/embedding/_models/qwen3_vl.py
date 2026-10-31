@@ -19,10 +19,12 @@ from kiapi.core.workdir import create_work_dir
 
 from .._operations.format_response import format_response
 from .._operations.parse_inputs import parse_inputs
+from .._utils.ensure_token_limit import ensure_token_limit
 from .._utils.to_vector import to_vector
 from .._views.embed_params import EmbedParams
 
 FEATURES = {"text", "image"}
+DIMENSION_RANGE = (64, 2048)
 
 # Source repo for the chat template, when the converted processor lacks one.
 TEMPLATE_SOURCE_MODEL_ID = "Qwen/Qwen3-VL-Embedding-2B"
@@ -41,7 +43,7 @@ def warmup(payload: SimpleNamespace) -> None:
     run(
         payload,
         EmbedParams(
-            model="qwen3-vl-embedding-2b", inputs={"text": "hi"}, max_length=512
+            model="qwen3-vl-embedding-2b", inputs=[{"text": "hi"}], max_length=512
         ),
     )
 
@@ -76,22 +78,27 @@ def run(payload: SimpleNamespace, params: EmbedParams) -> dict[str, Any]:
     model, processor = payload.model, payload.processor
     tmp_dir = create_work_dir("embedding/qwen3_vl")
     try:
-        parsed = parse_inputs(params.inputs, tmp_dir, allow=FEATURES)
-
-        item: dict[str, Any] = {}
-        if "text" in parsed:
-            item["text"] = parsed["text"]
-        if "image" in parsed:
-            item["image"] = parsed["image"]  # local file path
+        items = [parse_inputs(item, tmp_dir, allow=FEATURES) for item in params.inputs]
+        token_counts = [
+            len(processor.tokenizer.encode(item["text"])) if "text" in item else 0
+            for item in items
+        ]
+        for token_count in token_counts:
+            ensure_token_limit(token_count, params.max_length)
 
         t0 = time.time()
-        embeddings = model.process([item], processor=processor)
+        vectors = [
+            to_vector(model.process([item], processor=processor)) for item in items
+        ]
         elapsed = time.time() - t0
 
         return format_response(
             model_name=params.model,
-            embedding=to_vector(embeddings),
+            vectors=vectors,
             elapsed=elapsed,
+            prompt_tokens=sum(token_counts),
+            dimensions=params.dimensions,
+            encoding_format=params.encoding_format,
         )
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

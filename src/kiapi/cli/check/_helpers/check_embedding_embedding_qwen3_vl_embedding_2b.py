@@ -1,4 +1,7 @@
-from kiapi.capabilities.embedding import EmbedRequest, handle_embed
+import base64
+from pathlib import Path
+
+from kiapi.capabilities.embedding import EmbedItem, EmbedRequest, handle_embed
 from kiapi.core.app import AppContext
 from kiapi.core.model import ModelSpec
 
@@ -12,8 +15,9 @@ def check(ctx: AppContext, spec: ModelSpec) -> CheckResult:
     rec = ctx.file_store.get(image_file_id)
     if rec is None:
         raise RuntimeError("failed to create check input image")
+    image = base64.b64encode(Path(rec.path).read_bytes()).decode("ascii")
     result, artifacts = handle_embed(
         ctx,
-        EmbedRequest(model=spec.name, image=rec.path),
+        EmbedRequest(model=spec.name, input=[EmbedItem(image=image)]),
     )
     return build_check_result(spec, result, artifacts)

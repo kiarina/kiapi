@@ -163,9 +163,9 @@ kiapi.capabilities.chat:
 #--------------------------------------------------------------------------------
 kiapi.capabilities.embedding:
   # Maximum input token length: int
-  #   Maximum token length passed to the embedding model tokenizer.
-  #   Inputs longer than this are truncated before model processing.
-  # max_length: 512
+  #   Maximum tokenized length of one text input.
+  #   Longer inputs are rejected with HTTP 400.
+  # max_length: 32768
 
 #--------------------------------------------------------------------------------
 # Settings for Depth Pro quantization, input image limits, and progress display.

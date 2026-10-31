@@ -2,8 +2,9 @@
 
 Ported from mlx-embedding-server's scripts/verify.py. Exercises both default
 embedding models through real embeddings and checks each expected outcome: text
-on the text model, text/image/both on the VL model, plus the error paths
-(unsupported modality, unknown model, empty request).
+on the text model, text/image/both on the VL model, batches, `dimensions`, base64,
+plus the error paths (unsupported modality, unknown model, empty input, oversized
+input).
 
 Usage:
     # start the server first, e.g.:
@@ -18,13 +19,14 @@ Env:
 import base64
 import math
 import os
+import struct
 import sys
 import time
 
 import httpx
 
 BASE_URL = os.environ.get("KIAPI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
-URL = f"{BASE_URL}/v1/embedding"
+URL = f"{BASE_URL}/v1/embeddings"
 HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 IMAGE_PATH = os.environ.get(
     "KIAPI_IMAGE", os.path.join(HERE, "tests", "assets", "miineko.png")
@@ -45,41 +47,70 @@ def _l2(vec) -> float:  # type: ignore
 
 
 # --- cases: (id, desc, body, expect) ---
-# expect: ("ok", min_dim) | ("status", code)
+# expect: ("ok", vector_count, dimension) | ("status", code)
 def cases(img_b64: str):  # type: ignore
     return [
         (
             "1",
             "text => embedding (default model)",
-            {"text": "今日はいい天気ですね"},
-            ("ok", 1),
+            {"input": "今日はいい天気ですね"},
+            ("ok", 1, 4096),
         ),
         (
             "2",
             "text on the VL model",
-            {"model": "vl", "text": "a photo of a cat"},
-            ("ok", 1),
+            {"model": "vl", "input": "a photo of a cat"},
+            ("ok", 1, 2048),
         ),
-        ("3", "image on the VL model", {"model": "vl", "image": img_b64}, ("ok", 1)),
+        (
+            "3",
+            "image on the VL model",
+            {"model": "vl", "input": [{"image": img_b64}]},
+            ("ok", 1, 2048),
+        ),
         (
             "4",
             "text + image on the VL model",
-            {"model": "vl", "text": "猫", "image": img_b64},
-            ("ok", 1),
+            {"model": "vl", "input": [{"text": "猫", "image": img_b64}]},
+            ("ok", 1, 2048),
         ),
         (
             "5",
+            "array input",
+            {"input": ["一つ目", "二つ目", "三つ目"]},
+            ("ok", 3, 4096),
+        ),
+        ("6", "dimensions", {"input": "短くする", "dimensions": 256}, ("ok", 1, 256)),
+        (
+            "7",
             "image to the text-only model => 400",
-            {"model": "qwen3-embedding-8b", "image": img_b64},
+            {"model": "qwen3-embedding-8b", "input": [{"image": img_b64}]},
             ("status", 400),
         ),
         (
-            "6",
+            "8",
             "unknown model => 400",
-            {"model": "gpt-9", "text": "hi"},
+            {"model": "gpt-9", "input": "hi"},
             ("status", 400),
         ),
-        ("7", "empty request => 400", {"model": "qwen3-embedding-8b"}, ("status", 400)),
+        (
+            "9",
+            "empty input => 400",
+            {"model": "qwen3-embedding-8b", "input": ""},
+            ("status", 400),
+        ),
+        (
+            "10",
+            "dimensions out of range => 400",
+            {"input": "hi", "dimensions": 8},
+            ("status", 400),
+        ),
+        (
+            "11",
+            "over the token limit => 400",
+            {"input": "word " * 40000},
+            ("status", 400),
+        ),
     ]
 
 
@@ -91,11 +122,29 @@ def check(expect, r: httpx.Response):  # type: ignore
     if r.status_code != 200:
         return False, f"status={r.status_code} {r.text[:150]}"
     body = r.json()
-    dim = body.get("dimension", 0)
-    vec = body.get("embedding") or []
-    norm = _l2(vec)
-    ok = dim >= expect[1] and len(vec) == dim
-    return ok, f"dim={dim} ‖v‖={norm:.3f}"
+    vectors = [item["embedding"] for item in body["data"]]
+    norms = [_l2(vector) for vector in vectors]
+    ok = (
+        body["object"] == "list"
+        and len(vectors) == expect[1]
+        and all(len(vector) == expect[2] for vector in vectors)
+        and all(abs(norm - 1.0) < 1e-3 for norm in norms)
+    )
+    return ok, (
+        f"n={len(vectors)} dim={len(vectors[0])} ‖v‖={norms[0]:.3f} usage={body['usage']}"
+    )
+
+
+def check_batch_and_base64() -> tuple[bool, str]:
+    texts = ["今日はいい天気ですね", "明日は雨です"]
+    batch = post({"input": texts}).json()
+    encoded = post({"input": texts[1], "encoding_format": "base64"}).json()
+    raw = base64.b64decode(encoded["data"][0]["embedding"])
+    single = struct.unpack(f"<{len(raw) // 4}f", raw)
+    diff = max(
+        abs(a - b) for a, b in zip(batch["data"][1]["embedding"], single, strict=True)
+    )
+    return diff < 1e-3, f"dim={len(single)} batch_vs_base64={diff:.6f}"
 
 
 def main():  # type: ignore
@@ -117,6 +166,14 @@ def main():  # type: ignore
         if "--fast" in sys.argv:
             print("\n[FAST MODE] Exiting early.")
             break
+
+    if "--fast" not in sys.argv:
+        t0 = time.time()
+        ok, detail = check_batch_and_base64()
+        print(
+            f"[batch] {'✓' if ok else '✗'} ({time.time() - t0:5.1f}s) batch and base64\n     {detail}"
+        )
+        results.append(("batch", ok))
 
     print(f"\n{'=' * 70}\n## SUMMARY\n{'=' * 70}")
     passed = sum(1 for _, ok in results if ok)

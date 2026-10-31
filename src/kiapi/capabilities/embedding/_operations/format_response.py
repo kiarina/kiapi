@@ -1,24 +1,41 @@
-"""Shape an embedding vector into the server's ``/v1/embedding`` response dict.
+"""Shape embedding vectors into the OpenAI-compatible ``/v1/embeddings`` response.
 
 Identical across handlers, so it lives here and the per-model ``run()`` calls it
-after computing the vector.
+after computing the vectors.
 """
 
-from typing import Any
+from typing import Any, Literal
+
+from .._utils.encode_vector import encode_vector
+from .._utils.resize_vector import resize_vector
 
 
 def format_response(
     *,
     model_name: str,
-    embedding: list[float],
+    vectors: list[list[float]],
     elapsed: float,
-    prompt_tokens: int = 0,
+    prompt_tokens: int,
+    dimensions: int | None = None,
+    encoding_format: Literal["float", "base64"] = "float",
 ) -> dict[str, Any]:
-    """Build the ``/v1/embedding`` response dict for a single embedding."""
+    data = []
+    for index, vector in enumerate(vectors):
+        resized = resize_vector(vector, dimensions)
+        data.append(
+            {
+                "object": "embedding",
+                "index": index,
+                "embedding": (
+                    encode_vector(resized) if encoding_format == "base64" else resized
+                ),
+            }
+        )
+
     return {
+        "object": "list",
+        "data": data,
         "model": model_name,
-        "embedding": embedding,
-        "dimension": len(embedding),
         "usage": {"prompt_tokens": prompt_tokens, "total_tokens": prompt_tokens},
         "timings": {"total_s": round(elapsed, 3)},
     }

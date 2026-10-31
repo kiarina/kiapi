@@ -14,11 +14,16 @@ from .resolve_embed_params import resolve_embed_params
 
 
 def handle_embed(ctx: AppContext, req: EmbedRequest) -> tuple[dict, list[str]]:
-    """Run one embedding. Returns (embedding_result, artifact_file_ids)."""
+    """Run one embedding request. Returns (response, artifact_file_ids)."""
     settings = settings_manager.get_settings()
     spec = model_registry.resolve("embedding", req.model)
     ctx.ensure_model_ready(spec)
-    params = resolve_embed_params(settings, req, variant=spec.name)
+    params = resolve_embed_params(
+        settings,
+        req,
+        variant=spec.name,
+        dimension_range=spec.module.DIMENSION_RANGE,
+    )
     payload = ctx.memory_manager.acquire(spec)
     result = spec.module.run(payload, params)
     return result, []  # embeddings produce no file artifacts

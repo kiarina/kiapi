@@ -136,7 +136,7 @@ Always review the upstream license to confirm the terms and whether commercial u
 |---|---|---|---|
 | chat |  | `POST /v1/chat` | [Chat API details](src/kiapi/capabilities/chat/README.md) |
 |  |  | `POST /v1/responses` | OpenAI-compatible Responses API over the chat models. [Details](src/kiapi/capabilities/chat/README.md#responses-api) |
-| embedding |  | `POST /v1/embedding` | [Embedding API details](src/kiapi/capabilities/embedding/README.md) |
+| embedding |  | `POST /v1/embeddings` | [Embedding API details](src/kiapi/capabilities/embedding/README.md) |
 | image | zimage | `POST /v1/image/zimage` | [Z-Image API details](src/kiapi/capabilities/zimage/README.md) |
 |  | flux2 | `POST /v1/image/flux2` | [FLUX.2 API details](src/kiapi/capabilities/flux2/README.md) |
 |  | qwen | `POST /v1/image/qwen` | [Qwen Image API details](src/kiapi/capabilities/qwen/README.md) |

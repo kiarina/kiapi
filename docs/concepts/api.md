@@ -5,10 +5,13 @@ and OpenAPI documentation layers.
 
 ## Endpoint Organization
 
-Chat and embedding expose standard modality endpoints:
+Chat and embedding expose OpenAI-compatible endpoints:
 
 - `POST /v1/chat/completions`
-- `POST /v1/embedding`
+- `POST /v1/embeddings`
+
+Their models and documents live under the family path, such as
+`/v1/chat/models` and `/v1/embedding/models`.
 
 Generation endpoints follow:
 

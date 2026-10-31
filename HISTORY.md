@@ -3,6 +3,14 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-10-31 — embedding を OpenAI 互換の `POST /v1/embeddings` に置き換えた
+
+- 判断: オーナーの指示で互換性は維持せず、`POST /v1/embedding` を消した。family 名と `/v1/embedding/{models,openapi.json,docs,redoc}` は chat の `/v1/chat/*` と同じ形で残す。`GET /v1/models` は chat 専用のまま
+- 判断: `{text, image}` は `input` の要素に許す kiapi の拡張にした。token 配列は受けない（呼び出し元の tiktoken の ID は Qwen の語彙と合わない）。入力は 1 件ずつ処理する（padding すると全件が最長の長さで計算される）
+- `mlx_embeddings.generate` は文字列に `max_length` を当てないので、前の「512 で切る」は実際には効いていなかった。handler が長さを数え、超えたら 400 にする。既定は両モデルの sequence length の 32768
+- `kiapi check` の VL が画像のローカルパスを渡していて `parse_inputs` に通らなかったので、base64 で渡すようにした
+- 実測（サーバー機 M4 Max、worktree）: verify 12/12、公式 OpenAI SDK で配列・`dimensions`・既定の base64 が通った。配列と単独の差 0.000000。8,002 トークン 15.9 秒、31,002 トークン 130.6 秒（worker は 1 本なので、その間ほかの生成も待つ）
+
 ## 2026-10-22 — mlx-audio の prepared live clone 提案を独立パッチに整理
 
 - 採用済みの短区間方式からモデル層だけを上流 `7cc680b2` へ移植し、[提案bundle](docs/playbooks/mlx-audio-live-upstream/README.md) に完全patch・英語PR本文・再現用verifier・sanitized実測を保存。実行時依存やサービスは変更せず、PR/forkは未提出。

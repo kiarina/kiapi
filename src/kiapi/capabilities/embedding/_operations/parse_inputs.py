@@ -1,11 +1,11 @@
 """Turn an embedding request's modality inputs into usable values.
 
-The request carries one field per modality (``text``, ``image``, ...). Model
+Each input item carries one field per modality (``text``, ``image``, ...). Model
 handlers call :func:`parse_inputs` with the set of modalities they support
-(``allow=``); anything outside that set — or an empty request — is rejected with
+(``allow=``); anything outside that set — or an empty item — is rejected with
 :class:`~kiapi.capabilities.CapabilityError` (mapped to HTTP 400 by the API layer).
 
-  - ``text``  is passed through as-is.
+  - ``text``  must be non-empty and is passed through as-is.
   - ``image`` accepts a data URL, an http(s) URL, or bare base64, and is
     materialized to a file under ``tmp_dir`` (the loader reads paths).
 
@@ -90,7 +90,7 @@ def parse_inputs(
     """
     if not inputs:
         raise CapabilityError(
-            "request has no input (provide at least one of: text, image)"
+            "input item is empty (provide at least one of: text, image)"
         )
 
     out: dict[str, Any] = {}
@@ -100,7 +100,9 @@ def parse_inputs(
                 f"{kind} input is not supported by the selected model"
             )
         if kind == "text":
-            out["text"] = source or ""
+            if not source:
+                raise CapabilityError("text: empty input")
+            out["text"] = source
         elif kind == "image":
             out["image"] = _materialize(source, "image", tmp_dir)
         else:  # pragma: no cover — schema only exposes known modalities

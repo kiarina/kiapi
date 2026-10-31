@@ -15,11 +15,11 @@ class EmbeddingSettings(BaseSettings):
     )
 
     max_length: int = Field(
-        default=512,
+        default=32768,
         title="Maximum input token length",
         description=(
-            "Maximum token length passed to the embedding model tokenizer.\n"
-            "Inputs longer than this are truncated before model processing."
+            "Maximum tokenized length of one text input.\n"
+            "Longer inputs are rejected with HTTP 400."
         ),
     )
 

@@ -2,6 +2,8 @@
 
 [mlx-embeddings](https://github.com/Blaizzy/mlx-embeddings) provides a text/image embedding API.
 
+`POST /v1/embeddings` follows OpenAI's embeddings API.
+
 - **text embedding**:
   - Qwen3-Embedding-8B
 - **multimodal embedding**:
@@ -11,9 +13,11 @@
 
 | Endpoint | Name | Description |
 |---|---|---|
-| `POST /v1/embedding` | Embed | 1 Vectorize item. The response is `{ model, embedding, dimension, usage, timings }`. |
+| `POST /v1/embeddings` | Embeddings | OpenAI-compatible. Returns `{ object, data, model, usage, timings }`. |
 | `GET /v1/embedding/models` | Model list | Returns a list of available models. |
 | `GET /v1/embedding/openapi.json` | OpenAPI | Returns detailed input/output specifications, usage, and TIPS. |
+
+`GET /v1/models` lists chat models only.
 
 ## API Docs
 
@@ -36,29 +40,40 @@
 
 - **HTTP 400** when sending a modality that is not supported by the selected model.
   Example: Error when sending `image` to `qwen3-embedding-8b`.
-- In the VL model, if you send `text` and `image` at the same time, they will be sent as one combined item.
-  Embed.
+- In the VL model, an object with both `text` and `image` is embedded as one combined item.
 
 ## Notes
 
-- **Response format**:
-  `embedding` is a float array and `dimension` is its length.
-  `usage` returns `prompt_tokens` / `total_tokens`.
-  Currently, the number of tokens remains `0` depending on the model execution path.
+- **Request**:
+  `input` takes a string, an array of up to 2048 items, or a `{text, image}` object.
+  Objects are a kiapi extension for multimodal models. Token arrays are not accepted.
+  `dimensions` and `encoding_format` follow OpenAI.
+- **Response**:
+  `data` holds one `{ object, index, embedding }` per input.
+  `usage` counts text tokens; images are not counted.
+  `timings` is a kiapi extension.
 - **Output Vector**:
   Convert the output of `mlx-embeddings` to a Python `list[float]` with `_utils/to_vector.py`.
   In the help, it is treated as a vector for L2 normalization and last-token pooling.
+  `dimensions` truncates the vector and normalizes it again:
+  32-4096 for `qwen3-embedding-8b`, 64-2048 for `qwen3-vl-embedding-2b`.
 - **Input format**:
-  `text` passes the string as is.
+  `text` passes the string as is. Empty text is rejected.
   `image` accepts base64, data URLs, http(s) URLs,
   Materialize to a temporary file before running the VL model.
 - **max_length**:
-  The maximum length passed to the tokenizer is set with `KIAPI_EMBEDDING_MAX_LENGTH`.
-  Default value is `512`.
+  Text longer than `KIAPI_EMBEDDING_MAX_LENGTH` tokens returns HTTP 400 instead of being truncated.
+  Default value is `32768`, the sequence length of both models.
+  `mlx_embeddings.generate` ignores `max_length` for a string, so the handlers check the length.
+- **Instructions**:
+  Text is embedded as sent. Upstream recommends prefixing queries with
+  `Instruct: {task}\nQuery:{query}`; callers add it when they want it.
 - **Two embedded paths**:
   The text model is `mlx_embeddings.generate(...)`,
   VL models use `model.process([item], processor=...)`.
   The paths are different even within the same dependent library, so please verify both when updating `mlx-embeddings`.
+- **Items run one at a time**:
+  A padded batch would cost the longest item's length for every item.
 - **VL processor correction**:
   MLX converted Qwen3-VL processors may lack `chat_template` and image/video token-id attributes.
   `_patch_processor` in `_models/qwen3_vl.py` compensates with best-effort.
@@ -70,24 +85,36 @@
 ```bash
 jq -n \
 '{
-  text: "今日はいい天気ですね"
+  input: "今日はいい天気ですね"
 }' |
-curl -sS http://localhost:${PORT:-8000}/v1/embedding \
+curl -sS http://localhost:${PORT:-8000}/v1/embeddings \
 -H 'Content-Type: application/json' \
 --data-binary @- |
-jq '{model, dimension, head: .embedding[0:5], timings}'
+jq '{model, usage, dimension: (.data[0].embedding | length), head: .data[0].embedding[0:5], timings}'
+```
+### OpenAI SDK
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="unused")
+response = client.embeddings.create(
+    model="qwen3-embedding-8b",
+    input=["今日はいい天気ですね", "明日は雨です"],
+    dimensions=1024,
+)
+vectors = [item.embedding for item in response.data]
 ```
 ### text - VL model
 ```bash
 jq -n \
 '{
   model: "vl",
-  text: "a photo of a cat"
+  input: "a photo of a cat"
 }' |
-curl -sS http://localhost:${PORT:-8000}/v1/embedding \
+curl -sS http://localhost:${PORT:-8000}/v1/embeddings \
 -H 'Content-Type: application/json' \
 --data-binary @- |
-jq '{model, dimension, timings}'
+jq '{model, dimension: (.data[0].embedding | length), timings}'
 ```
 ### image - VL model
 ```bash
@@ -97,12 +124,12 @@ jq -n \
 --arg image "$IMG" \
 '{
   model: "vl",
-  image: $image
+  input: [{image: $image}]
 }' |
-curl -sS http://localhost:${PORT:-8000}/v1/embedding \
+curl -sS http://localhost:${PORT:-8000}/v1/embeddings \
 -H 'Content-Type: application/json' \
 --data-binary @- |
-jq '{model, dimension, timings}'
+jq '{model, dimension: (.data[0].embedding | length), timings}'
 ```
 ### text + image - VL model
 ```bash
@@ -112,13 +139,12 @@ jq -n \
 --arg image "$IMG" \
 '{
   model: "vl",
-  text: "a photo of a cat",
-  image: $image
+  input: [{text: "a photo of a cat", image: $image}]
 }' |
-curl -sS http://localhost:${PORT:-8000}/v1/embedding \
+curl -sS http://localhost:${PORT:-8000}/v1/embeddings \
 -H 'Content-Type: application/json' \
 --data-binary @- |
-jq '{model, dimension, timings}'
+jq '{model, dimension: (.data[0].embedding | length), timings}'
 ```
 ### Model list
 ```bash

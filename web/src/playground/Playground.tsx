@@ -574,7 +574,8 @@ function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind:
   const data = outcome.data as Record<string, unknown>;
   const results = Array.isArray(data?.results) ? (data.results as SearchResult[]) : null;
   const imageResults = results?.length && results.every((result) => result.category === "images");
-  const embedding = Array.isArray(data?.embedding) ? (data.embedding as number[]) : undefined;
+  const embeddings = Array.isArray(data?.data) ? (data.data as { embedding?: unknown }[]) : [];
+  const embedding = Array.isArray(embeddings[0]?.embedding) ? (embeddings[0].embedding as number[]) : undefined;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {results && (
@@ -601,7 +602,9 @@ function SyncResult({ outcome, onFetchUrl }: { outcome: Exclude<Outcome, { kind:
       )}
       {embedding && (
         <div className="card">
-          <h2 className="card-title">{embedding.length}-dimensional embedding</h2>
+          <h2 className="card-title">
+            {embeddings.length > 1 ? `${embeddings.length} embeddings, ` : ""}{embedding.length} dimensions
+          </h2>
           <div className="spark" aria-hidden="true">
             {embedding.slice(0, 96).map((v, i) => (
               <span key={i} style={{ height: `${Math.min(100, Math.abs(v) * 900)}%`, opacity: v < 0 ? 0.45 : 1 }} />

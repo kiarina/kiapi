@@ -95,7 +95,7 @@ def test_generation_routes_document_json_request_and_job_or_raw_response() -> No
 def test_core_body_routes_document_pydantic_request_models() -> None:
     routes = [
         ("chat", "/v1/chat/completions", "ChatRequest"),
-        ("embedding", "/v1/embedding", "EmbedRequest"),
+        ("embedding", "/v1/embeddings", "EmbedRequest"),
         ("web", "/v1/web/search", "SearchRequest"),
     ]
 

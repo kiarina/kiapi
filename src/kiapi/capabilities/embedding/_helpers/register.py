@@ -19,7 +19,7 @@ def register() -> None:
             openapi_path="/v1/embedding/openapi.json",
             docs_path="/v1/embedding/docs",
             redoc_path="/v1/embedding/redoc",
-            path_prefixes=("/v1/embedding",),
+            path_prefixes=("/v1/embedding", "/v1/embeddings"),
         )
     )
 
