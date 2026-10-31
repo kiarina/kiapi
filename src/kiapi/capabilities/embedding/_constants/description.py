@@ -24,6 +24,8 @@ dimensionality — embed both your queries and your corpus with the **same** mod
 ## Notes
 - `input` accepts up to 2048 items. Items run one at a time.
 - Inputs longer than the token limit return 400; they are never truncated.
+- Time grows faster than length: about 1.4 s per 1k tokens up to 2k tokens and
+  4.3 s per 1k at 32k. Split long documents into items of 2k-4k tokens.
 - Empty inputs return 400. Token arrays are not accepted.
 - `dimensions` truncates the vector and L2-normalizes it again.
 - `usage` counts text tokens; images are not counted.

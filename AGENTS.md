@@ -206,6 +206,7 @@ mise run verify --kiapi --family embedding --fast
 - [Qwen3.8-27B の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
 - [mflux を 0.21.0 へ上げ、Qwen-Image-2.1 の fork pin を外す](tasks/mflux-qwen-image-21-unpin.md)
+- [OpenAI 互換の embedding を PyPI へリリースする](tasks/release-openai-embeddings.md)
 - [tool_choice: required で並列の tool call が 1 件しか返らない件を調べる](tasks/chat-required-parallel-tool-calls.md)
 
 ### 待ち（`waiting/`）
