@@ -3,10 +3,9 @@ import binascii
 import mimetypes
 import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
-from kiapi.core.net import UnsafeURLError, verify_public_url
+from kiapi.core.net import UnsafeURLError, open_public_url
 
 from .._schemas.file_data_url_ref import FileDataURLRef
 from .._schemas.file_id_ref import FileIDRef
@@ -42,14 +41,11 @@ def _store_url(file_store: FileStore, ref: FileURLRef, *, kind: str) -> FileReco
         raise ValueError(f"{kind} url must be an absolute http:// or https:// URL")
 
     try:
-        verify_public_url(ref.url, kind=kind)
-    except UnsafeURLError as exc:
-        raise ValueError(str(exc)) from exc
-
-    try:
-        with urllib.request.urlopen(ref.url, timeout=30) as response:
+        with open_public_url(ref.url, kind=kind, timeout=30) as response:
             data = response.read()
             content_type = response.headers.get_content_type()
+    except UnsafeURLError as exc:
+        raise ValueError(str(exc)) from exc
     except urllib.error.URLError as exc:
         raise ValueError(f"failed to fetch {kind} url {ref.url!r}: {exc}") from exc
 

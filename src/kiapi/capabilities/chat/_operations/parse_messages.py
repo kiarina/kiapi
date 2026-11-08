@@ -28,12 +28,11 @@ import binascii
 import json
 import re
 import subprocess
-import urllib.request
 import uuid
 from pathlib import Path
 from typing import Any
 
-from kiapi.core.net import UnsafeURLError, verify_public_url
+from kiapi.core.net import UnsafeURLError, open_public_url
 
 _DATA_URL = re.compile(r"^data:(?P<mime>[\w./+-]+)?;base64,(?P<data>.*)$", re.DOTALL)
 
@@ -215,12 +214,10 @@ def _materialize(
 
     if source.startswith(("http://", "https://")):
         try:
-            verify_public_url(source, kind=kind)
+            with open_public_url(source, kind=kind, timeout=30) as resp:
+                data = resp.read()
         except UnsafeURLError as exc:
             raise MediaError(f"{kind}: {exc}")  # noqa: B904
-        try:
-            with urllib.request.urlopen(source, timeout=30) as resp:
-                data = resp.read()
         except Exception as exc:
             raise MediaError(f"{kind}: failed to fetch {source!r} ({exc})")  # noqa: B904
         ext = Path(source.split("?")[0]).suffix or _DEFAULT_EXT[kind]
