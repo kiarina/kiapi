@@ -90,9 +90,7 @@ default variant.
   RGBA references keep their alpha.
 - **Not supported**: `init_image` (use `/edit` with `images`), `loras`, and `scheduler`
   (ignored). A differing `quantize` builds a transient model, as above.
-- **Engine**: editing comes from a pinned [mflux fork](https://github.com/kiarina/mflux/tree/qwen-image-2.1-edit)
-  ([#741](https://github.com/mflux-community/mflux/pull/741)). With official mflux,
-  `image-2.1` is not registered.
+- **Engine**: editing uses mflux's `QwenImage21Edit` (mflux 0.24.0 or later).
 - **License**: the weights are for research and evaluation only. Do not use its outputs
   in commercial work without a separate license from Alibaba; use `image` / `edit-2509`
   (Apache-2.0) instead.

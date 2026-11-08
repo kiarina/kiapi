@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as `{text, image}` objects. `/v1/embedding/models` and the capability documents stay in place.
 - embedding: reject text over the token limit with HTTP 400. `KIAPI_EMBEDDING_MAX_LENGTH` now defaults to 32768.
 - Update mlx-audio to 0.6.1; retain the verified Qwen3-TTS compatibility patch implementations.
+- Update mflux to 0.24.0 from PyPI (drops the Qwen-Image-2.1 fork pin; mflux-community/mflux#741 is released) and Pillow to 13.0.0 (mflux 0.24.0 no longer imports `PIL._typing`); also transformers 5.22.2, torch 2.15.0, and opencv-python 5.0.0.93.
 - Update FastAPI to 0.162.2, Starlette to 1.10.0, pydantic to 2.14.3, setuptools to 84.2.1, and the dev tools (ruff 0.17.4, mypy 2.4.1, pytest 9.2.0); update Vite to 8.3.6 for the web UI.
 
 ### Fixed

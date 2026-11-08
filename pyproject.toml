@@ -42,10 +42,9 @@ dependencies = [
     # numpy>=2.5 needs numba>=0.67 in the out-of-band LTX-2 install
     # (`kiapi activate --family ltx2` pulls mlx-video -> librosa -> numba).
     "numpy",
-    # pillow 13.0.0 imports numbers._IntegralLike in PIL._typing and relies on
-    # PEP 810 lazy imports to skip it; on Python 3.12 the import runs and fails,
-    # breaking every mflux-based family (mflux imports PIL._typing).
-    "pillow<13",
+    # Pillow 13's private PIL._typing fails to import on Python 3.12
+    # (numbers._IntegralLike); mflux>=0.24.0 no longer imports it.
+    "pillow>=13.0.0",
     "psutil", # process RSS measurement (framework-agnostic fallback)
     "httpx", # web search capability: async HTTP client for the SearXNG backend
     "kiarina-utils-common>=2.2.0",
@@ -79,7 +78,7 @@ dependencies = [
     "torch",
     "torchvision",
     "torchaudio",
-    "mflux>=0.20.0",
+    "mflux>=0.24.0",
     "pydantic-settings-manager>=3.8.0",
 ]
 
@@ -120,8 +119,6 @@ environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
 # Opt-in Qwen3.8 image and Omni media-prefix APC, pending upstream releases.
 # Published wheels retain the official 0.7.1 dependency and conservative fallback.
 mlx-vlm = { git = "https://github.com/kiarina/mlx-vlm.git", rev = "6581ba8c2f2dbc8b994cb0a350532a4bec59abc2" }
-# Qwen-Image-2.1 editing and RGBA output (mflux-community/mflux#741), pending upstream release.
-mflux = { git = "https://github.com/kiarina/mflux.git", rev = "144a6becfb587bcaa0139758131faf0a7930ae18" }
 
 [dependency-groups]
 dev = [
