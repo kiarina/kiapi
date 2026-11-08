@@ -22,6 +22,18 @@ hub 2 と opencv 5 の阻害は 0.21.0 でも解けない。
   kiarina に時間を確かめてから行う
 - fork の `qwen-image-2.1-edit` branch（force-push しない）を消すのは、旧 kiapi を入れ直す可能性が無くなってから
 
+## 進捗（2026-11-09）
+
+- branch `deps/pillow13-mflux024`（`623a6f1`）で fork pin を外し `mflux>=0.24.0`・`pillow>=13.0.0` にした。
+  mflux 0.24.0 は `PIL._typing` を import しなくなり（`exif_orientation.py` のコメントのみ）、`pillow>=13.0.0` を要求する。
+  これで Pillow の security alert（13.0.0 で修正、critical を含む）が解ける。依存の上限は `huggingface-hub<2.0` は残り、
+  `opencv-python<6.0` に緩んだ（lock は opencv-python 5.0.0.93）。同時に transformers 5.22.2、torch 2.15.0 に上がる
+- 静的に確かめたこと: kiapi が使う mflux の import 先（qwen21 の `QwenImage21Edit`、qwen、flux2、z_image、seedvr2、depth_pro、
+  training）は 0.24.0 にすべてあり、`QwenImage21Edit.generate_image` は `image_paths`・`output_resolution`・`use_kv_cache` を保つ。
+  Pillow 13 の venv で全 import が通り、`image-2.1` も登録される。開発機の `mise run ci` 507 passed
+- **残り**: サーバー機で qwen（image-2.1 は [9]〜[12]）・zimage・flux2・seedvr2・depthpro の full verify（サービスが止まるので
+  kiarina に確認）→ main へ merge → 本番。Dependabot PR #28（pillow だけ）は mflux 0.20 と組むと壊れるので close した
+
 ## 経緯
 
 `HISTORY.md` の 2026-09-25（image-2.1 の追加と実測）、2026-09-28（waiting への切り出し）、2026-10-05
