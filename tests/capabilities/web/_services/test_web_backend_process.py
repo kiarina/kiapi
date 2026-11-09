@@ -68,3 +68,38 @@ def test_start_backend_runs_foreground_docker_with_dynamic_port(
 
     backend.release()
     assert procs[0].terminated is True
+
+
+def test_start_backend_passes_env_by_name_and_keeps_token(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    procs: list[DummyProc] = []
+
+    def fake_popen(cmd: list[str], **kwargs: Any) -> DummyProc:
+        proc = DummyProc(cmd, **kwargs)
+        procs.append(proc)
+        return proc
+
+    monkeypatch.setattr(subject, "_pick_free_port", lambda: 45679)
+    monkeypatch.setattr(subject.subprocess, "Popen", fake_popen)
+
+    backend = subject.WebBackendProcess.start(
+        name="crawl4ai",
+        image="unclecode/crawl4ai:latest",
+        container_port=11235,
+        log_dir=str(tmp_path),
+        ready_timeout_s=1.0,
+        healthcheck=lambda base_url: None,
+        env={"CRAWL4AI_API_TOKEN": "secret-value"},
+        api_token="secret-value",
+    )
+
+    cmd = procs[0].cmd
+    i = cmd.index("-e")
+    assert cmd[i + 1] == "CRAWL4AI_API_TOKEN"
+    # The value travels in the environment, never on the command line.
+    assert "secret-value" not in " ".join(cmd)
+    assert procs[0].kwargs["env"]["CRAWL4AI_API_TOKEN"] == "secret-value"
+    assert backend.api_token == "secret-value"
+
+    backend.release()

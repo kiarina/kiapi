@@ -17,6 +17,8 @@ class FetchParams(BaseModel):
 
     # Crawl4AI backend base URL.
     base_url: str
+    # Bearer token for the backend's API, when it requires one.
+    api_token: str | None = None
     timeout_s: float
 
     # Crawl4AI /md knobs (ignored for the /pdf format).

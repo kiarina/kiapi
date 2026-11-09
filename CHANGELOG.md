@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- web: start the Crawl4AI backend with a per-start `CRAWL4AI_API_TOKEN` and send it as a Bearer token. Crawl4AI images from 2026-10 bind only the container loopback without one, so `GET /v1/web/fetch` never became ready.
 - Compare Bearer authorization against the configured secret value.
 - Re-check every redirect target against the SSRF guard when fetching URL inputs (file refs, chat media, embedding images); a public URL could previously redirect the fetch to a private address.
 

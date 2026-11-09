@@ -49,9 +49,12 @@ def _probe_content_type(params: FetchParams) -> str | None:
 
 def _post_crawl4ai(params: FetchParams, path: str, payload: dict) -> dict:
     url = f"{params.base_url.rstrip('/')}{path}"
+    headers = (
+        {"Authorization": f"Bearer {params.api_token}"} if params.api_token else None
+    )
     try:
         with httpx.Client(timeout=params.timeout_s) as client:
-            resp = client.post(url, json=payload)
+            resp = client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
             data: dict = resp.json()
             return data
@@ -99,6 +102,7 @@ def handle_fetch(ctx: AppContext, req: FetchRequest) -> tuple[JobResult, list[Fi
         settings,
         req,
         base_url=backend.base_url,  # type: ignore[attr-defined]
+        api_token=getattr(backend, "api_token", None),
     )
 
     content_type = _probe_content_type(params)

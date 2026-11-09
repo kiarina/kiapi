@@ -36,3 +36,15 @@ def test_resolve_fetch_params_defaults() -> None:
     assert params.format == "markdown"
     assert params.filter == "fit"
     assert params.base_url == "http://crawl.local"
+    assert params.api_token is None
+
+
+def test_resolve_fetch_params_carries_api_token() -> None:
+    params = resolve_fetch_params(
+        WebSettings(),
+        FetchRequest(url="https://a.test"),
+        base_url="http://crawl.local",
+        api_token="tok",
+    )
+
+    assert params.api_token == "tok"

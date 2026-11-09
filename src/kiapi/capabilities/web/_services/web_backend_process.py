@@ -6,6 +6,7 @@ and ``release`` terminates that process. Docker is only an implementation detail
 of this payload.
 """
 
+import os
 import socket
 import subprocess
 import time
@@ -27,6 +28,7 @@ class WebBackendProcess:
         port: int,
         log_file: BinaryIO,
         log_path: Path,
+        api_token: str | None = None,
     ) -> None:
         self.name = name
         self.proc = proc
@@ -34,6 +36,9 @@ class WebBackendProcess:
         self.port = port
         self.log_file = log_file
         self.log_path = log_path
+        # Bearer token the container was started with, for backends that gate
+        # their API behind one (Crawl4AI). None when the backend is open.
+        self.api_token = api_token
         self.started_at = time.time()
 
     def release(self) -> None:
@@ -61,8 +66,15 @@ class WebBackendProcess:
         ready_timeout_s: float,
         healthcheck: Callable[[str], None],
         extra_args: list[str] | None = None,
+        env: dict[str, str] | None = None,
+        api_token: str | None = None,
         attempts: int = 3,
     ) -> Self:
+        """Start the container and wait until ``healthcheck`` passes.
+
+        ``env`` is passed to the container by name (``-e NAME``) with the values
+        in the docker CLI's environment, so secrets stay out of the process list.
+        """
         last_error: Exception | None = None
         for _ in range(attempts):
             port = _pick_free_port()
@@ -77,6 +89,7 @@ class WebBackendProcess:
                 container_name,
                 "-p",
                 f"127.0.0.1:{port}:{container_port}",
+                *(arg for key in (env or {}) for arg in ("-e", key)),
                 *(extra_args or []),
                 image,
             ]
@@ -85,6 +98,7 @@ class WebBackendProcess:
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
+                env={**os.environ, **env} if env else None,
             )
             backend = cls(
                 name=name,
@@ -93,6 +107,7 @@ class WebBackendProcess:
                 port=port,
                 log_file=log_file,
                 log_path=log_path,
+                api_token=api_token,
             )
             try:
                 _wait_ready(backend, ready_timeout_s, healthcheck)
