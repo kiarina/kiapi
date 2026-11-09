@@ -3,6 +3,14 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-11-09 — crawl4ai に起動ごとの API token を渡し、web.fetch を直した
+
+- 原因: 2026-10 以降の crawl4ai の image は `CRAWL4AI_API_TOKEN`（または JWT）が無いとコンテナの loopback にしか bind せず、
+  token があると `/health`・`/token` 以外のすべてに `Authorization: Bearer` を要求する（image の `auth_gate.py`）
+- 判断: token は設定にせず、kiapi が起動ごとに `secrets.token_urlsafe(32)` で作る。docker には `-e CRAWL4AI_API_TOKEN` と名前だけ渡し、
+  値は docker CLI の環境で渡す（プロセス一覧に出さない）。`/md`・`/pdf` に Bearer を付ける。古い image は token を無視するので互換
+- 実測（サーバー機の worktree）: `mise run verify --kiapi --family web` が通った（search、markdown 1,680 文字、PDF 2.2 MB、not_html・406・422）
+
 ## 2026-11-09 — mflux 0.24.0・Pillow 13.0.0 へ上げ、Qwen-Image-2.1 の fork pin を外した
 
 - 判断: Pillow の security alert（13.0.0 だけが修正版、critical を含む）を解くため、`PIL._typing` を import しなくなった mflux 0.24.0 と組んで上げた。
@@ -13,7 +21,7 @@
   transcriptions 5/5、acestep 8/8、audiogen 6/6、h3 6/6、ltx2 11/11、speech_call・speech_live（`--voice` を渡して手で実行）
 - web は検証できなかった。SearXNG と crawl4ai の Docker image がサーバー機から消えていて（未使用 image の掃除で消えたとみられる）、入れ直した
   crawl4ai の latest は `CRAWL4AI_API_TOKEN` が無いとコンテナの loopback にしか bind せず、ready にならない。main の本番でも同じで、
-  この更新とは無関係。`tasks/web-crawl4ai-api-token.md` を起こした
+  この更新とは無関係。`tasks/web-crawl4ai-api-token.md` を起こした（同日に直した。上の項）
 - `mise run verify --family speech_call` / `speech_live` は `--voice` を要求して driver からは落ちる。手で `--voice <登録済みの声>` を渡す
 - fork の `qwen-image-2.1-edit` branch はまだ消していない（旧 kiapi を入れ直す可能性が無くなってから）
 

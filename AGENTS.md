@@ -205,7 +205,6 @@ mise run verify --kiapi --family embedding --fast
 - [mlx-vlm を 0.7.2 以降へ上げて Omni の互換 patch を外す](tasks/mlx-vlm-omni-patch-removal.md)
 - [Qwen3.8-27B の投機的デコードを chat に組み込む](tasks/qwen38-speculative-decoding.md)
 - [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
-- [crawl4ai の新しい image で web.fetch が ready にならない件を直す](tasks/web-crawl4ai-api-token.md)
 - [OpenAI 互換の embedding を PyPI へリリースする](tasks/release-openai-embeddings.md)
 - [tool_choice: required で並列の tool call が 1 件しか返らない件を調べる](tasks/chat-required-parallel-tool-calls.md)
 
