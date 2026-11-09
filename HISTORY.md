@@ -3,6 +3,20 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-11-09 — mflux 0.24.0・Pillow 13.0.0 へ上げ、Qwen-Image-2.1 の fork pin を外した
+
+- 判断: Pillow の security alert（13.0.0 だけが修正版、critical を含む）を解くため、`PIL._typing` を import しなくなった mflux 0.24.0 と組んで上げた。
+  `[tool.uv.sources]` の mflux の fork pin を外し `mflux>=0.24.0`・`pillow>=13.0.0`。同じ lock で transformers 5.22.2、torch 2.15.0、
+  opencv-python 5.0.0.93、python-dateutil 4.0.0 にも上がった
+- 実測（サーバー機、worktree の full verify）: qwen 13/13（image-2.1 の生成・編集の画像も目で確かめた）、zimage 12/12、flux2 12/12、
+  seedvr2 6/6、depthpro 7/7、chat（3 モデルの画像・Omni の音声・動画・tool call・stream・prefix）、embedding 12/12、
+  transcriptions 5/5、acestep 8/8、audiogen 6/6、h3 6/6、ltx2 11/11、speech_call・speech_live（`--voice` を渡して手で実行）
+- web は検証できなかった。SearXNG と crawl4ai の Docker image がサーバー機から消えていて（未使用 image の掃除で消えたとみられる）、入れ直した
+  crawl4ai の latest は `CRAWL4AI_API_TOKEN` が無いとコンテナの loopback にしか bind せず、ready にならない。main の本番でも同じで、
+  この更新とは無関係。`tasks/web-crawl4ai-api-token.md` を起こした
+- `mise run verify --family speech_call` / `speech_live` は `--voice` を要求して driver からは落ちる。手で `--voice <登録済みの声>` を渡す
+- fork の `qwen-image-2.1-edit` branch はまだ消していない（旧 kiapi を入れ直す可能性が無くなってから）
+
 ## 2026-10-31 — qwen3-embedding-8b の長さごとの速度を測った
 
 - 条件: サーバー機（Mac Studio M4 Max）の本番、warm、日本語・英語の実文書、`timings.total_s` の中央値（2〜5 回）。途中で別の作業の chat が同じ worker を交互に使っていた。ばらつきは 11,723 トークンの 28.4・34.0 秒以外は数 % 以内
