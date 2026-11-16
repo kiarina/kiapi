@@ -3,6 +3,15 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-11-16 — mlx-audio への上流 PR の候補を取り下げ、mlx-audio の版を据え置いた
+
+- 判断（オーナー）: 2026-10-22 に用意した prepared live-clone の上流 PR の候補を取り下げた。Spirits Garden は 2026-10-23 に kiapi の声を外し、
+  qwentts.cpp で短区間ごとに要求を出すだけで同じ体験になったので、使う予定が無い。提案の文書（`docs/playbooks/mlx-audio-live-upstream/`）は消した。
+  中身（patch・PR 本文・verifier・実測）は `3ae3d51` から辿れる
+- 判断（オーナー）: mlx-audio は 0.6.1 に据え置き、Dependabot の PR #35（0.6.4）を閉じて、mlx-audio を Dependabot の対象から外した。
+  0.6.4 は出だしの声色のずれ（kiapi の patch と同じ発想）、0.6.5 は Qwen3-TTS の decoder を 2 か所直しており、上げるには patch の見直しと試聴が要る。
+  speech を使う利用者が今いないので、その手間をかけない
+
 ## 2026-11-16 — transformers 5.23.0・numpy 2.5.5 へ上げた（推論経路の依存）
 
 - 内容: transformers 5.22.2 → 5.23.0、numpy 2.5.4 → 2.5.5、regex 2026.11.15、miniaudio 1.73、nagisa 0.3.2、filelock 4.2.10（`04ceaa0`）

@@ -217,6 +217,3 @@ waits. Span completion is internal: clients buffer/play continuous outer audio
 and do not interpret individual spans as turn completion. No initial playback
 buffer is added on the server; clients own playout timing.
 
-## Upstream proposal
-
-The [prepared live-clone proposal](../../../../docs/playbooks/mlx-audio-live-upstream/README.md) contains an independently tested patch for mlx-audio, its scope and PR draft. It is not the runtime dependency used by this implementation.

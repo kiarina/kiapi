@@ -75,5 +75,3 @@ lifetime are independent.
 Short-span generation plus client playback buffering improved downstream calls,
 but superiority over ordinary `generate()` calls with the same spans and buffer
 has not been established. Upstream already caches some reference preprocessing.
-The [proposal assessment](../../../../../docs/playbooks/mlx-audio-live-upstream/assessment.md)
-sets out the standard-API comparison required before deciding what to upstream.

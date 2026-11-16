@@ -13,6 +13,10 @@ updates:
       # re-verifying both the omni and vlm models, so it is never an automatic
       # update.
       - dependency-name: "mlx-vlm"
+      # mlx-audio is pinned exactly because the speech capability patches its
+      # Qwen3-TTS voice cloning (see src/kiapi/capabilities/speech/_helpers/patch_mlx_audio.py).
+      # Raising it requires re-auditing those patches and listening to the output.
+      - dependency-name: "mlx-audio"
 
   # Web UI dependencies are declared in web/package.json and pinned in web/pnpm-lock.yaml.
   - package-ecosystem: "npm"
