@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update mflux to 0.24.0 from PyPI (drops the Qwen-Image-2.1 fork pin; mflux-community/mflux#741 is released) and Pillow to 13.0.0 (mflux 0.24.0 no longer imports `PIL._typing`); also transformers 5.22.2, torch 2.15.0, and opencv-python 5.0.0.93.
 - Update FastAPI to 0.162.2, Starlette to 1.10.0, pydantic to 2.14.3, setuptools to 84.2.1, and the dev tools (ruff 0.17.4, mypy 2.4.1, pytest 9.2.0); update Vite to 8.3.6 for the web UI.
 - Update FastAPI to 0.163.1, pydantic-settings to 2.16.3, and the dev tools (ruff 0.17.5, pytest-asyncio 1.5.0); update Vite to 8.3.8 and @vitejs/plugin-react to 6.3.0 for the web UI.
+- Update transformers to 5.23.0 and numpy to 2.5.5 (also regex, miniaudio 1.73, nagisa 0.3.2, filelock 4.2.10).
 
 ### Fixed
 
