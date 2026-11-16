@@ -3,6 +3,17 @@
 完了した作業、実測値、過去の意思決定の記録です。
 作業日を含めて、新しいものを上に追記します。
 
+## 2026-11-16 — transformers 5.23.0・numpy 2.5.5 へ上げた（推論経路の依存）
+
+- 内容: transformers 5.22.2 → 5.23.0、numpy 2.5.4 → 2.5.5、regex 2026.11.15、miniaudio 1.73、nagisa 0.3.2、filelock 4.2.10（`04ceaa0`）
+- 実測（サーバー機、worktree の full verify）: acestep 8/8、audiogen 6/6、chat（3 モデルの画像・Omni の音声・動画・tool call・stream・prefix）、
+  depthpro 12/12、embedding 12/12、flux2、h3 6/6、ltx2 11/11、qwen 13/13、seedvr2 6/6、transcriptions 5/5、zimage 12/12、
+  speech_call・speech_live（`--voice` を渡して手で実行）。本番へ入れた後に qwen3.8-27b の chat で疎通を確かめた
+- 1 回目の chat と h3 は qwen3.8-27b の 503（`not activated`）で落ちた。依存の更新とは無関係で、HF の repo に新しい revision が出ていて、
+  load が `README.md` を含まない形で新しい snapshot を落とし、`refs/main` がそちらを向いたため。`kiapi activate --repo` で埋めて再実行し通った。
+  原因と直し方は `tasks/hf-snapshot-partial-revision.md`
+- web は binary URL の case だけ 502。検証用の URL（`www-media.blazeworks.jp`）の DNS が無くなったためで、同じ task に書いた
+
 ## 2026-11-09 — crawl4ai に起動ごとの API token を渡し、web.fetch を直した
 
 - 原因: 2026-10 以降の crawl4ai の image は `CRAWL4AI_API_TOKEN`（または JWT）が無いとコンテナの loopback にしか bind せず、
