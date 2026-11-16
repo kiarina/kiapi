@@ -207,6 +207,7 @@ mise run verify --kiapi --family embedding --fast
 - [kiapi の全 family を使える Web UI を `/` で提供する](tasks/web-ui.md)
 - [OpenAI 互換の embedding を PyPI へリリースする](tasks/release-openai-embeddings.md)
 - [tool_choice: required で並列の tool call が 1 件しか返らない件を調べる](tasks/chat-required-parallel-tool-calls.md)
+- [推論経路の依存更新（transformers 5.23.0 ほか）を verify して main へ入れる](tasks/inference-deps-2026-11-16.md)
 
 ### 待ち（`waiting/`）
 
